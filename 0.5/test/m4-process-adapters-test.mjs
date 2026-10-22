@@ -1,0 +1,58 @@
+import assert from 'node:assert/strict';
+import fs from 'node:fs';
+import os from 'node:os';
+import path from 'node:path';
+import { createRealProcessAdapters } from '../src/console/process-adapters.js';
+
+const root = fs.mkdtempSync(path.join(os.tmpdir(), 'qqa-m4-process-'));
+const snow = path.join(root, 'snowluma');
+const snowConfig = path.join(snow, 'config');
+fs.mkdirSync(snowConfig, { recursive: true });
+fs.writeFileSync(path.join(snowConfig, 'runtime.json'), JSON.stringify({ webuiHost: '127.0.0.1', webuiPort: 5099, webuiTls: { enabled: false } }));
+fs.writeFileSync(path.join(snow, 'node.exe'), 'node');
+fs.writeFileSync(path.join(snow, 'index.mjs'), 'const LIST_QQ_VERSION="9.9.33-51802"; console.log(1)');
+fs.mkdirSync(path.join(snow, 'native'));for(const ext of ['node','dll'])fs.writeFileSync(path.join(snow,'native',`snowluma-win32-x64.${ext}`),'QA_M4_NOT_NATIVE');
+const calls = [];
+const fakeChild = (pid = 120) => {
+  const handlers = new Map();
+  return { pid, exitCode: null, killed: false, stdout: { on() {} }, stderr: { on() {} }, on(name, fn) { handlers.set(name, fn); return this; }, once(name, fn) { handlers.set(name, fn); return this; }, kill(signal) { calls.push(['kill', signal]); this.killed = true; this.exitCode = 0; handlers.get('exit')?.(0, signal); }, unref() {} };
+};
+const fakeSpawn = (file, args, options) => { calls.push(['spawn', file, args, options]); return fakeChild(); };
+const fakeNet = { createConnection() { const socket = { once(name, fn) { if (name === 'error') queueMicrotask(() => fn(new Error('closed'))); return this; }, setTimeout() { return this; }, destroy() {} }; return socket; } };
+const events = [];
+const adapters = createRealProcessAdapters({ appRoot: root, spawn: fakeSpawn, netImpl: fakeNet, fsImpl: fs, snowlumaPlatform:'win32', snowlumaArch:'x64', nativeProbe:async()=>({ok:true}), emit: (name, payload) => events.push([name, payload]) });
+const context = { config: { snowluma: { dir: snow } }, emit: (name, payload) => events.push([name, payload]) };
+let result = await adapters.snowluma.launch({}, context);
+assert.deepEqual(result, { ok: true, launched: true, embedded: true });
+assert.equal(calls[0][0], 'spawn');
+assert.equal(calls[0][1], path.join(snow, 'node.exe'));
+assert.deepEqual(calls[0][2], [path.join(snow, 'index.mjs')]);
+assert.equal(calls[0][3].cwd, snow);
+assert.equal(calls[0][3].windowsHide, true);
+assert.equal(calls[0][3].detached, false);
+result = await adapters.snowluma.stop(context);
+assert.equal(result.stopped, true);
+assert.equal(result.embedded, true);
+assert.ok(events.some(([name, payload]) => name === 'snowluma.status' && payload.running === true));
+
+const fallback = path.join(root, 'fallback');
+fs.mkdirSync(fallback, { recursive: true });
+fs.writeFileSync(path.join(fallback, 'launcher.bat'), '@echo off');
+fs.writeFileSync(path.join(fallback, 'index.mjs'), 'const LIST_QQ_VERSION="9.9.33-51802";');
+fs.mkdirSync(path.join(fallback, 'native'));for(const ext of ['node','dll'])fs.writeFileSync(path.join(fallback,'native',`snowluma-win32-x64.${ext}`),'QA_M4_NOT_NATIVE');
+const fallbackCalls = [];
+const fallbackAdapter = createRealProcessAdapters({ appRoot: root, spawn: (file, args, options) => { fallbackCalls.push([file, args, options]); return fakeChild(121); }, nativeProbe(){assert.fail('External launcher must not execute an unknown native loader');}, netImpl: fakeNet, fsImpl: fs, snowlumaPlatform:'win32', snowlumaArch:'x64' });
+const fallbackContext = { config: { snowluma: { dir: fallback } } };
+result = await fallbackAdapter.snowluma.launch({}, fallbackContext);
+assert.equal(result.embedded, false);
+assert.equal(fallbackCalls[0][0], 'cmd.exe');
+assert.deepEqual(fallbackCalls[0][1], ['/c', path.join(fallback, 'launcher.bat')]);
+assert.equal(fallbackCalls[0][2].detached, true);
+assert.equal(fallbackAdapter.snowluma.statusSync(fallbackContext).nativeState, 'unchecked');
+assert.match(fallbackAdapter.snowluma.statusSync(fallbackContext).nativeDiagnosis, /外部启动方式.*尚未验证/);
+
+const missing = createRealProcessAdapters({ appRoot: root, fsImpl: fs, netImpl: fakeNet });
+result = await missing.qqPortable.launch();
+assert.equal(result.status, 400);
+assert.equal(result.error, '便携 QQ 未安装：请先运行 npm run setup');
+console.log('✓ M4 process adapters: SnowLuma checked spawn/external-launcher diagnosis/stop and QQ missing install');

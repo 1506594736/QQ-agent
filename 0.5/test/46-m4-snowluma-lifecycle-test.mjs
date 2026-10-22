@@ -1,0 +1,26 @@
+import assert from 'node:assert/strict';
+import fs from 'node:fs';
+import os from 'node:os';
+import path from 'node:path';
+import { createRealProcessAdapters } from '../src/console/process-adapters.js';
+
+const root = fs.mkdtempSync(path.join(os.tmpdir(), 'qqa-m4-snow-lifecycle-'));
+const snow = path.join(root, 'snowluma');
+fs.mkdirSync(path.join(snow, 'config'), { recursive: true });
+fs.writeFileSync(path.join(snow, 'runtime.json'), '{}');
+fs.writeFileSync(path.join(snow, 'config', 'runtime.json'), JSON.stringify({ webuiHost: '127.0.0.1', webuiPort: 5099 }));
+fs.writeFileSync(path.join(snow, 'config', 'onebot_123.json'), JSON.stringify({ networks: { wsServers: [{ accessToken: 'ws-token' }], httpServers: [{ accessToken: 'http-token' }] } }));
+fs.writeFileSync(path.join(snow, 'node.exe'), 'node');
+fs.writeFileSync(path.join(snow, 'index.mjs'), 'const LIST_QQ_VERSION="9.9.33-51802"; console.log(1)');
+fs.mkdirSync(path.join(snow, 'native'));for(const ext of ['node','dll'])fs.writeFileSync(path.join(snow,'native',`snowluma-win32-x64.${ext}`),'QA46_NOT_NATIVE');
+let probes = 0;
+const fakeNet = { createConnection() { const socket = { once(name, fn) { if (name === 'connect' && ++probes > 2) queueMicrotask(fn); else if (name === 'error' && probes <= 2) queueMicrotask(() => fn(new Error('closed'))); return this; }, setTimeout() { return this; }, destroy() {} }; return socket; } };
+const child = { pid: 22, exitCode: null, killed: false, stdout: { on() {} }, stderr: { on() {} }, once() { return this; }, kill() { this.killed = true; this.exitCode = 0; }, unref() {} };
+const adapters = createRealProcessAdapters({ appRoot: root, fsImpl: fs, netImpl: fakeNet, snowlumaPlatform:'win32', snowlumaArch:'x64', nativeProbe:async()=>({ok:true}), spawn() { return child; } });
+const context = { config: { snowluma: { dir: snow, accessToken: 'configured' } } };
+assert.deepEqual(adapters.snowluma.tokenCandidates(context), ['configured', 'ws-token', 'http-token', '']);
+const ready = await adapters.snowluma.ensureAutoLaunch(context);
+assert.equal(ready.running, true);
+assert.equal(ready.launched, true);
+assert.equal(adapters.snowluma.statusSync(context).webuiUrl, 'http://127.0.0.1:5099/');
+console.log('✓ M4 SnowLuma lifecycle: autoLaunch 20s probe, WebUI 5099 fallback, token candidates');

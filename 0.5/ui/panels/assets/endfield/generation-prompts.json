@@ -1,0 +1,28 @@
+{
+  "generator": "built-in image_gen",
+  "assets": [
+    {
+      "key": "endfieldEmblem",
+      "prompt": "Use case: logo-brand. Asset type: a single original monochrome UI emblem used as a recolorable alpha mask in a desktop industrial control console inspired by the industrial graphic language of Arknights Endfield. Primary request: design one premium, impeccably balanced geometric symbol for a personal automation agent: two precise interlocking angular brackets enclosing a small solid rhombus node, suggesting an industrial relay and controlled signal. Orthographic flat graphic, confident 45-degree cuts, a few large clean shapes and deliberate negative space; visually recognizable at 24 pixels. One centered white glyph on a genuinely transparent background, square composition with generous even padding. No text, no letters, no official logo, no trademark reproduction, no emoji, no gradients, no glow, no shadow, no 3D, no background panel, no tiny decorative strokes. The opaque glyph must be neutral white so CSS can recolor the entire alpha silhouette to any theme color. Create only one symbol, no sheet or multiple variants."
+    },
+    {
+      "key": "endfieldArchive",
+      "prompt": "Use case: logo-brand. Asset type: a single original empty-state UI glyph for a desktop engineering console, consumed as a theme-recolorable transparent alpha mask. Primary request: design one premium geometric industrial archive symbol, visually compatible with a futuristic industrial information system inspired by Arknights Endfield: a compact chamfered storage cartridge with two stacked internal index bars and a small separated square status node, suggesting stored memory and a quiet standby state. Flat orthographic graphic, exact horizontal and vertical geometry, consistent substantial strokes, clean 45-degree corner cuts, deliberate negative space, readable at 40 pixels. One centered pure white silhouette on a genuinely transparent background, square framing, generous even padding. No text, no official logo, no emoji, no gradients, no grey antialias decoration beyond edges, no glow, no shadow, no 3D, no background plate, no collage, no extra icons. Alpha must preserve the clean negative spaces for CSS mask recoloring."
+    }
+  ],
+  "cleanupInstruction": "Preserve the silhouettes and transparency; remove all distressed texture, noisy cutouts and stray pixels; use uninterrupted crisp pure-white flat shapes and exact 45-degree chamfers.",
+  "additionalEditNotes": "A second edit requested pure black glyph ink on transparent alpha, retaining the geometric silhouettes and removing texture. RGB ink is discarded when rendered as an alpha mask. Both initial and edited results were compared at 180px and 32px in a real browser.",
+  "selectedOutputs": [
+    {
+      "asset": "emblem.png",
+      "generationFile": "exec-830684a5-48e5-41c2-8e78-668dc6ee8860.png",
+      "selection": "Final edited interlocking relay emblem; alpha mask follows currentColor."
+    },
+    {
+      "asset": "archive.png",
+      "generationFile": "exec-b0cdf2bb-2768-48cf-beb7-f2da3f29708c.png",
+      "selection": "Initial archive: its two internal index bars read more clearly at small sizes than the edited hollow cartridge."
+    }
+  ],
+  "rendering": "Original 1280x1280 RGBA files preserved, no programmatic image edits; CSS mask uses alpha and background:currentColor."
+}
