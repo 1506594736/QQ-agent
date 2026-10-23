@@ -14,7 +14,7 @@
 // 写 .part 再 rename 是原子的：要么完整，要么不存在。
 //
 // ── 进度输出到 stderr ────────────────────────────────────────────────
-// `npm run setup > log.txt` 时，日志文件里只该有可读的日志，
+// `npm run setup:napcat > log.txt` 时，日志文件里只该有可读的日志，
 // 而不该混进几十行 `\r` 刷新的进度条。所以进度走 stderr、日志走 stdout。
 
 import fs from 'node:fs';

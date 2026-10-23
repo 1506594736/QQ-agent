@@ -58,7 +58,7 @@ test('238 reply phase contracts and provider leases',{timeout:45000},async t=>{
         'core.send':options=>{const queue=defaultComponents['core.send'](options),send=queue.sendTextBatch;queue.sendTextBatch=(chat,text,options)=>{const work=send(chat,text,options);queueObserved?.(chat,text);return work;};return queue;}},
       transport:{id:'inert238',start(){},stop(){},actions:{},async send(chatKey,segments){physical.push({chatKey,segments:structuredClone(segments)});await physicalHandler?.(chatKey,segments);return{msgId:physical.length};}},
       priceUpdates:{refresh:async()=>({ok:true}),resolve:()=>null},fetchImpl:globalThis.fetch});
-    app.config.update({telemetry:{enabled:false},proactive:{enabled:false},snowluma:{autoLaunch:false},allowAllWhenEmpty:true,send:{dedupeWindowMs:0},api:{model:'synthetic238',apiKey:'HOST_SECRET238',maxRounds:3}});
+    app.config.update({telemetry:{enabled:false},proactive:{enabled:false},allowAllWhenEmpty:true,send:{dedupeWindowMs:0},api:{model:'synthetic238',apiKey:'HOST_SECRET238',maxRounds:3}});
     await app.loader.loadAll();await app.services.start();
     assert.deepEqual(app.loader.listEntries().map(entry=>entry.id).sort(),['a238','b238','compat-04','core-tools','legacy238']);assert.ok(app.loader.listEntries().every(entry=>entry.status==='active'));assert.equal(app.httpServer.port,null);
     const pin=(name,id)=>app.config.update({extensions:{providers:{...app.config.get().extensions?.providers,[name]:id}}});

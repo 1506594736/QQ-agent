@@ -23,7 +23,7 @@ eq(defaults.commandMute.command, '/安静', "commandMute.command='/安静'");
 eq(defaults.persona.roleText, 'PERSONA', 'persona.roleText=人设资产');
 const p2 = buildDefaultConfig({ portOffset: 100, personaText: '' });
 eq(p2.server.port, 3310, 'profile=2 端口 3210+100');
-eq(p2.snowluma.wsUrl, 'ws://127.0.0.1:3101', 'snowluma.wsUrl=3001+100');
+eq(p2.onebot.wsUrl, 'ws://127.0.0.1:3101', 'onebot.wsUrl=3001+100');
 
 section('deepMerge 语义（SPEC §5.0：对象递归 / 数组整体替换 / __replace__）');
 eq(deepMerge({ a: { b: 1, c: 2 } }, { a: { b: 9 } }), { a: { b: 9, c: 2 } }, '对象递归合并');

@@ -231,7 +231,7 @@ export function wrap(previous) { return options => {
         assert.equal(application.composition.owners['runtime.config'], mode === 'wrap' ? 'config245-wrap' : 'config245-replace');
         if (mode === 'wrap') assert.equal(application.config.loads245, 1);
       }
-      application.config.update({ server: { token: 'synthetic245-console-token' }, telemetry: { enabled: false }, proactive: { enabled: false }, memory: { consolidateEnabled: false }, snowluma: { autoLaunch: false } });
+      application.config.update({ server: { token: 'synthetic245-console-token' }, telemetry: { enabled: false }, proactive: { enabled: false }, memory: { consolidateEnabled: false }, });
       application.orchestrator.pause();
       const port = await application.start(), base = `http://127.0.0.1:${port}`;
       assert.notEqual(port, 15967); origins.add(base);

@@ -162,7 +162,7 @@ try{
   assert.equal(originalMessages(),messagesBefore);assert.equal(originalMemory(),memoryBefore);
   assert.ok(kernel.sessions.get(finished.id));assert.ok(kernel.sessions.get(pending.id));assert.equal(kernel.memory.query(chatKey).length,1);
   assert.ok(intercepted.length>=9);assert.deepEqual(errors,[]);assert.deepEqual(dialogs,[]);assert.deepEqual(outboundRequests,[]);assert.equal(outbound,0);
-  assert.ok(requests.every(request=>!request.path.includes('snowluma/launch')&&!request.path.includes('qq-portable/launch')));
+  assert.ok(requests.every(request=>!request.path.endsWith('/launch')));
   console.log(JSON.stringify({test:'169-destructive-panel-ui',result:'passed',realKernel:true,opaqueIframes:true,destructiveRequestsMocked:intercepted.length,realResetCalls:0,productionConsoleAccessed:false}));
 }finally{
   await browser?.close();await kernel.stop();assert.equal(path.dirname(path.resolve(dataDir)),path.resolve(os.tmpdir()));assert.ok(path.basename(dataDir).startsWith('qqa-destructive169-'));fs.rmSync(dataDir,{recursive:true,force:true});

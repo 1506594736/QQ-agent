@@ -447,13 +447,6 @@
         "owner"
       ]
     },
-    "file-inbox": {
-      "f": [
-        "local",
-        "memory"
-      ],
-      "t": []
-    },
     "finish-merge": {
       "f": [
         "cost"
@@ -544,13 +537,6 @@
     "group-whitelist": {
       "f": [
         "manage",
-        "safe"
-      ],
-      "t": []
-    },
-    "guardian": {
-      "f": [
-        "local",
         "safe"
       ],
       "t": []
@@ -1240,12 +1226,6 @@
         "native"
       ]
     },
-    "speech-to-text-qq": {
-      "f": [
-        "media"
-      ],
-      "t": []
-    },
     "steam-query": {
       "f": [
         "game"
@@ -1619,14 +1599,6 @@
       "t": [
         "zero",
         "net"
-      ]
-    },
-    "daily-greeting": {
-      "f": [
-        "cron"
-      ],
-      "t": [
-        "zero"
       ]
     },
     "proactive-contact": {
@@ -2566,14 +2538,6 @@
         "owner"
       ]
     },
-    "msg-pacing": {
-      "f": [
-        "trigger"
-      ],
-      "t": [
-        "zero"
-      ]
-    },
     "random-cat": {
       "f": [
         "media"
@@ -3234,14 +3198,6 @@
       ],
       "t": [
         "net"
-      ]
-    },
-    "snowluma-guard": {
-      "f": [
-        "local"
-      ],
-      "t": [
-        "native"
       ]
     },
     "xhh-proactive": {
@@ -4205,13 +4161,6 @@
       ],
       "t": []
     },
-    "qq-self": {
-      "f": [
-        "qq",
-        "media"
-      ],
-      "t": []
-    },
     "qqzone": {
       "f": [
         "qq",
@@ -5018,15 +4967,6 @@
         "zero"
       ]
     },
-    "pcstatus": {
-      "f": [
-        "local",
-        "media"
-      ],
-      "t": [
-        "zero"
-      ]
-    },
     "qq-face": {
       "f": [
         "media"
@@ -5414,13 +5354,6 @@
         "net"
       ]
     },
-    "anon-qa": {
-      "f": [
-        "qq",
-        "cron"
-      ],
-      "t": []
-    },
     "bili-memes": {
       "f": [
         "web"
@@ -5639,13 +5572,6 @@
       "t": [
         "native"
       ]
-    },
-    "daily-greeting": {
-      "f": [
-        "cron",
-        "persona"
-      ],
-      "t": []
     },
     "diary": {
       "f": [

@@ -1,7 +1,7 @@
 // Owns selected provider instances, not their business implementations.
 // Registration, enable/disable, permission changes and provider selection all
 // reconcile through the same queue. A stopped generation cannot publish events.
-const SERVICE_EVENTS = new Set(['transport.status', 'snowluma.log', 'snowluma.status', 'qq-portable.log', 'qq-portable.status', 'blocklist-sync', 'telemetry.tick']);
+const SERVICE_EVENTS = new Set(['transport.status', 'blocklist-sync', 'telemetry.tick']);
 export function createServiceHost({ capability, config, bus, log = console, authorize = async () => true, contextFor = (_name, context) => context, onState = () => {}, runInHostContext = action => action() } = {}) {
   const instances = new Map();
   const errors = new Map();

@@ -3,12 +3,12 @@
 // 覆盖「设置 → 聊天白名单 → 选择群 / 选择好友」的拉取链路：
 //   前端 openWhitelistPicker → GET /api/onebot/groups|friends → OneBot get_group_list / get_friend_list
 //
-// 除 OneBot 本身是 _harness 的 mock（标准 OneBot v11 形状，与 SnowLuma 对外口径一致）外，
+// 除 OneBot 本身是 _harness 的 mock（标准 OneBot v11 形状，与 OneBot 对外口径一致）外，
 // 其余全部是真实代码：
 //   · 真实后端（bootApp：真实路由 + onebot.call 的 HTTP 调用 + {id,name} 映射）
 //   · 真实前端（jsdom + ui/app 拆分段：点「选择群/选择好友」→ 弹窗渲染 → 勾选 → 确认写回）
 //
-// 背景：SnowLuma 更新 v1.14.19（仓库迁移 SnowLuma/SnowLuma）后，验证这条用户常用链路
+// 背景：OneBot 更新 v1.14.19（仓库迁移 OneBot/OneBot）后，验证这条用户常用链路
 // 不受影响；同时锁定两条配套行为：
 //   · 群名补底缓存（groupDisplayName：无存档白名单群也只显示群名）
 //   · 拉取失败的可读文案（前端「拉取失败：…」的依据是 502 里的 error）

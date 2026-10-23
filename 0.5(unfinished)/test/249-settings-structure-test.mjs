@@ -144,8 +144,8 @@ try{
   await page.emulateMedia({reducedMotion:'reduce'});await sharedToggle.click();await sharedToggle.click();assert.equal(await memorySlide.evaluate(n=>getComputedStyle(n).animationName),'none');await page.emulateMedia({reducedMotion:'no-preference'});
   await page.setViewportSize({width:560,height:900});await searchShot('memory-dedicated-narrow');assert.ok(await frame.locator('body').evaluate(el=>el.ownerDocument.documentElement.scrollWidth<=el.ownerDocument.documentElement.clientWidth+1));await page.setViewportSize({width:1360,height:900});await frame.locator('#save').click();await frame.locator('#reload').click();await frame.locator('#status').filter({hasText:'配置已读取'}).waitFor();await pick(frame,'memory');assert.equal(await sharedToggle.getAttribute('aria-checked'),'false');assert.equal(await memoryChoice.isVisible(),true);assert.equal(qa.disk().memory.provider,'b');assert.equal(qa.disk().memory.model,'shared');assert.equal(await memoryChoice.textContent(),'B显示名');await assertHiddenMemoryFields();assert.deepEqual(await paths(frame),baselinePaths);
   console.log('✓ memory main-model card switch reveals the dedicated selector on its right; ID inputs stay hidden, chosen route survives switching/reload, horizontal frames and reduced motion are verified');
-  await pick(frame,'access');assert.equal(await frame.locator('#field-snowluma-wsUrl').isVisible(),false);
-  await pick(frame,'onebot');assert.equal(await frame.locator('#field-snowluma-wsUrl').isVisible(),true);
+  await pick(frame,'access');assert.equal(await frame.locator('#field-onebot-wsUrl').isVisible(),false);
+  await pick(frame,'onebot');assert.equal(await frame.locator('#field-onebot-wsUrl').isVisible(),true);
   console.log('✓ current search source only; memory conditional model; independent OneBot section');
 
   await pick(frame,'desktop');assert.equal(await frame.locator('#field-ui-refreshMs').isVisible(),false);

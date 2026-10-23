@@ -181,7 +181,7 @@ await withFakeIntervals(async ({ timers, tick }) => {
     async call() { return { data: {} }; }
   }
   const provider = createOneBotProvider({
-    cfg: () => ({ snowluma: { wsUrl: 'ws://127.0.0.1:3001' } }), log: {}, clientFactory: LateStartClient,
+    cfg: () => ({ onebot: { wsUrl: 'ws://127.0.0.1:3001' } }), log: {}, clientFactory: LateStartClient,
     onEvent: () => {}, onStatus: () => {}, tokenCandidates: () => [''],
     portProbe: async () => { probes++; return true; },   // 端口已就绪
     portProbeIntervalMs: 10,

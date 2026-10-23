@@ -1,5 +1,5 @@
 // Real loopback OneBot endpoints, synthetic identities and credentials only.
-// No system QQ, SnowLuma process, external network or non-idempotent QQ action is used.
+// No system QQ, OneBot process, external network or non-idempotent QQ action is used.
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import http from 'node:http';
@@ -201,10 +201,10 @@ test('late old-generation HTTP probes cannot republish a previous account after 
 });
 
 test('resolver configuration failures block both channels locally until a valid binding arrives', async t => {
-  const target = await endpoint(t), current = client(t, target.config({ connectionError: '所选账号的监听端口冲突', connectionCode: 'SNOWLUMA_PORT_CONFLICT' }));
+  const target = await endpoint(t), current = client(t, target.config({ connectionError: '所选账号的监听端口冲突', connectionCode: 'ONEBOT_ENDPOINT_CONFLICT' }));
   await current.connect(); await assert.rejects(current.call('get_group_list'), /端口冲突/);
   assert.equal(target.handshakes.length, 0); assert.equal(target.requests.length, 0);
-  assert.equal(current.stage, 'configuration_error'); assert.equal(current.errorCode, 'SNOWLUMA_PORT_CONFLICT');
+  assert.equal(current.stage, 'configuration_error'); assert.equal(current.errorCode, 'ONEBOT_ENDPOINT_CONFLICT');
   current.configure(target.config()); await until(() => current.transportReady, 'cleared resolver error permits connection');
 });
 

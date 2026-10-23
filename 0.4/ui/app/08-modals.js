@@ -1160,7 +1160,7 @@ async function openWhitelistPicker(kind) {
     return;
   }
   if (!list?.length) {
-    $('#pick-result').textContent = isGroups ? '没拉到群列表（检查 SnowLuma）' : '没拉到好友列表';
+    $('#pick-result').textContent = isGroups ? '没拉到群列表（检查 OneBot 连接）' : '没拉到好友列表';
     return;
   }
   // 群名进补底缓存：分群按钮等处只显示群名，靠这份名字辨识
@@ -1477,11 +1477,9 @@ async function saveConfig({ quiet = false } = {}) {
     //    结果"保存一次别的设置，OneBot 令牌就被清空"。
     const enteredWsToken = val('#cfg-obtoken', '').trim();
     const enteredHttpToken = val('#cfg-obhttptoken', '').trim();
-    patch.snowluma = {
-      dir: val('#cfg-snowlumadir', c.snowluma?.dir || '').trim(),
-      autoLaunch: chk('#cfg-snowlumalaunch', !!c.snowluma?.autoLaunch),
-      wsUrl: val('#cfg-wsurl', c.snowluma?.wsUrl || '').trim(),
-      httpUrl: val('#cfg-httpurl', c.snowluma?.httpUrl || '').trim(),
+    patch.onebot = {
+      wsUrl: val('#cfg-wsurl', c.onebot?.wsUrl || '').trim(),
+      httpUrl: val('#cfg-httpurl', c.onebot?.httpUrl || '').trim(),
       ...(enteredWsToken && enteredWsToken !== '******' ? { accessToken: enteredWsToken } : {}),
       ...(enteredHttpToken && enteredHttpToken !== '******' ? { httpAccessToken: enteredHttpToken } : {})
     };

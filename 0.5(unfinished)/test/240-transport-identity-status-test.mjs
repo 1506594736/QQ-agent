@@ -47,7 +47,7 @@ function ownedClock(){
 async function fixture(t,{legacy=false}={}){
   const appRoot=fs.mkdtempSync(path.join(os.tmpdir(),'qqa-identity240-')),dataDir=path.join(appRoot,'data'),clock=ownedClock(),routes=new Map(),events=[],bans=[],calls=[];
   const state={account:'24099'},legacyHandles=[];let app,mid=240000;
-  for(const folder of['bundled','plugins','skills','snowluma/config'])fs.mkdirSync(path.join(appRoot,folder),{recursive:true});
+  for(const folder of['bundled','plugins','skills'])fs.mkdirSync(path.join(appRoot,folder),{recursive:true});
   fs.writeFileSync(path.join(appRoot,'package.json'),'{"type":"module"}');
   if(!legacy){const dir=path.join(appRoot,'bundled/transport-onebot');fs.mkdirSync(dir);fs.copyFileSync(path.join(source,'bundled/transport-onebot/plugin.json'),path.join(dir,'plugin.json'));fs.writeFileSync(path.join(dir,'index.js'),`export {default} from ${JSON.stringify(pathToFileURL(path.join(source,'bundled/transport-onebot/index.js')).href)};`);}
   const makeLegacy=context=>{const instance={id:'legacy240',actions:{},start(){context.onStatus({connected:true,selfId:state.account});},stop(){}};legacyHandles.push({instance,...context});return instance;};
@@ -64,7 +64,7 @@ async function fixture(t,{legacy=false}={}){
       'core.events':async(event,dependencies)=>{const row={type:event.type,selfId:dependencies.selfIdOf(),done:false};events.push(row);await defaults['core.events'](event,dependencies);row.done=true;},
     }});
   const save=patch=>{app.config.update(patch);const persisted=JSON.parse(fs.readFileSync(path.join(dataDir,'config.json'),'utf8'));assert.deepEqual(app.config.get(),persisted);};
-  save({api:{model:'inert-identity240'},allow:{groups:['24001']},persona:{botName:'UNMENTIONED_SYNTHETIC_240',selfNickname:''},snowluma:{autoLaunch:false,dir:path.join(appRoot,'snowluma'),wsUrl:'ws://identity240.invalid',httpUrl:'http://identity240.invalid',accessToken:'SYNTHETIC_240_A',httpAccessToken:'SYNTHETIC_240_HTTP'},telemetry:{enabled:false},proactive:{enabled:false},chatActive:{enabled:false},memory:{consolidateEnabled:false},sticker:{enabled:false},store:{contextSliderPos:10,peakSchedule:{enabled:false}},wakeDelayMs:200});
+  save({api:{model:'inert-identity240'},allow:{groups:['24001']},persona:{botName:'UNMENTIONED_SYNTHETIC_240',selfNickname:''},onebot:{wsUrl:'ws://identity240.invalid',httpUrl:'http://identity240.invalid',accessToken:'SYNTHETIC_240_A',httpAccessToken:'SYNTHETIC_240_HTTP'},telemetry:{enabled:false},proactive:{enabled:false},chatActive:{enabled:false},memory:{consolidateEnabled:false},sticker:{enabled:false},store:{contextSliderPos:10,peakSchedule:{enabled:false}},wakeDelayMs:200});
   app.capability.register('chat.ban-state','kernel',{'note-muted':(...args)=>bans.push(args),'note-unmuted':(...args)=>bans.push(args)});
   await app.loader.loadAll();assert.deepEqual(app.loader.listEntries().map(entry=>entry.id),legacy?[]:['transport-onebot']);for(const entry of app.loader.listEntries())assert.equal(entry.status,'active');await app.services.start();assert.equal(app.httpServer.port,null);
   const status=()=>{const handler=routes.get('GET /api/status');assert.equal(typeof handler,'function','actual registerConsoleRoutes handler is registered');return handler({query:{},body:{},params:{}}).onebot;};
@@ -80,7 +80,7 @@ async function fixture(t,{legacy=false}={}){
 
 test('actual default login, hot configuration clear, old/new ingress and provider-event identity reach public status',async t=>{
   const f=await fixture(t),provider=await f.login();assert.equal(f.status().selfId,'24099');await f.mention('24099',true);await f.wireBan(provider,'24099');assert.equal(f.bans.length,1);
-  f.state.account='24098';f.save({snowluma:{accessToken:'SYNTHETIC_240_B'}});assert.equal(provider.selfId,null);assert.equal(f.status().selfId,null,'hot clear cannot publish the cached previous ID');await f.mention('24099',false);
+  f.state.account='24098';f.save({onebot:{accessToken:'SYNTHETIC_240_B'}});assert.equal(provider.selfId,null);assert.equal(f.status().selfId,null,'hot clear cannot publish the cached previous ID');await f.mention('24099',false);
   const count=f.bans.length,row=await f.wireBan(provider,'24099');assert.equal(row.selfId,null);assert.equal(f.bans.length,count,'old account ban does not trigger after clear');
   await f.login();assert.equal(f.status().selfId,'24098');await f.mention('24099',false);await f.mention('24098',true);const fresh=await f.wireBan(provider,'24098');assert.equal(fresh.selfId,'24098');assert.equal(f.bans.length,count+1);
   assert.ok(f.calls.some(call=>call.action==='get_login_info'));

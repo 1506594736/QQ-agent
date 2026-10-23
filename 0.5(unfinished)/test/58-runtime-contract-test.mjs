@@ -85,7 +85,7 @@ section('E. media.download：域名匹配 + claim + 无 provider 回退');
 
 section('F. 回归：本轮新增文件语法可解析');
 {
-  for (const file of ['src/kernel/kernel.js', 'src/kernel/plugin-loader.js', 'src/kernel/stickers.js', 'src/kernel/send.js', 'src/console/process-adapters.js']) {
+  for (const file of ['src/kernel/kernel.js', 'src/kernel/plugin-loader.js', 'src/kernel/stickers.js', 'src/kernel/send.js']) {
     assert.ok(fs.existsSync(path.join(root, file)), `${file} 存在`);
   }
   console.log('✓ 关键文件齐备');

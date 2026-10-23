@@ -23,7 +23,11 @@ node_modules/
 *.pfx
 .shots/
 .extension-management-v1/
-snowluma/config/
-snowluma/data/
-snowluma/logs/
 website/qa/
+
+# Independently managed runtime trees can contain credentials and account data.
+/runtime/
+**/config/
+**/data/
+**/logs/
+!/ui/panels/logs/

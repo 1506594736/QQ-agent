@@ -93,7 +93,7 @@ export function createPanelMetadata({panels,defaultPanels=[],ui={},resolveUiAsse
         const navigation={source:trusted?'trusted':'defaults'};
         if(raw.navigation.home===true)navigation.home=true;
         if(raw.navigation.role==='configuration'&&Array.isArray(raw.navigation.sections)){
-          navigation.role='configuration';navigation.sections=[...new Set(raw.navigation.sections)].filter(section=>['models','access'].includes(section)).sort();
+          navigation.role='configuration';navigation.sections=[...new Set(raw.navigation.sections)].filter(section=>['models','access','onebot'].includes(section)).sort();
         }
         if(navigation.home||navigation.role)panel.navigation=navigation;
       }

@@ -72,7 +72,7 @@ async function fixture(t, { config: patch = {}, layer = null, sdk = false, model
   let app, mid = 235000, ingestOptions;
   const models = [], calls = [], routes = new Map(), cache = new Map();
   const state = { account: '23599', nickname: 'QA_LIVE_NICK', member: null, sendError: null };
-  for (const folder of ['bundled', 'plugins', 'skills', 'snowluma/config']) fs.mkdirSync(path.join(appRoot, folder), { recursive: true });
+  for (const folder of ['bundled', 'plugins', 'skills']) fs.mkdirSync(path.join(appRoot, folder), { recursive: true });
   fs.writeFileSync(path.join(appRoot, 'package.json'), '{"type":"module"}');
   fs.cpSync(path.join(source, 'bundled/core-tools'), path.join(appRoot, 'bundled/core-tools'), { recursive: true });
   const transportDir = path.join(appRoot, 'bundled/transport-onebot'); fs.mkdirSync(transportDir);
@@ -117,7 +117,7 @@ async function fixture(t, { config: patch = {}, layer = null, sdk = false, model
   app = await createApplication({ appRoot, env: { QQ_AGENT_DATA_DIR: dataDir, QQ_AGENT_MIGRATE_FROM: path.join(appRoot, 'absent-migration'), QQ_AGENT_PORT: '0' }, components,
     priceUpdates: { refresh: async () => ({ ok: true, remote: false }), resolve: () => null }, fetchImpl: async () => { throw new Error('235 has no generic SDK HTTP transport'); } });
   const save = value => { app.config.update(value); const disk = JSON.parse(fs.readFileSync(path.join(dataDir, 'config.json'), 'utf8')); app.config.load(); assert.deepEqual(app.config.get(), disk); return disk; };
-  save({ api: { model: 'offline235', maxRounds: 3 }, allow: { groups: ['23501', '23502'] }, snowluma: { autoLaunch: false, dir: path.join(appRoot, 'snowluma'), wsUrl: 'ws://fixture235.invalid', httpUrl: 'http://fixture235.invalid', accessToken: 'QA_SECRET_235', httpAccessToken: 'QA_HTTP_SECRET_235' },
+  save({ api: { model: 'offline235', maxRounds: 3 }, allow: { groups: ['23501', '23502'] }, onebot: { wsUrl: 'ws://fixture235.invalid', httpUrl: 'http://fixture235.invalid', accessToken: 'QA_SECRET_235', httpAccessToken: 'QA_HTTP_SECRET_235' },
     telemetry: { enabled: false }, proactive: { enabled: false }, chatActive: { enabled: false }, memory: { consolidateEnabled: false }, sticker: { enabled: false }, sessionRetryAttempts: 0, wakeDelayMs: 200,
     store: { contextSliderPos: 100, historyCount: 80, peakSchedule: { enabled: false }, promptAnchor: { enabled: false } }, ...patch });
   await app.loader.loadAll();
@@ -156,7 +156,7 @@ test('actual default provider identity wakes plain text; explicit names and ID a
   await f.ingest('111', '', { segments: mention('23599') }); assert.equal(f.models.length, 4);
   f.save({ store: { contextSliderPos: 15, keywords: ['QA_KEYWORD'] } }); await f.ingest('111', 'QA_KEYWORD hello'); assert.equal(f.models.length, 5);
   f.state.account = '23597'; f.state.nickname = 'QA_NEW_LIVE_NICK';
-  f.save({ persona: { selfNickname: '' }, store: { contextSliderPos: 10 }, snowluma: { accessToken: 'QA_NEW_CONNECTION' } });
+  f.save({ persona: { selfNickname: '' }, store: { contextSliderPos: 10 }, onebot: { accessToken: 'QA_NEW_CONNECTION' } });
   assert.equal(f.app.transport.selfId, null); assert.equal(f.app.transport.selfNickname, '');
   const old = await f.ingest('111', '', { segments: mention('23599') }); assert.equal(old.entry.atMe, false); assert.equal(f.models.length, 5, 'old account ID is not reused while the new scope has no identity');
   await f.openCurrent(); await f.ingest('111', '@QA_NEW_LIVE_NICK hello'); assert.equal(f.models.length, 6);
@@ -321,25 +321,4 @@ test('community async result from a replaced same-object registration cannot bec
   assert.equal((await pending).reason, 'global-blocklist'); assert.equal(calls, 2); assert.equal(f.app.store.recent('group:23501', Infinity).length, 0);
   provider.getBlocklist = async () => { throw new Error('synthetic unavailable'); }; f.save({ globalBlocklist: ['333'], communityExemptions: [] });
   assert.equal((await f.ingest('333', 'QA_EXCEPTION_FALLBACK', { run: false })).reason, 'global-blocklist');
-});
-
-test('SnowLuma actual panel refresh consumes the selected async process route and disposes late replies', async t => {
-  const f = await fixture(t), gates = { running: true, held: null, calls: 0 };
-  const qq = { ready: false, running: false, processState: 'stopped', launchAllowed: false };
-  const provider = { id: 'selected235', selfId: '23599', selfNickname: 'QA_SELECTED_NICK', start() {}, stop() {}, status: () => ({ connected: true, selfId: '23599', selfNickname: 'QA_SELECTED_NICK' }),
-    processes: { snowluma: { statusSync: () => ({ configured: true, running: false, processState: 'stopped' }), async status() { gates.calls++; return gates.held ? gates.held.promise : { configured: true, running: gates.running, processState: gates.running ? 'running' : 'stopped' }; } }, qqPortable: { statusSync: () => qq, status: async () => qq } } };
-  f.app.capability.register('transport.provider', 'kernel', provider, { lifecycle: true }); await f.app.services.refresh();
-  const nodes = new Map(), listeners = new Map(); let dispose;
-  const node = id => { if (!nodes.has(id)) nodes.set(id, { textContent: '', title: '', disabled: false, addEventListener(name, callback) { listeners.set(`${id}:${name}`, callback); } }); return nodes.get(id); };
-  const context = { request: (method, url) => f.route(method, url), $: node, dateTime: String,
-    onShellEvent: () => () => {}, onLeave: callback => { dispose = callback; }, window: { addEventListener() {} },
-    createLogStream: () => ({ refresh: async () => {}, append() {}, dispose() {} }), setTimeout, clearTimeout, console };
-  const code = fs.readFileSync(path.join(source, 'ui/panels/snowluma/panel.js'), 'utf8').replace(/^import[^\n]*\n/gm, '');
-  vm.runInNewContext(code, context); await until(() => node('#status').textContent.includes('SnowLuma：运行中'));
-  assert.equal(gates.calls, 1); assert.equal(node('#sl-start').disabled, true);
-  gates.running = false; await listeners.get('#reload:click')(); await until(() => node('#status').textContent.includes('SnowLuma：未运行')); assert.equal(node('#sl-start').disabled, false);
-  const statusMethod = provider.processes.snowluma.status; delete provider.processes.snowluma.status;
-  await listeners.get('#reload:click')(); await until(() => node('#status').textContent.includes('SnowLuma：状态待确认')); assert.equal(node('#sl-start').disabled, true);
-  provider.processes.snowluma.status = statusMethod;
-  gates.held = deferred(); const pending = listeners.get('#reload:click')(); await until(() => gates.calls === 3); const before = node('#status').textContent; dispose(); gates.held.resolve({ configured: true, running: true, processState: 'running' }); await pending; await tick(); assert.equal(node('#status').textContent, before);
 });

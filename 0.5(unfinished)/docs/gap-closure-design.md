@@ -6,7 +6,7 @@
 >
 > **目标修订（同日）**：原「换平台（微信）」目标**已从 task_plan.md 删除**。qq-agent 定位为 **QQ 专用机器人**。
 > - **已删除**：换平台（微信等跨平台接入）——理由见文末「附录：为什么删除换平台目标」，适配层仅占约 20% 成本。
-> - **保留**：换协议端（SnowLuma → NapCat 等 OneBot 实现互替）——适配器可覆盖 90%，本节方案照做。
+> - **保留**：更换兼容的 OneBot 协议端，接口与行为差异由 provider 处理。
 > - 下方「三」已改为**只覆盖换协议端**；原跨平台分析降级为附录，供决策追溯。
 
 ---
@@ -48,8 +48,6 @@
 | 扩展目录重建后监听不自愈 | SPEC §7（目录删除重建） | 临时目录隔离复现：删除并重建 skills/ 后，新插件不自动装载，手动 loadAll 才激活。`src/kernel/plugin-loader.js:790–814` 重扫没有重建目录监听器。已接受的依赖/资产更新需重启决策没有取消这一目录监听要求。 |
 | 插件化边界仍有结构缺口（本轮关闭） | DSH-ARCH §3.2 / §6.3 | market/community/telemetry/reminders/media-service/memory-service/llm-dialects 的默认业务实现已归属 bundled，web.search 由 web-tools、process.mcp 由 mcp-bridge 注册，kernel 装配窄接口和服务宿主。旧业务路径仅保留兼容入口。86 验证各服务及停用撤销，87 真实 kernel 验证默认 owner、替换、定时任务和公开 facade。已批准的数据仓、状态机、配置、发送排队、统计持久化及 A-6 价格机制继续由 core 拥有，不计为新缺口。 |
 | 追加插件替换协议端（本轮关闭） | DSH-ARCH §6.2 / §6.3 | `bundled/transport-onebot/provider.js`、`client.js`、`processes.js` 拥有默认协议及进程实现；用户通过 `registerTransport` 注册受授权控制的 managed transport。87 的真实磁盘插件驱动真实发送队列、归一化入站及状态，并验证停用回退、重新授权、热更新、旧回调抑制和保存的 facade 动态解析。无需编辑 kernel 或重新构建；真实 QQ 协议端联调仍在实机验收范围。 |
-| 登录态迁移仍需人工操作 | DSH-ARCH §10.3 / M5 | `src/kernel/migrator.js:165–174` 明确不导入登录态。空目标 + 旧登录配置的临时迁移复现为 `errors:0, ok:false, requiresAction:true, status:manual, loginCopied:false`，因此尚未达成覆盖升级免扫码要求。 |
-| 便携 QQ 安装与版本锁流程缺失 | F-196 / SPEC §11.1 / notes17 §5.17–5.19 | 缺少 setup 下载、固定 QQ 版本和哈希验包流程。`package.json` 没有 setup 脚本；`src/console/process-adapters.js:312–332` 只查固定目录，缺包时却提示运行不存在的 `npm run setup`。隔离调用返回 400，现有打包规则未包含该运行时。 |
 | 内置官方价格表与手填兜底不完整 | F-084 / SPEC §11.3 | `src/console/price-update-adapters.js:131–150` 仅有 custom + 远程缓存。空缓存夹具虽标 `source:builtin`，价格条目为 0、模型无匹配；首次离线启动没有规格要求的内置价格兜底。`src/console/routes.js:107` 在官方开关启用且未匹配时直接返回 0，也未使用全局手填兜底。 |
 | 发送批次引用与媒体停顿偏差 | SPEC §6.10 第 3、5 条 | 文字批次的每条仍传 `replyToMessageId`，OneBot 每条都插引用，未限定首条；图片/表情/媒体缺少规格规定的前置停顿。见 `src/kernel/send.js` 的 `chainSend` 与媒体入口、`bundled/transport-onebot/provider.js:129–132`。本轮没有修改该业务行为。 |
 | 思考强度与旧模式的优先级错误 | F-072 / SPEC §5（thinkingEffort） | 真实 LLM 请求构造＋离线 fetch 复现：effort=off、mode=auto 时仍发 DeepSeek thinking.enabled，o3 则收到 reasoning_effort=off；effort=high、mode=off 时又被关掉。`src/kernel/llm.js:224–228` 先用旧模式决定开关，未落实“effort 为空时才兼容旧模式”的要求。 |
@@ -70,7 +68,6 @@
 - Electron 壳和进程适配器的 M4 测试使用 BrowserWindow/spawn/网络探测替身；尚不能证明实际 Windows 托盘、自启、多 PROFILE、验证码、安装升级及真实 QQ 收发全部通过。
 - DSH-ARCH §13 明确要求真实群 @唤醒回复、真实 0.4 数据迁移、覆盖升级数据完好且免扫码、三种启动方式、10 个真实市场插件及发布端切换。当前缺少完整实机验收记录，不能以离线夹具替代。
 - 现有 `dist/QQ Agent Setup 0.5.0.exe` 是 2026-10-05 的产物。打包 kernel 与当前 kernel 的 SHA256 不同，包内缺少本轮新增 media.js、usage-days.js、provider-catalog.js 和 settings/spec-editors.js。
-- `npm run verify:preview` 当前返回 0，但仅检查目录存在；输出 `snowluma:false, qqPortable:false`。该结果不能证明开箱可用，其“设置便携 QQ 目录”的提示也没有相应配置入口。
 - 系统提示整体覆盖的规则存在文档冲突：SPEC §5 要求安全/工具协议也失效，notes06b 要求保留；当前实现选择保留。该项需要先统一有效要求，没有计为已确认的行为故障。“配置模型后自动处理积压”亦需补执行复验，当前缺少证据。
 
 整改顺序：先修实际请求/发送/清除密钥及网页安全边界，再补 SDK 与兼容/插件化边界、迁移和 QQ 安装流程、剩余 UI；最后重新构建，并执行规格明确要求的实机验收。任何“全规格完成”结论都应以这些缺口关闭及验收证据补齐为前提。
@@ -84,7 +81,6 @@
 - 用户面板清单 entry 改为相对插件 **`ui/` 专用资产目录**，不公开源码或配置目录。资源 URL 和调用绑定面板 id / 真实 owner / 加载代际，active + ui.panel 授权才能访问。
 - `ctx.call` 只能调用本插件的最终工具 id，复用可用性、参数与 scope 管线；`ctx.getConfig` 只读自身 schema，按名称和 schema secret/sensitive 标记递归脱敏。
 - 用户 iframe 不接收全局 SSE 日志/聊天/权限，不拿 shell token；启停/撤销/热重载使旧面板立即失效。
-- `portProbe` 加 started / generation 双闸，stop 后返回的旧探测、重复 start 与手动 reconnect 不会复活连接。
 - ESM 相对子模块不能只靠入口 query 热更新：**依赖/资产内容变化明确要求进程重启**。拒绝让旧子模块按新版磁盘指纹继承授权；单入口更新仍支持。
 - 验收：M0–M3 全回归（含 34/53 两组真实 Chromium）25/25，M4 10/10，headless 12/12。50/51/52 增加身份/撤销/指纹绕过/代际/SSE 行为断言。
 
@@ -234,7 +230,7 @@ v0.4 已有 9 篇开发文档（4722 行），但 v0.5 的 `docs/` 只有 3 篇�
 
 ## 三、换协议端 —— transport 能力化 ★仍需先做
 
-> **范围（2026-10-04 修订）**：本节**只解决「换协议端」**——SnowLuma → NapCat，或未来换别的 OneBot 实现。
+> **范围（2026-10-04 修订）**：本节**只解决「换协议端」**：连接不同的 OneBot 实现，并核对接口支持情况。
 > 这是同协议不同实现，provider 抽象可覆盖绝大部分，改 3 处内核即可。
 > **不解决跨平台接入**——该目标已删除，理由见附录。
 > transport 解耦本身仍值得做：内核不再静态依赖 OneBot 实现，对测试注入、协议端更换都有直接价值。
@@ -264,7 +260,7 @@ QQ 差异（`group_id` / `user_id` / CQ 转义 / `send_group_msg` vs `send_priva
 | 2 | `orchestrator.js:172` `await onebot?.call('get_group_member_info', {group_id, user_id, no_cache})` | **QQ 专属 API 写在调度器里**，拿成员禁言状态 |
 | 3 | `routes.js:543` `kind==='group' ? 'send_group_msg' : 'send_private_msg'` | 控制台路由直接拼 OneBot action |
 
-另：`bus.js:11,23` 白名单里有 `onebot.status` / `snowluma.status` 等平台专属事件名。
+另：`bus.js:11,23` 白名单里有 `onebot.status` 等平台专属事件名。
 
 ### 实现方案（已落地 2026-10-04 / 10-05）
 
@@ -281,7 +277,6 @@ createKernel({ env, headless, transport, transportFactory })
 ```
 
 provider 侧新增 `bind({onEvent, onStatus})`，让**现成注入对象也能接上入站回调**。
-默认 OneBot 工厂继续独占 `tokenCandidates` / `portProbe`（SnowLuma 细节不进 providerContext）。
 
 **Step 2 — 入站与生命周期闭环**
 
@@ -290,8 +285,6 @@ provider 侧新增 `bind({onEvent, onStatus})`，让**现成注入对象也能�
 - `transportStopped` 闸门：`stop()` 后 provider 的迟到事件直接丢弃（microtask 前后各判一次）
 - `transportRef` 可变引用：provider 构造期若同步回调，不触发 const TDZ
 - 控制台 `/api/status` 优先读内核快照（`deps.transportStatus()`），回落 provider 契约
-- **SnowLuma 端口就绪轮询从 kernel 移入默认 OneBot provider**（`portProbe` + `portProbeIntervalMs`）：
-  kernel 不再读 `transport.client.connected`、不再调 `reconnect`、不再轮询 SnowLuma 端口
 
 **Step 3 — orchestrator 禁言查询走归一化动作**
 
@@ -331,7 +324,6 @@ if (r) muted = !!r.muted;   // null/undefined = 平台无法判定 → 按未禁
   （不再是"方法存在"式探针）：入站事件归一化、getForward / getImage / getSelfMemberInfo 的
   **实际请求参数与判据**、transportFactory 收到 callbacks、真实 `createKernel().start()` 装配后
   入站消息落 store、控制台 status DTO 反映 provider 状态、停机后迟到事件被忽略、
-  portProbe 晚启动重连与 stop 停探测
 - 回归：smoke 12/12、run-m1 12/12，以及 09 / 19 / 25 / 28 / 31×2 / 35 / 36 / 39 / 40 / 43 / 44 /
   46 / 50 / 51 / m4-shell 逐个全绿
 - 35 号测试的 onebot mock 随契约升级为 `actions.getImage`；其 `client.call` 改为"不应被调用"，
@@ -423,7 +415,7 @@ if (r) muted = !!r.muted;   // null/undefined = 平台无法判定 → 按未禁
 4. 补前端 + 迁 v0.4 生态（纯体力活，compat-04 已铺路）
 ```
 
-**共同前置**：M4/M5 的真实运行时验收（Electron GUI / SnowLuma 真实进程 / Windows 安装）不能继续拖。transport 改造会让内核改动面变大，届时用 mock 验收的返工成本更高。
+**共同前置**：M4/M5 的真实运行时验收（Electron GUI / 外部协议连接 / Windows 安装）不能继续拖。transport 改造会让内核改动面变大，届时用 mock 验收的返工成本更高。
 
 ---
 

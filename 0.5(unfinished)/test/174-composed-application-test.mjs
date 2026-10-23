@@ -101,8 +101,7 @@ export async function register(http, context, config) {
     application.log.setLevel('error');
     application.config.update({
       server: { token: 'synthetic-application-174-token' }, allowAllWhenEmpty: true,
-      telemetry: { enabled: false }, proactive: { enabled: false }, memory: { consolidateEnabled: false }, snowluma: { autoLaunch: false },
-    });
+      telemetry: { enabled: false }, proactive: { enabled: false }, memory: { consolidateEnabled: false }, });
     // Keep the real ingest, store and controllers active while model work stays passive.
     application.orchestrator.pause();
     const port = await application.start();

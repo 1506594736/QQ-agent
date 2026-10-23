@@ -93,7 +93,7 @@
 
 ## 4. 旧 OneBot 操作逐项对照
 
-旧手册宣称可经 `ctx.onebot.call()` 触达“73个”接口；以下按该手册**实际列出的动作名**逐项记录，不用历史总数代替核对。额外的 get_forward_msg/get_video/get_file 与收藏表情详情也列出。v0.5普通SDK没有通用raw call。传输内部仍能执行某协议动作，**不代表普通插件拥有该接口**。
+以下按通用协议调用与扩展开发所需的动作逐项记录；具体支持情况由协议端决定。v0.5普通SDK没有通用raw call。传输内部仍能执行某协议动作，**不代表普通插件拥有该接口**。
 
 | 旧动作 | 状态 | 普通 0.5 路径 / 缺口 |
 |---|---|---|
@@ -149,9 +149,6 @@
 | group_poke | 入口改变 | send.poke/group chatKey + userId |
 | send_poke | 入口改变 | send.poke/chatKey + {groupId?,userId} |
 | set_group_reaction | 缺口 | 无公共表情回应动作 |
-| add_custom_face | 入口改变 | actions.addCustomFace(file) → {emojiId} |
-| delete_custom_face | 入口改变 | actions.deleteCustomFace(emojiId) → {ok} |
-| modify_custom_face | 入口改变 | actions.modifyCustomFace(emojiId,desc) → {ok} |
 | set_essence_msg | 缺口 | 无公共动作 |
 | delete_essence_msg | 缺口 | 无公共动作 |
 | _send_group_notice | 缺口 | 无公共动作 |
@@ -170,8 +167,6 @@
 | get_forward_msg | 入口改变 | actions.getForward(messageId) |
 | get_video | 入口改变 | actions.getVideo(file) |
 | get_file | 入口改变 | actions.getFile(file) |
-| fetch_custom_face | 入口改变 | actions.fetchCustomFaces(count) |
-| fetch_custom_face_detail | 入口改变 | actions.fetchCustomFaceDetails({limit,signal})，有界且complete:false |
 
 这些缺口不宜用给插件整个 OneBot client 解决。后续若补，应在现有传输能力中增加明确方法、参数验证、最小权限、账号/配置代际、取消与回归测试。文档和示例不得绕过 facade import 客户端、读取连接令牌或自行猜端口。
 
@@ -209,7 +204,7 @@
 | stickers.list | 入口改变 | list/get/all在公共白名单，数据结果脱敏 |
 | stickers.find | 入口改变 | 当前用get；原引用解析规则不应凭名字假定一致 |
 | stickers.collect | 等价且受控 | collect，写库需fs.outsideNamespace |
-| stickers.sync | 入口改变 | syncFromQQ/mergeFromQQ按不同来源分别处理 |
+| stickers.sync | 需独立扩展 | 默认不提供 QQ 收藏表情同步；本地已有索引保留，外部同步依赖用户选择的扩展能力 |
 | stickers.note | 等价且受控 | note，写库需fs.outsideNamespace |
 | stickers.markUsed | 等价且受控 | markUsed，写库需fs.outsideNamespace |
 | sender.sendTextBatch | 入口改变 | execution.send.sendTextBatch(chatKey,texts,options)，qq.send |

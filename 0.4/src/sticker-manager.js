@@ -1,11 +1,11 @@
-// 运行期表情库管理：同步 QQ 收藏表情 + 本地认知层（备注/笔记/使用计数）。
-// 纯函数在 stickers.js；这里管缓存、TTL 和 OneBot 交互。
+// 运行期本地表情库管理：图片转存、备注、笔记和使用计数。
+// 通过通用 get_image 获取消息图片，不管理外部客户端的收藏。
 import fs from 'node:fs';
 import path from 'node:path';
 import { getConfig, DATA_DIR } from './config.js';
 import { safeFetchBinary } from './safe-fetch.js';
 import {
-  loadStickerStore, saveStickerStore, mergeStickerLibrary,
+  loadStickerStore, saveStickerStore,
   findSticker, formatStickerList, applyStickerNote, markStickerUsed
 } from './stickers.js';
 
@@ -52,8 +52,6 @@ export class StickerManager {
   constructor(onebot) {
     this.onebot = onebot;
     this.entries = loadStickerStore();
-    this.syncedAt = 0;
-    this.syncing = null;
     this.collectTimes = [];
     this.healLocalPaths();
   }
@@ -86,35 +84,14 @@ export class StickerManager {
     return getConfig().sticker?.enabled !== false;
   }
 
-  /** 同步 QQ 收藏表情（带 TTL 缓存；force 立即刷新）。失败时退回本地缓存。 */
+  /** 从本地文件刷新表情库，不向外部客户端同步收藏。 */
   async sync(force = false) {
     if (!this.enabled) return { entries: this.entries, fromCache: true, disabled: true };
-    const ttl = 60000;
-    const now = Date.now();
-    if (!force && this.syncedAt && now - this.syncedAt < ttl) {
-      return { entries: this.entries, fromCache: true };
+    if (force) {
+      this.entries = loadStickerStore();
+      this.healLocalPaths();
     }
-    if (this.syncing) return this.syncing;
-    this.syncing = (async () => {
-      try {
-        const count = Math.min(500, Math.max(1, Number(getConfig().sticker?.promptMaxStickers) * 10 || 100));
-        const data = await this.onebot.call('fetch_custom_face_detail', { count });
-        const fetched = Array.isArray(data) ? data : (Array.isArray(data?.data) ? data.data : null);
-        if (!fetched) throw new Error('fetch_custom_face_detail 返回 data 不是数组');
-        // 只有拿到合法数组才合并，避免异常响应清空本地库
-        const merged = mergeStickerLibrary(this.entries, fetched);
-        this.entries = merged;
-        this.syncedAt = Date.now();
-        saveStickerStore(this.entries);
-        return { entries: this.entries, fromCache: false };
-      } catch (error) {
-        // 同步失败不致命：本地缓存继续用
-        return { entries: this.entries, fromCache: true, error: String(error?.message ?? error) };
-      } finally {
-        this.syncing = null;
-      }
-    })();
-    return this.syncing;
+    return { entries: this.entries, fromCache: true };
   }
 
   /**
@@ -122,10 +99,7 @@ export class StickerManager {
    *
    * ── 为什么需要它（"表情包经常发送失败"的第二根因）──────────────────────
    * 表情库里 http 直链的寿命只有 1 小时左右（QQ 图床 rkey 过期）。
-   * 同步 TTL 也是 60 秒 —— 但 sync 只在**收消息**的运行里刷新，
-   * 一次运行 12 轮工具循环可能跑几分钟，中途直链就会过期；
-   * 更糟的是 sync 失败时（协议端断连）库里的 url 全是旧的，
-   * 发送必失败。这个方法在**发送前**做一次兜底：
+   * 发送前检查本地文件或尝试转存仍可访问的远端地址：
    *   · 本地转存（file:///）→ 永久有效，直接返回
    *   · http 直链 → 尝试下载转存到 data/sticker-images/：
    *       成功 = 库里 url 升级成本地路径（下次发送永久有效，这正是收藏
@@ -201,13 +175,7 @@ export class StickerManager {
   /**
    * 收藏一条消息里的图片。
    *
-   * 2026-09-26 起**必定调用 add_custom_face 入 QQ 收藏**（QQ 客户端里
-   * "把图片变成自己的表情"的同款能力）：QQ 侧托管后图片永久有效 —— 不怕
-   * 图床 rkey 过期、不怕部署目录搬家。此前只做本地转存，直链一过期就产生
-   * "收藏成功却永远发不出去"的僵尸条目（现场实测直链 400），搬家后历史条目
-   * 还会集体失效。流程：取字节 → 本地转存（双保险）→ add_custom_face（必定）
-   * → 备注回写 → 定可发地址。QQ 入库失败不阻断本地收藏，但会在返回里如实
-   * 标注（qqCollectError）。
+   * 图片优先转存到本地；失败时保留原地址并明确标记，绝不声称已持久化。
    */
   async collect(messageId, { url, note = '', file = '' } = {}) {
     if (!getConfig().sticker?.collectEnabled) throw new Error('收藏表情功能未开启');
@@ -234,59 +202,24 @@ export class StickerManager {
       catch (error) { console.warn(`[sticker] 本地转存写盘失败: ${error?.message ?? error}`); }
     }
 
-    // ③ QQ 原生收藏（必定调用）：有字节走 base64；没字节把 url 交给 QQ 服务端自取
-    let emojiId = String(existing?.emojiId || '').trim();
-    let qqCollectError = '';
-    if (!emojiId) {
-      try {
-        const addRef = bytes ? `base64://${bytes.toString('base64')}` : url;
-        const ret = await this.onebot.call('add_custom_face', { file: addRef });
-        emojiId = String(ret?.emoji_id ?? '').trim();
-        if (!emojiId) throw new Error('add_custom_face 未返回 emoji_id');
-      } catch (error) {
-        qqCollectError = String(error?.message ?? error);
-      }
-    }
-
-    // ④ 备注写进 QQ 收藏（best-effort，QQ 面板里能看到这条备注）
-    if (emojiId && noteText) {
-      try { await this.onebot.call('modify_custom_face', { emoji_id: emojiId, desc: noteText.slice(0, 20) }); }
-      catch { /* 备注失败不影响收藏 */ }
-    }
-
-    // ⑤ 定"当前可发送"的地址：本地转存 > QQ 收藏回查的长效表情 url > 原 url（僵尸）
-    let sendUrl = localFile;
-    if (!sendUrl && emojiId) {
-      try {
-        const list = await this.onebot.call('fetch_custom_face_detail', { count: 200 });
-        const items = Array.isArray(list) ? list : (Array.isArray(list?.data) ? list.data : []);
-        const hit = items.find((x) => String(x?.emoji_id ?? x?.resId ?? x?.id ?? '') === emojiId);
-        const qqUrl = String(hit?.url || '').trim();
-        if (qqUrl) sendUrl = qqUrl;
-      } catch { /* 查不到就往下退 */ }
-    }
-    // 僵尸预警 = 既没本地转存、也没进 QQ 收藏（只能靠会过期的直链活着）
-    const persistFailed = !localFile && !emojiId;
-    if (!sendUrl) sendUrl = url;
+    const sendUrl = localFile || url;
+    const persistFailed = !localFile;
 
     if (existing) {
-      // 幂等：重复收藏只更新备注 / 补齐 QQ 身份（上面已按需补调 add_custom_face）
+      // 幂等：重复收藏更新本地备注和图片。
       this.note(id, { note: noteText });
       const target = this.entries.find((e) => e.id === id) || existing;
-      if (emojiId) target.emojiId = emojiId;
       if (localFile) { target.url = localFile; target.localFile = localFile; }
       else if (sendUrl && !String(target.url || '').startsWith('file:///')) target.url = sendUrl;
       if (file) target.qqFile = file;
-      target.persistFailed = !String(target.url || '').startsWith('file:///') && !target.emojiId;
+      target.persistFailed = !String(target.url || '').startsWith('file:///');
       saveStickerStore(this.entries);
-      target.qqCollectError = qqCollectError;   // 仅供本次返回提示
       return target;
     }
 
     const entry = {
       id,
-      resId: emojiId || id,
-      emojiId,
+      resId: id,
       qqFile: file,
       url: sendUrl,
       sourceUrl: url,                  // 保留原始 url 备查
@@ -307,7 +240,6 @@ export class StickerManager {
     this.entries.push(entry);
     this.collectTimes.push(now);
     saveStickerStore(this.entries);
-    entry.qqCollectError = qqCollectError;   // 仅供本次返回提示，不入库
     return entry;
   }
 

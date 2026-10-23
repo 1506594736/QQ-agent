@@ -24,7 +24,7 @@ let remoteStatus=200,remoteError='投稿过于频繁，请稍后再试',holdRemo
 const kernel=createKernel({appRoot,env:{QQ_AGENT_DATA_DIR:dataDir,QQ_AGENT_PORT:'0',QQ_AGENT_MIGRATE_FROM:path.join(fixtureRoot,'absent')},headless:true,transport:{id:'fixture',start(){},stop(){},status:()=>({connected:true}),actions:{}},priceUpdates: { refresh: async () => ({ok:true}), updateCheck: async () => ({ok:true,current:'0.5.0',latest:'0.5.0',hasUpdate:false}) },communityMarket:{syncGlobalBlocklist:async()=>({ok:true,ids:[]}),getBlocklist:()=>({ok:true,ids:[]}),listAccounts:()=>({ok:true,accounts:[]})},
   fetchImpl:async(url,init)=>{assert.equal(String(url),FEEDBACK_ENDPOINT);remoteCalls.push({url:String(url),init:{...init,signal:undefined},body:JSON.parse(init.body)});if(holdRemote)await holdRemote;return new Response(JSON.stringify(remoteStatus===200?{ok:true,echo:'never forward remote metadata'}:{ok:false,error:remoteError}),{status:remoteStatus,headers:{'content-type':'application/json',...(remoteStatus===302?{location:'https://evil.invalid/'}:{})}});},
 });
-kernel.config.update({server:{port:0,token},telemetry:{enabled:false},proactive:{enabled:false},snowluma:{autoLaunch:false},api:{apiKey:'private-key124'}});
+kernel.config.update({server:{port:0,token},telemetry:{enabled:false},proactive:{enabled:false},api:{apiKey:'private-key124'}});
 kernel.loader.startWatchers=()=>{};
 const png=Buffer.from('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+/l1sAAAAASUVORK5CYII=','base64'),dataUrl=`data:image/png;base64,${png.toString('base64')}`;
 let browser,port;

@@ -1,5 +1,7 @@
 # task_plan.md — QQ Agent 0.5 Preview 完整功能交付（规格书逐条落地）
 
+> 范围更新（2026-10-23）：专属协议端与便携客户端的安装、启动和登录态迁移已从项目范围移除。本文保留其余历史记录；旧编号、测试数量与结果只对应当时范围，不代表当前版本已经完成验收。当前外部协议端由用户自行管理。
+
 > **2026-10-16 最新用户裁决**：前端、后端、核心业务及绝大多数基础实现均是默认项，管理员应能靠追加文件替换；社区追加层部分重叠时须逐目标组合并验证稳定性。以 `docs/architecture-composition.md` v2.1 为追加式架构合同。下文历史“保留 core 不算缺口”“规格只读”等说法不再限制本轮改造；真实账号、打包和部署仍不属于此次本地回归范围。
 
 本轮交付与验证详情见 `docs/composition-regression-evidence.md`；启动组合示例位于 `examples/composition/`。既有运行时插件热更新与新增启动组合分开管理：有状态核心更换在新进程代生效。
@@ -45,7 +47,7 @@
 - [ ] 控制台设置：首次配置密钥、渠道/模型、人设、四档滑条、白名单、工具、搜索、安全、桌面设置；保存只提交用户改动，轮询不能覆盖正在编辑的表单。
 - [ ] 技能/插件管理：两页按 kind 分流并提供设置/安装/停用/删除/热更新；修复安装器解压落点和已存在目录误删风险。
 - [ ] 真热更新：入口 query 不会自动传播到相对 import；以真实 helper 子模块更新测试作为验收，不以源码含 ns= 判定完成。
-- [ ] 后台生命周期：同进程实例锁不允许误抢；退出不得杀用户外置 QQ/SnowLuma；价格/名单/遥测停止后不可再次排程，统计不得只读首次缓存。
+- [ ] 后台生命周期：同进程实例锁不允许误抢；退出不得杀用户外置 QQ；价格/名单/遥测停止后不可再次排程，统计不得只读首次缓存。
 - [ ] 用户最新要求：collect_sticker 必须 QQ 收藏与备注均确认成功才入索引；旧缓存/无能力/失败不伪装成功。
 - [ ] 真实 Chromium 验收与完整回归、阶段产物；完整 Preview 仍需逐条收口，保持 task 2/3/4 未完成直到全部要求落实。
 
@@ -89,14 +91,14 @@
 验收终点：R01-R91 矩阵逐条签收 + M0-M3 全回归 + headless smoke + 真实 Chromium + `git diff --check`；上述门已通过，M3 里程碑提交为 `a34790c`。
 
 ### Phase M4 桌面壳与深水区 ✅ implementation complete; real-runtime acceptance blocked
-Electron 全行为/便携 QQ/SnowLuma 守护/wmic 复刻 C-01 标注/主动话题/活跃期/峰谷四象限/锚点/记忆整理
+Electron 全行为/主动话题/活跃期/峰谷四象限/锚点/记忆整理
 /ask 弹卡/MCP 桥（transport 可替换性的落点——NapCat = 换协议端插件）。
 
 **已提交：** Electron `182233c`/`27fbb56`、进程适配器 `d9c2523`、active/anchor/memory `cf5c096`、MCP/compat `8d8faf2`/`e861cc5`/`827cbd8`/`e81aa53`/`16b242d`，完整 M4 runner `9815e75`。
-**剩余阻塞：** 真实 Electron 依赖/GUI、SnowLuma/QQ/Windows 注册表/双实例、captcha 诊断 IPC 未验收；M3 Chromium 当前提交后的实跑结果需 QA 明确报告。权限 ask 三态 UI/超时/去重/停机 fail-closed 已完成 mock 门禁。M5 不得以 mock 绿灯替代真实运行时门。
+**剩余阻塞：** 真实 Electron 依赖/GUI、QQ/Windows 注册表/双实例、captcha 诊断 IPC 未验收；M3 Chromium 当前提交后的实跑结果需 QA 明确报告。权限 ask 三态 UI/超时/去重/停机 fail-closed 已完成 mock 门禁。M5 不得以 mock 绿灯替代真实运行时门。
 
 ### Phase M5 打包与验收 ⬜ pending
-M4 实现门已完成；进入 M5 前仍需取得真实 Electron/SnowLuma/便携 QQ/Windows 环境并完成阻塞的运行时验收。
+M4 实现门已完成；进入 M5 前仍需取得真实 Electron/Windows 环境并完成阻塞的运行时验收。
 已增加前置配置提交 `a73da81`（Electron/electron-builder scripts、NSIS 配置、installer.nsh、ASCII 启动脚本）与锁文件同步提交 `f1ad06b`；但 `assets/icon.png` 缺失，真实依赖安装/构建/Windows 安装验收仍 BLOCKED。
 NSIS/installer.nsh/version.json/compat-04 垫片（0.4 插件兼容 = "追加文件"的最终证明）
 
@@ -113,7 +115,6 @@ run-m3 27/27。详见 `progress.md` 同日条目。
 | 改前端页面 | 面板协议（M3 iframe 沙箱）+ 插件静态目录 |
 | 加功能 | 捆绑/用户插件 registerTool/capability/hook |
 | 改核心行为 | hook（before-llm-messages 可改消息、before-tool 可否决）+ capability 替换 |
-| SnowLuma→NapCat | 换OneBot provider 插件（协议差异在 provider 内消化） |
 | 0.4 老插件 | compat-04垫片翻译旧 API |
 
 ### 冲突仲裁（两个插件改同一处时）
@@ -179,7 +180,7 @@ run-m3 27/27。详见 `progress.md` 同日条目。
 **当前唯一完整回归活句柄exec44328**，full-2026-10-16T11-21-39-880Z，458份冻结源码/测试，预计M3 169、M4 10以终态为准。先核对同一handle/result，期间不编辑生产或测试，不因观察超时重启。继续旧/新ui.refreshMs消费者差异（不能机械让精确展示时钟读取后台）、会话事件合批、启动/全部其它领域原子对账，目标active；当前15967没有更新或访问，未打包、部署或操作真实QQ。
 
 
-用量页 0.4 交互迁移（2026-10-15T10:51:55.471Z，UTC）：已读取 develop 中的旧版实现，将五指标卡、可悬停/键盘查看的柱图、时间范围切换、按天/会话/模型的整宽表格、模型展开和工具/分组明细弹窗迁入 0.5 沙箱面板。保留主题继承与声明 API；运行次数和实际模型调用分别统计，同模型按渠道拆分，历史未记渠道的总量明确未分渠道，不能据此钻取其它渠道。增量刷新保持行节点、焦点和滚动，旧异步响应与新明细失败不显示前一范围数值。163、106、80及5份相关测试通过，164最终有头回归 exit0；新163/164纳入M3，本轮未重跑完整M3/M4。主合成QA备份142份静止数据后同步191份core源码并以原离线wrapper启动100528/15967；原空数据只读15987预览也已更新并实际点击复验，未种入模拟用量。主旧进程退出已观察，退出码和最终关闭者未知；预览被exec中断exit1，旧锁由生产内核正常识别恢复，未手工删锁。配置字节保持，静止复制时数据字节一致不代表运行后所有缓存/日账原字节均不变。详见[本轮证据](.qa-local/usage-v04-20261015/final-verification.json)。不提升真实QQ/SnowLuma、账号或外部模型验收结论，186项11/96/2/76/0/1保持；没有打包或远程部署。
+用量页 0.4 交互迁移（2026-10-15T10:51:55.471Z，UTC）：已读取 develop 中的旧版实现，将五指标卡、可悬停/键盘查看的柱图、时间范围切换、按天/会话/模型的整宽表格、模型展开和工具/分组明细弹窗迁入 0.5 沙箱面板。保留主题继承与声明 API；运行次数和实际模型调用分别统计，同模型按渠道拆分，历史未记渠道的总量明确未分渠道，不能据此钻取其它渠道。增量刷新保持行节点、焦点和滚动，旧异步响应与新明细失败不显示前一范围数值。163、106、80及5份相关测试通过，164最终有头回归 exit0；新163/164纳入M3，本轮未重跑完整M3/M4。主合成QA备份142份静止数据后同步191份core源码并以原离线wrapper启动100528/15967；原空数据只读15987预览也已更新并实际点击复验，未种入模拟用量。主旧进程退出已观察，退出码和最终关闭者未知；预览被exec中断exit1，旧锁由生产内核正常识别恢复，未手工删锁。配置字节保持，静止复制时数据字节一致不代表运行后所有缓存/日账原字节均不变。详见[本轮证据](.qa-local/usage-v04-20261015/final-verification.json)。不提升真实QQ、账号或外部模型验收结论，186项11/96/2/76/0/1保持；没有打包或远程部署。
 
 
 ### 2026-10-16 第九批续行：动态刷新、事件合批与未关闭事项
@@ -265,7 +266,7 @@ root232已正式把默认parser抽到src/kernel/inline-tools.js，通过原agent
 代理分工与共享边界：
 - motion236/237正式拥有pause-controls.js、app暂停小片、routes仅POST/DELETE pause、store仅strict markAllRead/throughId+host-only boundary incarnation、sessions/chats选择状态/selection-state.js、新236/237/自有fixture。browser由motion独占，完成后交startup。partial必须暂停、诚实marked/failed/remaining、只重试原有界scope，新消息不误标；clear/recreate/restart旧票据409，取消重试才新意图。不能仅以runtime标读声称持久成功。当前还在补严格故障/边界，未停源。
 - startup234正式拥有bundled/market/client.js名单部分、新console/blocklist-members、settings/blocklist-state/members、settings panel仅access入口、community panel仅名单迟到保护、新234及自有fixture。已纯/HTTP首轮7组exit0，browser未跑；需真实client停止信号捕获、volatile pushLocal:false远端∪最新local−exempt/get/cache变动失效、目标membership CAS/跨入口/partial等补全。当前页Map不限，不占7400B RAM，跨页面不保存的界限明确。root已实际接console.blocklistMembers factory、GET/PUT /api/blocklist-members、settings成员GET与两新bootScripts（总7）；root仅给market/index factory加signal一行，client每操作须捕获旧signal实例防stop/start复活。
-- core235拥有OneBot client/provider、kernel ingest/transport、sdk-services只新transport.actions权限/信号表、SnowLuma panel、prompt/history effective-global（orchestrator只history区不碰resume）、new235。kernel只facade/ingest/动态globalBlocklistOf注入小片可直接改。实际19/19首轮过，继续追加服务Promise/代际及权限边界，未停源。root已补SnowLuma精确GET /api/snowluma/status与status DTO可选selfNickname。有效global必须消费当前所选community.client权威集合，不仅raw−exempt；缺能力/异常才cfg fallback。
+- core235拥有OneBot client/provider、kernel ingest/transport、sdk-services只新transport.actions权限/信号表、prompt/history effective-global（orchestrator只history区不碰resume）、new235。kernel只facade/ingest/动态globalBlocklistOf注入小片可直接改。实际19/19首轮过，继续追加服务Promise/代际及权限边界，未停源。有效global必须消费当前所选community.client权威集合，不仅raw−exempt；缺能力/异常才cfg fallback。
 - root独占其余routes/defaultComponents/manifest/M3、232inline后续与233搜索默认/精确endpoint/最终结果cap。233只有QA实际缺陷还未正式实现；新local-policy合同要保留现代preflight与旧批后原子，不能盲加同key二次调用造成已有provider时序改变，待明确compat映射/新phase设计。
 
 所有UI/后台/核心仍须通过追加文件实际消费验证；当前无源码冻结，不能启动full。继续局部测试、待全员停源和root剩余实现收敛再新full，保留full69360 197/199+10/10真实历史。15967仍未访问/同步，未打包、部署、真实QQ/账号/远端模型联调；完整用户原子迁移目标保持active。
@@ -331,7 +332,7 @@ full-2026-10-17T08-29-00-723Z 于 2026-10-17T08:44:43.548Z 实际exit1：M3 **20
 
 **唯一完整进程后台PID167484**，full-2026-10-17T09-28-21-970Z，startedAt=2026-10-17T09:28:22.038Z，**556**份源码/测试已冻结，预期**216 M3+10 M4**。full-launch-batch17-20261017T092821857Z/launch.json、source-before和run-all.log为证；目前未终态，不能称全绿。禁止新full/browser/验证或修改src/ui/bundled/electron/scripts/test/assets/package；仅只读后续模块inventory与独占QA/docs。最终只认本目录result、实际退出及source-after，不因观察超时重启。
 
-新默认键runtime.log.policy/console.sessionNames、独立scroll-policy/chat-title叶子及诊断合同见architecture-composition§17和v04-parity-plan第十七批。15967未访问、同步或重启，不打包部署、不操作真实QQ/模型/外网。完整每原子目标仍active，不把此批六项当全域穷尽；后续三代理只读做logger/profile/SnowLuma全模块矩阵（不是只找缺陷）。
+新默认键runtime.log.policy/console.sessionNames、独立scroll-policy/chat-title叶子及诊断合同见architecture-composition§17和v04-parity-plan第十七批。15967未访问、同步或重启，不打包部署、不操作真实QQ/模型/外网。完整每原子目标仍active，不把此批六项当全域穷尽；后续三代理只读做logger/profile 全模块矩阵（不是只找缺陷）。
 
 
 ## 第十七批完整终态：全部通过

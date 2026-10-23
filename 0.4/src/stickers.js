@@ -1,5 +1,5 @@
 // 表情包体系（移植自原版 sticker-lib.js）：本地表情知识库 + 搜索 + 提示词摘要。
-// QQ 收藏表情（SnowLuma fetch_custom_face_detail）是"源"，本地库是 AI 认知层。
+// 仅管理本地表情条目；不会同步或修改外部客户端的收藏。
 import fs from 'node:fs';
 import path from 'node:path';
 import { DATA_DIR } from './config.js';
@@ -20,8 +20,7 @@ export function normalizeStickerEntry(raw) {
   return {
     id,
     resId: String(entry.resId || entry.emoji_id || id).trim(),
-    // QQ 原生收藏身份（add_custom_face 的 emoji_id）：入了 QQ 收藏的条目靠它
-    // 做幂等补录、备注回写（modify_custom_face）与长效地址回查。
+    // 保留已有条目的不透明标识，不据此调用任何外部收藏接口。
     emojiId: String(entry.emojiId || '').trim(),
     // 消息里的协议端缓存文件 id：转存失败后的重试线索（get_image 认它）。
     qqFile: String(entry.qqFile || '').trim(),
@@ -186,7 +185,7 @@ export function buildStickerContext(entries, max = 10, { rotatePeriodMin = 60, n
     const id = withId ? ` id=${e.id}` : '';
     return `- ${label}${extra}${id}`;
   });
-  return `【可用表情包】你的 QQ 收藏表情里有 ${list.length} 个表情（以下为常用/轮换的 ${selected.length} 个，完整列表可用 list_stickers 查询）：\n${lines.join('\n')}`;
+  return `【可用表情包】你的本地表情库里有 ${list.length} 个表情（以下为常用/轮换的 ${selected.length} 个，完整列表可用 list_stickers 查询）：\n${lines.join('\n')}`;
 }
 
 /** 发送前的表情包策略提示（软策略）。 */

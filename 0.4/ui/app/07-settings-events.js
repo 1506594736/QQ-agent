@@ -752,16 +752,10 @@ function bindSettingsEvents(c) {
   $$('.hc-fix-btn').forEach((btn) => {
     btn.addEventListener('click', () => {
       const target = btn.dataset.target;
-      if (target === 'snowluma') {
-        switchTab('snowluma');
-        // 高亮一键启动按钮
-        setTimeout(() => {
-          const quickBtn = $('#quick-start-btn');
-          if (quickBtn) {
-            quickBtn.style.boxShadow = '0 0 0 3px var(--accent)';
-            setTimeout(() => { quickBtn.style.boxShadow = ''; }, 2000);
-          }
-        }, 300);
+      if (target === 'settings-onebot') {
+        state.settingsSection = 'onebot';
+        renderSettingsSidebar();
+        renderSettings();
       } else if (target === 'settings-api') {
         // 切换到 API 设置区块
         state.settingsSection = 'api';
@@ -942,14 +936,6 @@ function bindSettingsEvents(c) {
       if (hint) hint.innerHTML = `发现新版本 <b>v${esc(data.latest)}</b>（当前 v${esc(data.current)}） <a href="${esc(data.url)}" target="_blank" rel="noopener">去下载</a>`;
     } else if (hint) hint.textContent = `已是最新（v${data.current}）`;
     checkUpdateBtn.disabled = false;
-  });
-
-  // ── OneBot 区块事件 ──
-  const openSnowlumaBtn = $('#open-snowluma-btn');
-  if (openSnowlumaBtn) openSnowlumaBtn.addEventListener('click', async () => {
-    await saveConfig({ quiet: true });
-    try { await api('/api/snowluma/open-folder', { method: 'POST', body: '{}' }); }
-    catch (e) { $('#snowluma-hint').textContent = `失败：${e.message}`; }
   });
 
   // ── 数据管理区块事件 ──

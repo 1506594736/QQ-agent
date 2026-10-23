@@ -256,7 +256,7 @@ function registerAllTools() {
   registerTool({
     id: 'send_sticker',
     name: '发送表情',
-    description: '发送一个 QQ 收藏表情（一条消息只能一张表情，不能附带文字；想说的话先用 send_message 单独发）。stickerId 从 list_stickers 获取。',
+    description: '发送一个 本地表情（一条消息只能一张表情，不能附带文字；想说的话先用 send_message 单独发）。stickerId 从 list_stickers 获取。',
     category: 'messaging',
     icon: '😀',
     parameters: {
@@ -313,7 +313,7 @@ function registerAllTools() {
   registerTool({
     id: 'list_stickers',
     name: '查看表情库',
-    description: '查看/搜索你的 QQ 收藏表情（含备注和你的本地笔记）。',
+    description: '查看/搜索你的 本地表情（含备注和你的本地笔记）。',
     category: 'sticker',
     icon: '📋',
     parameters: {
@@ -409,8 +409,7 @@ function registerAllTools() {
         if (!entry) return err(`在当前会话找不到消息 ${args.messageId}。${midHint(ctx)}`);
         const imageMedia = (entry.media || []).find((m) => m.kind === 'image' && (m.url || m.file));
         if (!imageMedia) return err('该消息没有可收藏的图片');
-        // collect 会把图片转存到本地（双保险）并**必定入 QQ 收藏**（add_custom_face，
-        // 即 QQ"把图片变成表情"的同款能力）；QQ 入库失败会在 warning 里如实标注
+        // 收藏到本地表情库，不操作外部客户端收藏。
         const saved = await ctx.stickers.collect(args.messageId, {
           url: imageMedia.url || '',
           file: imageMedia.file || '',
@@ -420,12 +419,8 @@ function registerAllTools() {
           collected: true,
           id: saved.id,
           note: saved.localNote,
-          emojiId: saved.emojiId || '',
-          qqSaved: !!saved.emojiId,
           localSaved: !!saved.localFile,
-          ...(saved.qqCollectError
-            ? { warning: `已${saved.localFile ? '本地收藏' : '记录'}，但入 QQ 收藏失败：${saved.qqCollectError}` }
-            : {})
+          ...(saved.persistFailed ? { warning: '未能转存图片，仅记录了可能过期的原地址。' } : {})
         });
       } catch (error) {
         return err(error?.message ?? error);
@@ -937,7 +932,7 @@ function registerAllTools() {
 
   // ── 发网图（send_image / search_images）────────────────────────────────
   //
-  // 补的是一个明显缺口：此前机器人只能发 QQ 收藏的表情（send_sticker），
+  // 补的是一个明显缺口：此前机器人只能发 本地收藏的表情（send_sticker），
   // **无法主动发一张网上找的图**。
   //
   // 安全校验：预览确认、字节魔数校验、safe-fetch（SSRF 防护 + 限量 + 浏览锁定）。

@@ -171,7 +171,6 @@ export function createMockOneBotHttp() {
         ]
       });
     }
-    if (action === 'fetch_custom_face_detail') return reply([{ emoji_id: 'st1', res_id: 'st1', md5: 'aaa', desc: '滑稽', url: `http://127.0.0.1:${server.address()?.port}/img.png` }]);
     if (action.startsWith('search')) {
       res.writeHead(200, { 'content-type': 'text/html; charset=utf-8' });
       res.end(`<html><body>
@@ -320,7 +319,7 @@ export async function bootApp({ config = {}, script = [] } = {}) {
     },
     webSearch: { enabled: true, searchUrl: `http://127.0.0.1:${onebotHttpPort}/search`, maxResults: 6 },
     security: { allowPrivateImageHosts: false },
-    snowluma: { wsUrl: `ws://127.0.0.1:${onebotWsPort}`, httpUrl: `http://127.0.0.1:${onebotHttpPort}`, accessToken: '' },
+    onebot: { wsUrl: `ws://127.0.0.1:${onebotWsPort}`, httpUrl: `http://127.0.0.1:${onebotHttpPort}`, accessToken: '' },
     persona: { botName: '覆盖Bot', participation: 'medium', roleText: '你是覆盖测试群里的机器人。' },
     allow: { groups: ['456'], private: ['777'] },
     deny: { groups: [], private: [] },
@@ -334,10 +333,10 @@ export async function bootApp({ config = {}, script = [] } = {}) {
     store: { maxMessagesPerChat: 0, contextTier: 4, historyCount: 80, keepSessionFiles: 100 },
     server: { port: await freePort(), token: '' }
   };
-  // config 覆盖：对 api / snowluma / store 这类对象做一层合并，
-  // 避免调用方只写 { snowluma: { dir } } 时把 wsUrl/httpUrl 一起冲掉。
+  // config 覆盖：对 api / onebot / store 这类对象做一层合并，
+  // 避免调用方只写 { onebot: { accessToken } } 时把 wsUrl/httpUrl 一起冲掉。
   const merged = { ...baseConfig, ...config };
-  for (const key of ['api', 'snowluma', 'store', 'send', 'persona', 'ui', 'webSearch']) {
+  for (const key of ['api', 'onebot', 'store', 'send', 'persona', 'ui', 'webSearch']) {
     if (config[key] && typeof config[key] === 'object' && baseConfig[key]) {
       merged[key] = { ...baseConfig[key], ...config[key] };
     }

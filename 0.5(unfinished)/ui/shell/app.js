@@ -24,14 +24,14 @@ import {createPauseControls} from './pause-controls.js';
 installMotion(document);
 document.querySelector('#brand-emblem')?.append(createIcon('emblem',{size:36}));
 document.querySelector('#navigation-dismiss')?.append(createIcon('close',{size:16}));
-const readinessNames={qq:'QQ 内核',snow:'SnowLuma',onebot:'OneBot',model:'模型配置'};
+const readinessNames={onebot:'OneBot',model:'模型配置'};
 for(const [id,name] of Object.entries(readinessNames)){
   const item=document.querySelector('#ready-'+id);
   item.querySelector('.readiness-icon').append(createIcon('status-'+id+'-pending',{size:24}));
   item.dataset.icon='pending';
   item.title=name+'：正在读取状态。';
   item.disabled=true;
-  item.addEventListener('click',()=>open(id==='model'?'settings':'snowluma',id==='model'?{section:'models'}:{}));
+  item.addEventListener('click',()=>open('settings',{section:id==='model'?'models':'onebot'}));
 }
 
 // Local shell layout only: resizing navigation never remounts a plugin or writes config.
@@ -127,30 +127,10 @@ function renderRuntime(){
     setText(cacheHitLabel,`今日缓存命中 ${(Math.max(0,Math.min(1,rate))*100).toFixed(1)}%`);
     setAttribute(cacheHitLabel,'title',usage?`今日缓存输入 ${Number(usage.cachedTokens)||0} / 总输入 ${Number(usage.promptTokens)||0} Tokens`:'今日输入 Tokens 的缓存命中比例');
   }else{setText(cacheHitLabel,'今日缓存命中 —');setAttribute(cacheHitLabel,'title','等待今日用量统计');}
-  const qq=runtimeStatus.qqPortable,snow=runtimeStatus.snowluma,onebot=runtimeStatus.onebot;
-  if(qq){
-    const installed=qq.installedReady===true,isolationBlocked=installed&&(qq.ready!==true||qq.launchAllowed!==true||qq.launchIsolation?.verified!==true);
-    const issue=qq.error||qq.installationDiagnosis||qq.diagnosis,blocked=qq.ready===false;
-    if(qq.processState==='unknown'){
-      const processIssue=qq.processDiagnosis||qq.error||'尚未确认便携 QQ 的实际进程状态，请刷新查询或手工检查。';
-      const launchIssue=isolationBlocked?` 启动暂停：${qq.launchIsolation?.reason||qq.diagnosis||'启动隔离尚未验证。'}`:blocked&&issue?` 安装状态：${issue}`:'';
-      setReadiness('qq','warn','状态待确认',`QQ 状态待确认：${processIssue}${launchIssue}`);
-    }else if(isolationBlocked){
-      const reason=qq.launchIsolation?.reason||qq.diagnosis||'QQ 独立数据目录尚未通过真实运行验证，已暂停便携启动，避免使用系统 QQ 数据。';
-      const installation=qq.proofValid===true||qq.installationVerified===true?'已安装并通过文件与版本校验':'已发现，版本符合固定版本要求，尚未验证安装证明';
-      setReadiness('qq','warn','隔离未验证',`QQ${qq.version?` ${qq.version}`:''} ${installation}。启动暂停：${reason}${qq.running?' 已检测到运行中的便携 QQ。':''}`);
-    }else setReadiness('qq',blocked?'bad':qq.running?'good':'warn',blocked?issue&&/版本|校验/.test(issue)?'需要检查':'缺少内核':qq.running?'运行中':'未运行',issue?`QQ 内核状态异常：${issue}`:blocked?'未找到便携 QQ 内核，请先完成本地内核安装。':qq.running?'便携 QQ 正在运行。':'QQ 内核已准备，尚未启动。');
-  }
-  if(snow){
-    const issue=snow.error||snow.diagnosis;
-    if(snow.processState==='unknown')setReadiness('snow','warn','状态待确认',issue?`SnowLuma 状态待确认：${issue}`:'尚未确认 SnowLuma 的实际进程状态，请重试查询或手工检查。');
-    else if(snow.configured===false)setReadiness('snow','bad','未配置',issue?`未找到可用的 SnowLuma：${issue}`:'未找到 SnowLuma 目录，请在设置中检查运行环境。');
-    else if(issue)setReadiness('snow','bad','需要检查',`SnowLuma 状态异常：${issue}`);
-    else setReadiness('snow',snow.running?'good':'warn',snow.running?'运行中':'未运行',snow.running?'SnowLuma 正在运行；QQ 账号登录和 OneBot 连接状态请查看下一项。':'SnowLuma 尚未运行，可在 SnowLuma 面板启动。');
-  }
+  const onebot=runtimeStatus.onebot;
   if(onebot){
     const ready=onebot.connected&&(typeof onebot.transportReady==='boolean'?onebot.transportReady:true);
-    const reason=onebot.diagnosis||(onebot.error&&/401|unauthor|令牌不匹配/i.test(onebot.error)?'接入认证失败，令牌不匹配，请检查对应协议的令牌':onebot.error)||(snow?.processState==='unknown'?snow.diagnosis||'SnowLuma 进程状态待确认':snow?.running===false?'SnowLuma 尚未运行':'请检查账号、实际监听地址与连接设置');
+    const reason=onebot.diagnosis||(onebot.error&&/401|unauthor|令牌不匹配/i.test(onebot.error)?'接入认证失败，令牌不匹配，请检查对应协议的令牌':onebot.error)||'请先自行启动协议端并登录账号，再检查 OneBot 地址与令牌';
     setReadiness('onebot',ready?'good':'warn',ready?'已连接':onebot.connected?'验证中':'未连接',ready?'协议服务与账号验证已通过，可以收发消息。':`${onebot.connected?'连接待验证':'协议服务未连接'}：${reason}。`);
   }
   if(runtimeConfig){
@@ -168,7 +148,7 @@ function applyRuntimeStatus(patch){
   delete next.configUpdated;
   // Transport notifications are provider snapshots. Optional readiness fields
   // from a previous provider must not survive its replacement or reset.
-  for(const key of ['orchestrator','qqPortable','snowluma','usage'])if(patch[key]&&typeof patch[key]==='object')next[key]={...runtimeStatus[key],...patch[key]};
+  for(const key of ['orchestrator','usage'])if(patch[key]&&typeof patch[key]==='object')next[key]={...runtimeStatus[key],...patch[key]};
   if(typeof patch.paused==='boolean')next.orchestrator={...next.orchestrator,paused:patch.paused};
   runtimeStatus=next;++statusRevision;state.set({status:runtimeStatus});renderRuntime();
 }
@@ -224,7 +204,7 @@ updateNotice=createUpdateNotice({api,onStatus:status=>registry.emit('update-stat
 function renderNav(){
   const existing=new Map([...nav.querySelectorAll('button[data-panel]')].map(button=>[button.dataset.panel,button]));
   const panels=registry.list(),ids=new Set(panels.map(panel=>panel.id));
-  for(const id of Object.keys(readinessNames))document.querySelector('#ready-'+id).disabled=!ids.has(id==='model'?'settings':'snowluma');
+  for(const id of Object.keys(readinessNames))document.querySelector('#ready-'+id).disabled=!ids.has('settings');
   for(const [id,button] of existing)if(!ids.has(id))button.remove();
   for(const [index,panel] of panels.entries()){
     let button=existing.get(panel.id);
@@ -314,7 +294,7 @@ function applyRuntimeConfig(config,generation=configGeneration){
   syncThemeFromConfig(runtimeConfig);renderRuntime();
 }
 const configRefresh=createRefreshQueue(async({isCurrent})=>{const generation=configGeneration,config=await api.get('/api/config');if(isCurrent()&&!statusPollClosed&&generation===configGeneration)applyRuntimeConfig(config,generation);});
-sse=new SseClient({token:api.token,recoverAuth:api.recoverAuth,onEvent:(name,payload)=>{if(name==='status'&&payload?.configUpdated){++configGeneration;void configRefresh.request().catch(()=>{});}if(name==='status')applyRuntimeStatus(payload);else{state.set({[name]:payload});const runtimeKey={'onebot-status':'onebot','snowluma-status':'snowluma','qq-portable-status':'qqPortable'}[name];if(runtimeKey)applyRuntimeStatus({[runtimeKey]:payload});}registry.emit(name,payload);if(['plugin-loaded','plugin-unloaded','plugin-error','permission-decision'].includes(name)||(name==='hello'&&!registry.list().length))refreshPanels();if(name==='permission-ask')renderPermissionCard(payload);if(name==='permission-decision'&&payload?.decision!=='ask'){const card=document.querySelector(`[data-permission-id="${CSS.escape(payload.requestId||'')}"]`);card?.remove();}},onState:(status,error)=>{consoleAuth.invalidate(error);if(error?.status===401&&!registry.list().length){panelFailed(error);if(!consoleAuth.automatic)sse.close();}const labels={connecting:'SSE 连接中',connected:'SSE 已连接',reconnecting:'SSE 重连中'};indicator.textContent=error?`${labels[status]||'SSE 异常'}：${error.message}`:labels[status]||'SSE 异常';dot.classList.toggle('online',status==='connected');}});
+sse=new SseClient({token:api.token,recoverAuth:api.recoverAuth,onEvent:(name,payload)=>{if(name==='status'&&payload?.configUpdated){++configGeneration;void configRefresh.request().catch(()=>{});}if(name==='status')applyRuntimeStatus(payload);else{state.set({[name]:payload});const runtimeKey={'onebot-status':'onebot'}[name];if(runtimeKey)applyRuntimeStatus({[runtimeKey]:payload});}registry.emit(name,payload);if(['plugin-loaded','plugin-unloaded','plugin-error','permission-decision'].includes(name)||(name==='hello'&&!registry.list().length))refreshPanels();if(name==='permission-ask')renderPermissionCard(payload);if(name==='permission-decision'&&payload?.decision!=='ask'){const card=document.querySelector(`[data-permission-id="${CSS.escape(payload.requestId||'')}"]`);card?.remove();}},onState:(status,error)=>{consoleAuth.invalidate(error);if(error?.status===401&&!registry.list().length){panelFailed(error);if(!consoleAuth.automatic)sse.close();}const labels={connecting:'SSE 连接中',connected:'SSE 已连接',reconnecting:'SSE 重连中'};indicator.textContent=error?`${labels[status]||'SSE 异常'}：${error.message}`:labels[status]||'SSE 异常';dot.classList.toggle('online',status==='connected');}});
 tokenManagement=createTokenManagement({api,auth:consoleAuth,sse});
 panelRecovery=createPanelRecovery({host,api,auth:consoleAuth,onRecovered:async data=>{
   if(statusPollClosed)return;
@@ -359,18 +339,6 @@ async function pollStatus(){
     if(statusResult.status==='rejected'){consoleAuth.invalidate(statusResult.reason);throw statusResult.reason;}
     if(configResult.status==='rejected')throw configResult.reason;
     if(panelLoadError&&!registry.list().length)void refreshPanels();
-    // The adapter's synchronous snapshot never runs a process query. Refresh
-    // it through the bounded endpoint on the existing polling schedule.
-    if(statusResult.value.qqPortable&&Object.hasOwn(statusResult.value.qqPortable,'processState')){
-      const qqRevision=statusRevision;
-      try{
-        const qq=await api.get('/api/qq-portable/status');
-        if(qqRevision===statusRevision)applyRuntimeStatus({qqPortable:qq});
-      }catch(error){
-        consoleAuth.invalidate(error);
-        if(qqRevision===statusRevision)applyRuntimeStatus({qqPortable:{...runtimeStatus.qqPortable,processState:'unknown',processDiagnosis:error.message}});
-      }
-    }
   } catch (error) {
     // SSE 已经提供连接状态；轮询失败不弹 toast，避免后台网络抖动刷屏。
     state.set({statusError: error.message});

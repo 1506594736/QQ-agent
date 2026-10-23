@@ -1,5 +1,7 @@
 # findings.md — 0.5 实现过程中的关键发现
 
+> 范围更新（2026-10-23）：专属协议端与便携客户端的安装、启动和登录态迁移已从项目范围移除。本文保留其余历史记录；旧编号、测试数量与结果只对应当时范围，不代表当前版本已经完成验收。当前外部协议端由用户自行管理。
+
 ## 环境
 - 3210 残留进程 = 上版 v0.5 的孤儿 node.exe（PID 12444，2026-09-30 用户授权杀掉）。
 - 测试端口约定：3987/3988（避开默认段，防与用户实跑实例冲突）。
@@ -22,14 +24,14 @@
 ### M3 增量架构结论（核心约束）
 1. **路由注册插件化**：kernel 只保留公共守卫、路由注册/分发、状态聚合与核心最小 CRUD；具体业务路由按 `bundled/routes-*` provider 追加文件，通过 `ctx.registerRoute({id,method,pattern,handler,bodyMode,auth})` 注册。用户插件可追加 route，但默认禁止覆盖核心 id；manifest 声明 `permissions:['ui.route']`，插件卸载同时移除路由。路由 registry 须提供 `list/availability` 供 `/api/routes` 与测试。
 2. **面板协议插件化**：新增 `src/kernel/panels.js`（PanelRegistry）+ `ui/shell/panel-host.js`。面板清单声明 `id,title,entry,permissions,tab,order`；主壳只渲染宿主 iframe，不执行业务 DOM。iframe `sandbox="allow-scripts"`（不默认 allow-same-origin），仅通过 `postMessage` JSON-RPC：`hello`、`getState`、`callApi`、`emit` 三个能力；请求带 nonce、超时、origin/source 校验，API 调用仍过同源 token/origin 守卫；插件不得拿 Node/kernel 对象。面板静态资源由插件自身目录提供，追加目录即可新增/替换面板；同 id 后加载覆盖需 warn + 清理旧 iframe。
-3. **8 页签只是默认面板**：sessions/chats/memory/usage/skills/plugins/snowluma/settings 由 `bundled/panels-*` 默认清单提供；主壳只保留导航、SSE、主题、对话框和 panel-host。默认 UI 可删/替换而不改 kernel。
+3. **默认页签由面板提供**：sessions/chats/memory/usage/skills/plugins/settings/logs/community 由 `bundled/panels-*` 默认清单提供；主壳只保留导航、SSE、主题、对话框和 panel-host。默认 UI 可删/替换而不改 kernel。
 4. **configSchema 驱动设置**：Skill 设置表单由 manifest.configSchema 渲染；主设置保留最小手写区块（api/server/security/persona）；密钥字段只显示 hasXxx，脱敏回传不可覆盖真值；保存防抖 + 离开 settings flush。
 5. **安全**：route provider handler 不可绕过公共守卫；panel callApi 仅允许声明的 method/path 白名单，禁止任意外域/Node；iframe 消息校验 `event.source===iframe.contentWindow` + nonce；所有危险动作走自绘 `uiConfirm`。
 
 ### 路由对账分层与优先级
 - P0（M3 验收必须）：公共已实现路由回归；R-01/02/03/04/05/06/07；R-19/20/21；R-22~35 Provider；R-42 test/api；R-43/44 config/preview；R-53~63 skill/tools/config/models；R-64~69 sessions；R-70/71/72/77 chats/memory/messages；R-80~89 pause/chat ops/logs；R-90 captcha-forward。
-- P1（可用性增强）：R-08~18 SnowLuma/portable/OneBot groups/friends；R-36/37 vision scan；R-38~41 search providers；R-45/46 community blocklist；R-47~52 market accounts/publish/install；R-73~76 memory edit/consolidate；R-78 media-data；R-79 members。
-- P2（M4/M5 依赖或外部服务）：真实 SnowLuma spawn/portable QQ、市场真实上传/安装、captcha 真实反代、视觉真实扫描、社区远端同步。P0 先提供稳定人话 stub/可注入 provider，不把外部缺失伪装成成功。
+- P1（可用性增强）：OneBot groups/friends；R-36/37 vision scan；R-38~41 search providers；R-45/46 community blocklist；R-47~52 market accounts/publish/install；R-73~76 memory edit/consolidate；R-78 media-data；R-79 members。
+- P2（M4/M5 依赖或外部服务）：市场真实上传/安装、captcha 真实反代、视觉真实扫描、社区远端同步。P0 先提供稳定人话 stub/可注入 provider，不把外部缺失伪装成成功。
 
 ### 文件/接口清单
 - 内核：`src/kernel/route-registry.js`、`src/kernel/panels.js`、`src/kernel/route-providers.js`（provider 装配/可替换）、`src/kernel/usage.js`（stats/breakdown）、`src/kernel/model-catalog.js`、`src/kernel/ui-actions.js`（危险操作统一 guard）。
@@ -47,7 +49,7 @@
 
 ### M3 独立契约审计（2026-09-30）
 - 高风险服务端缺口（工程修复中）：`routes.js` chat action 正则必须用命名 `op`（http 路由仅传 named groups）；R-65 返回完整顶层会话而非 `{session}` 且不能删 messages；SessionRegistry 必须从磁盘读历史并受控 delete/clear；R-43 必须使用 `sanitizeConfigForApi`（删 secret 键+`hasXxx`，不能自造 `apiKeyConfigured`）；`GET /api/tools` 是 registry DTO 而非 capability；R-80 是 `POST /api/chats/<key>/wake` 410；R-83/84/85 返回 `removed/marked` 并 emit；R-64 limit 上限 1048576。
-- SSE：`/api/events` 与 REST 共用 token+origin 守卫；`bus` 必须桥接 session/chat/memory/onebot/log/plugin/status 等事件；`snowluma.status` 名必须映射 `snowluma-status`；logger 需要接 Bus，bridge stop 时解绑。
+- SSE：`/api/events` 与 REST 共用 token+origin 守卫；`bus` 必须桥接 session/chat/memory/onebot/log/plugin/status 等事件；logger 需要接 Bus，bridge stop 时解绑。
 - Panel/RPC：当前首版只有 iframe mount，缺真实 panels/RPC 接线；必须 `source===frame.contentWindow` + mount nonce + panelId/path allowlist，opaque sandbox origin 下不以 origin 信任替代 nonce；shell 独占 token，iframe 不得获得 token/state secret；unmount 清 listener/timer/AbortController；测试 fixture panel + fixture route provider 验证“追加文件即可扩展”。
 - 审计给出 46 条可执行用例，覆盖 SSE guards/15s ping、R43/44、R53-60、R65-69、R77/80-87、iframe JSON-RPC；M3 QA 必须用隔离 DATA_DIR+fake OneBot/LLM，断言 HTTP+JSON+磁盘+SSE 联合副作用。
 
@@ -58,17 +60,15 @@
 - Electron：`disableHardwareAcceleration()`；AppUserModelID=`cn.kondius.qq-agent`；打包/开发 dataDir 优先级 `QQ_AGENT_DATA_DIR` > 项目或 exe 旁 `data<profileSuffix>`；主实例且新目标不存在时迁旧 `%APPDATA%/qq-agent/data`。`app.setPath('userData', data/electron-user-data)` 是单实例/网络启动保命点。
 - 核心锁 `qq-agent.lock` + Electron `requestSingleInstanceLock` 双层；boot 每阶段同步写 `boot-diag.log`；`QQ_AGENT_PROFILE` 多开 data-<n> 与端口偏移。
 - BrowserWindow 1360×860，最小 960×640，show:false→ready-to-show，contextIsolation true / nodeIntegration false / preload CJS。F5 reloadIgnoringCache；外链强制系统浏览器；回环导航白名单；窗口 close 默认托盘隐藏。
-- `before-quit` 必须 preventDefault → await core.stop → app.quit；stop 顺序：watcher/abort/reminder/sync+poll/index flush/SSE/OneBot/server/SnowLuma/logger/lock。便携 QQ 默认不杀。
+- `before-quit` 必须 preventDefault → await core.stop → app.quit；stop 顺序：watcher/abort/reminder/sync+poll/index flush/SSE/OneBot/server/logger/lock。
 - preload 窄桥 `qqAgentShell.refocus()`；自绘 dialog 关闭后必须 BrowserWindow.focus，防 Electron alert/confirm 后输入框失焦。
 
-### SnowLuma / OneBot / 便携 QQ
-- SnowLuma 活性只探 WebUI（默认 5099），不能用 WS 3001（未登录时不监听，会导致双拉）；内置 spawn node.exe index.mjs，stdio pipe 进 500 行环+SSE；缺内置入口才 launcher.bat 回退。启动互斥：launching/proc/WebUI port。
-- OneBot：WS 收事件、HTTP 发/查；HTTP 3000/WS 3001+PROFILE偏移；普通 action 15s，SLOW_ACTION `/^(send_(group|private)|upload_|_send)/i` 90s（poke 不慢）；426 专门文案；WS 退避 3s→30s，代际防 401 风暴，401 候选 token 轮换 ≥5s，端口轮询 2s，selfInfo 15s/45s 双兜底。
-- 数据/协议层必须隔离平台词：transport provider 承担 QQ/OneBot，未来 NapCat 只换 provider；大图发本地 file URI，不能用 base64。
+### OneBot 连接
+- OneBot：WS 收事件、HTTP 发/查；HTTP 3000/WS 3001+PROFILE偏移；普通 action 15s，SLOW_ACTION `/^(send_(group|private)|upload_|_send)/i` 90s（poke 不慢）；426 专门文案；WS 退避 3s→30s，代际防 401 风暴，selfInfo 15s/45s 双兜底。
+- 数据/协议层必须隔离平台词：transport provider 承担 QQ/OneBot；大图发本地 file URI，不能用 base64。
 
 ### M5 安装/升级硬约束（初步）
 - appId `cn.kondius.qq-agent` 不变，`asar:false`，`nsis.deleteAppDataOnUninstall:false`；升级流程备份→卸旧→装新→还原，绝不碰安装目录 `data/` 与 `data/electron-user-data`。
-- QQ 便携版本锁 9.9.33.51802，SnowLuma 默认 v1.14.19；升级版本/二进制必须显式 SHA256。
 
 ## M4/M5 深水规格补充（m4-mcp-spec，2026-09-30）
 
@@ -94,9 +94,8 @@
 
 ### NSIS / version / 覆盖升级
 - appId `cn.kondius.qq-agent` 不变；data 与 electron-user-data 在安装目录，asar=false，卸载不删 data；覆盖顺序固定：停应用/释放锁→时间戳备份→备份失败立即中止→卸旧程序→装新→恢复/迁移 data→关键文件/installId 校验。
-- 必保 config/memory/stickers/reminders/messages/SnowLuma 登录态/telemetry installId；sessions 可弃；0.4 源只读；config 损坏先 `config.json.corrupt-<ts>` 再默认；Key 脱敏回传不能覆盖真值。
+- 必保 config/memory/stickers/reminders/messages/telemetry installId；sessions 可弃；0.4 源只读；config 损坏先 `config.json.corrupt-<ts>` 再默认；Key 脱敏回传不能覆盖真值。
 - version.json 固定 GET `https://kondius.cn/qq-agent/version.json`，8s 超时、三段 semver；成功 HTTP200 `{ok:true,current,latest,hasUpdate,url,notes}`，失败仍 HTTP200 `{ok:false,current,error}`；每小时一次，失败不阻断启动。
-- QQ 便携版本锁 9.9.33.51802/build 9.9.33-51802，SnowLuma 默认 v1.14.19，二进制必须显式 SHA256；安装器具体宏/备份命名/回滚字面未钉死，不应自行编造。
 
 ## M1 规格要点（SPEC §6 + §2.3，2026-09-30 精读）
 
@@ -201,10 +200,10 @@ waiting|running|done|noreply|error|aborted|discarded（干净消失 UI 不显示
 - 独立审计发现 R52 `inflateRawSync` 超限解压风险；已由 `0686b60` 修复为受限 raw inflate，并校验 local/central size、CRC、压缩条目边界；`test/38-m3-community-market-test.mjs` **27/27**，随后完整 M3 runner **22/22**、真实 Chromium **27/27**、headless smoke **12/12** 全部复验通过。
 
 ## M4 最终门禁（2026-10-01）
-- M4 runner 已独立子进程执行 **9/9 文件通过**：Electron shell、process adapters、SnowLuma lifecycle、active/memory、active-anchor production、MCP、compat、正式 loader assembly、permission ask；当前 HEAD 上 MCP 14、compat 11、loader 7、permission ask 专项均通过，模块类型 warning 仅来自临时 fixture。
+- M4 runner 已独立子进程执行 **9/9 文件通过**：Electron shell、process adapters、active/memory、active-anchor production、MCP、compat、正式 loader assembly、permission ask；当前 HEAD 上 MCP 14、compat 11、loader 7、permission ask 专项均通过，模块类型 warning 仅来自临时 fixture。
 - M3 防回归：`run-m3.mjs` 22/22 文件通过；headless smoke 12/12；使用 managed Node + bash `export NODE_PATH` + `PLAYWRIGHT_CHROMIUM_EXECUTABLE_PATH` 指向 Chromium 1228 后，当前提交真实 Chromium 27/27 通过。
 - 工作树已 clean。实现层已提交：`27fbb56`、`6ae7274`、`827cbd8`、`e81aa53`、`16b242d`、`c8994be`、`2a7f879`、`2875ef6`、`25ff14b`、`5fcf9ad`、`8550437`、`a6aec68`、`0b2c375`、`065c5d7`、`0ff7cff`、`2b077da`、`1ce8c3a`、`d23d747`、`aea0e7d`、`d23d747`、`e77351c`。权限 Ask timer race 后续固定提交为 `d23d747`，其 test45 fake-clock 竞态门与 M4 9/9 已复验。
-- 真实运行时仍 BLOCKED：虽已通过 `npm ci` 安装 Electron/electron-builder，且 package-lock 已同步（`f1ad06b`），仍未取得真实 SnowLuma、便携 QQ 与 Windows 托盘/注册表/双实例环境；未跑真实 MCP server；真实 captcha 网络/公网反代与权限 GUI 仍未验收。权限 ask 三态 broker/UI 已由 `2875ef6`、`7e1c4c2`、`2fbd330`、`5c5ff65`、`25ff14b`、`8550437`、`a6aec68` 实现并通过 test45/run-m4；其 once/always/deny、去重、超时/停机 fail-closed、审计 requestId 与 detail 脱敏仍以 mock/HTTP/SSE 级证据为主，真实 GUI 三按钮仍需 Windows runtime。
+- 真实运行时仍 BLOCKED：虽已通过 `npm ci` 安装 Electron/electron-builder，且 package-lock 已同步（`f1ad06b`），仍未取得真实 Windows 托盘/注册表/双实例环境；未跑真实 MCP server；真实 captcha 网络/公网反代与权限 GUI 仍未验收。权限 ask 三态 broker/UI 已由 `2875ef6`、`7e1c4c2`、`2fbd330`、`5c5ff65`、`25ff14b`、`8550437`、`a6aec68` 实现并通过 test45/run-m4；其 once/always/deny、去重、超时/停机 fail-closed、审计 requestId 与 detail 脱敏仍以 mock/HTTP/SSE 级证据为主，真实 GUI 三按钮仍需 Windows runtime。
 - 结论：M4 代码实现门通过，但真实运行时验收门未通过；M5 安装器/发布流程不应被本次 mock 结果伪装为已完成。
 
 ## 2026-10-06 Preview 完整功能交付启动审计
@@ -220,14 +219,13 @@ waiting|running|done|noreply|error|aborted|discarded（干净消失 UI 不显示
 
 ### 已确认的近期增量（需纳入完整审计）
 - 四档唤醒已按用户权威口径改为独立短路：1=仅@，2=@或关键词，3=@/关键词之外最多骰一次，4=有消息就回；拍一拍与@同级；测试已挂入 M1。
-- `sticker_note` 已删除；`collect_sticker` 计划写 QQ 侧 `add_custom_face -> modify_custom_face`，本地仅索引；`test/57` 覆盖失败不落幽灵索引。
 - 技能页新增用户插件删除、ZIP 安装、单插件热更新；热更新用 import namespace 绕 ESM 子模块缓存，指纹变化作废旧授权；这些端点/manifest/UI 仍需完整运行时验证。
 
 ### 初步疑点（仅作为待核实清单，不得当成最终结论）
 1. `memory.consolidate` 与 `media.transcribe` 是否仍无 provider；若无，F-031/F-101/F-102 不能宣称完整，仅能宣称 capability 缺口。
 2. proactive/active/anchor 的逻辑虽有源码与 M4 测试，需核对真实 tick、配置闸门、活跃期收尾和提示词前缀字节稳定性。
 3. F-160/F-161/F-167 的目录加载、热更新、删除与权限/iframe 代际是否形成完整用户链路，而不是端点各自存在。
-4. NSIS 已有构建产物，但 Electron GUI、SnowLuma、便携 QQ、Windows 托盘/注册表/双实例、真实升级仍需运行时证据。
+4. NSIS 已有构建产物，但 Electron GUI、Windows 托盘/注册表/双实例、真实升级仍需运行时证据。
 5. 规格中 F-170..F-175、F-220..F-223 等社区/反馈/遥测功能，需要核对当前是否真实可用、是否仅有适配器/503 stub。
 6. 规格书 §6.4 旧「累积生效」文字、其它历史笔记与近期用户权威口径可能存在冲突；实现和所有测试必须以用户 2026-10-06 定义为准。
 
@@ -242,11 +240,9 @@ waiting|running|done|noreply|error|aborted|discarded（干净消失 UI 不显示
 
 #### 运行时/交付审计（runtime-auditor）
 - P0：`src/kernel/kernel.js` 没有 production `memory.consolidate` provider；`memory-media-adapters` 会对手动/自动整理返回 503 `CAPABILITY_MISSING`。因此 F-101/F-102 仍不是完整可用功能。
-- P0：当前 package 打包配置只把项目源码/运行依赖打进安装包，`snowluma/` 与便携 QQ 资源不在仓库产物中；默认安装后的 SnowLuma/QQ 启停链路会报资源缺失。Preview 必须明确“外置依赖包”策略或把受许可的资源作为独立安装步骤/资源包。
-- P1：真实 Electron/托盘/注册表/双实例/真实 SnowLuma/OneBot/MCP server/权限 GUI 仍未形成真实 Windows 证据，mock/HTTP/SSE 绿灯不能替代。
+- P1：真实 Electron/托盘/注册表/双实例/OneBot/MCP server/权限 GUI 仍未形成真实 Windows 证据，mock/HTTP/SSE 绿灯不能替代。
 - P1：proactive/active/anchor 有单测与源码，但缺真实长跑证据；需要 deterministic clock + headless orchestration 验收。
 - P1：社区/反馈/遥测路由需逐条确认是真实外部闭环还是 503/adapter；规格要求不能把“可注入”算作默认可用。
-- 运行时实物证据（runtime-auditor）：`dist/win-unpacked/resources/app` 只有 assets/bundled/electron/src/ui/package.json，没有 `snowluma/` 或 runtime；根目录 `snowluma/` 约 97MB 含 node.exe，但 package.json build.files 未包含。安装后 SnowLuma adapter 默认路径与产物不一致，必须在 Preview 交付中明确外置/资源包策略，不能宣称默认安装即完整。
 
 ### SPEC 能力消费点审计回传（spec-auditor，2026-10-06）
 - `message.owner-check`：SPEC §7.5/§3 要 orchestrator 按 QQ 号从触发批识别主人并替换 persona/rules；当前 `orchestrator.js` ownerRules 为空，全文没有 `capability.providers('message.owner-check')` 消费点。
@@ -259,8 +255,7 @@ waiting|running|done|noreply|error|aborted|discarded（干净消失 UI 不显示
 1. ~~P0 能力接线：owner-check、media.download、reply.inline-calls、grounded-select/local-policy 的生产消费点。~~
    `message.owner-check` 已接入 orchestrator（缺省回退全局人设）；其余 media/reply 能力仍待补。
 2. ~~P0 记忆闭环：memory.consolidate 无 production provider。~~ 已在 `kernel.js` 注册 production provider，复用 `chatCompletionWithRetry`，adapter 负责只减不增安全校验；需补真实模型+异步事件测试。
-3. **P0 运行时交付**：Electron/NSIS 产物不含根目录 snowluma/ 与 runtime/qq-portable，默认安装不是功能完整 Preview。
-4. **P1 UI/进程**：sessions 空 body 兼容、SnowLuma launcher detached stop/端口假阳性、stale lock、插件/技能职责和事件刷新。
+4. **P1 UI/进程**：sessions 空 body 兼容、stale lock、插件/技能职责和事件刷新。
 5. **P1 后台循环**：media.download 生产消费、blocklist/price/telemetry/vision/plugin-watch/UI polling 等规格周期仍需逐项闭环。
 
 ### 2026-10-06 已完成的 P0 修复
@@ -289,7 +284,6 @@ waiting|running|done|noreply|error|aborted|discarded（干净消失 UI 不显示
 - loader fs.watch 已默认开启：bundled/plugins/skills 三根目录 500ms debounce、重入保护、停机关闭 watcher/timer；热更新仍走新 import namespace。
 - 价格源已接 kernel scheduler：启动拉取；成功24h、失败3h；emit price-update，stop 回收 timer。
 - sessions 面板 GET 空 body 已改为 `undefined + query`，并把断言加入 55 号 panel contract。
-- SnowLuma adapter：真实 fetch 注入时只把 HTML/JSON WebUI 响应判为外部运行，避免任意 TCP 占端口假阳性；无 fetch 注入的 fixture 仍 TCP fallback；launcher.bat detached 模式 stop 会继续按命令行发现真实 index.mjs node 进程。
 - kernel 单实例锁：遇 stale lock 会读取 pid，`process.kill(pid,0)` 确认不存活后回收并重试；活实例仍拒绝启动。
 - 所有回归保持全绿：M1 13/13、M2 8/8、M3 27/27、M4 10/10、smoke 12/12。
 
@@ -298,7 +292,6 @@ waiting|running|done|noreply|error|aborted|discarded（干净消失 UI 不显示
 - `send_image` note 不再只是 result 文案，而是作为文本+图片消息链发送；浏览锁改 URL hostname 精确匹配。
 - `memory` 面板正确处理印象对象 `{content,createdAt}`，显示整理状态与 202/503 结果。
 - `ui/shell/app.js` 轮询状态：启动立即 poll，按 config.ui.refreshMs（下限1000，默认15s）轮询 `/api/status` + `/api/config`，失败静默写入 state，防止 toast 刷屏。
-- 进程适配器：真实 fetch 注入时 SnowLuma 只有 HTML/JSON WebUI 特征才算 running；无 fetch 的 fixture 继续 TCP fallback；detached launcher stop 会继续 WMIC 查同目录 index.mjs。
 - lock：实例锁 EEXIST 时读 pid，用 `process.kill(pid,0)` 判断；死锁回收后重试，活锁明确拒绝。
 - 价格循环：kernel 启动即刷新，成功24h/失败3h scheduler，stop 回收。
 - media.download 核心消费点：消息文本命中 B站/抖音域名后 capability.claim，认领的 segments 统一走 SendQueue；无 provider 明确 no-provider。平台下载解析器仍需外部插件。
@@ -306,9 +299,6 @@ waiting|running|done|noreply|error|aborted|discarded（干净消失 UI 不显示
 
 ### 第三轮运行时/交付收口
 - kernel.start 使用 try/catch：启动任一步失败时 stop transport/loader/scheduler/http 并 releaseLock，避免残留死锁。
-- kernel.stop 现在调用 snowluma.stop（launcher wrapper/孤儿 node 清理）、snowluma.shutdown、qqPortable.stop；之前只 shutdown SnowLuma，便携 QQ 与 launcher 进程可能残留。
-- OneBot client 对 WS close code=1008 + invalid access token/unauthorized reason 走 tokenCandidates 轮换和 5s 限频，之前只处理 error 文案而漏掉 SnowLuma 的 safeClose(1008) 行为。
-- Preview build 策略：由于根 `snowluma/` 含真实配置 token，不能直接纳入 build.files；新增 verify-preview-build.mjs 检查源码必需资源与外部运行时，实测 dist app 源码齐全、snowluma/runtime 缺失时给明确 warning。默认安装仍需用户配置外置运行时，这是 M5 hard gate，不伪装成完整。
 
 ### 2026-10-06 下午设置与管理实现口径
 - 设置界面保留现有操作台色彩/布局，不另起前端框架；主配置改为分区字段+局部 patch，只读脱敏状态不回传整份配置。四档由唯一 contextSliderPos 派生，概率直接转滑条，不提交被后端忽略的派生字段。
@@ -322,9 +312,9 @@ waiting|running|done|noreply|error|aborted|discarded（干净消失 UI 不显示
 - M3 最新 28/28，M1 13/13，M2 8/8，M4 10/10，smoke 12/12。
 
 ### 当前阶段收口结论（2026-10-06 21:35）
-- 已实跑：M1 13/13、M2 8/8、M3 28/28、M4 10/10、headless smoke 12/12；verify-preview-build 对现有 dist 证实源码资源齐全，但 SnowLuma/QQ 外置运行时缺失。
+- 已实跑：M1 13/13、M2 8/8、M3 28/28、M4 10/10、headless smoke 12/12；verify-preview-build 对现有 dist 证实源码资源齐全，但 QQ 外置运行时缺失。
 - 已明确不凭空实现的外部能力：B站/抖音下载解析（media-download provider）、reply-rescue/grounded-select/local-policy、视频 frames、语音 transcribe、社区真实远端接口、Windows GUI/NSIS 升级真实验证。规格只定义接口/消费点，未给 provider 行为细节或发行许可资源；当前核心消费点已接线并在无 provider 时安全回退。
-- 已完成仓内可确定实现：owner-check consumer、memory.consolidate production provider、工具 DTO/T-25..T-29 多项、sticker_note 新语义、loader fs.watch、UI refreshMs poll、stale lock、启动失败释放锁、SnowLuma HTTP 特征探测/launcher stop、OneBot 1008 token rotation、price feed 24h/3h、global blocklist 5min、media.download claim+SendQueue。
+- 已完成仓内可确定实现：owner-check consumer、memory.consolidate production provider、工具 DTO/T-25..T-29 多项、sticker_note 新语义、loader fs.watch、UI refreshMs poll、stale lock、启动失败释放锁、price feed 24h/3h、global blocklist 5min、media.download claim+SendQueue。
 - 仍需专门阶段：settings 全量配置 UI/社区市场入口/意见金句/遥测、query/web/search vendor 方言逐家对齐、vision flush、reply safety 三能力、Windows runtime 与清洁发行资源包。
 
 ### 第五轮遥测/反馈收口
@@ -337,7 +327,6 @@ waiting|running|done|noreply|error|aborted|discarded（干净消失 UI 不显示
 - settings 用整份脱敏配置回传，status 轮询每次调用 load() 并清 dirty，会吞正在编辑的文本；须改为局部 patch 与保存版本控制，不在轮询中重建活表单。
 - 插件删除/热载端点拿 listEntries DTO 的 rootKind/dir，但 DTO 只有 root 且不含 dir；功能无法实际操作。安装端点未用 extractZipSafely 返回的临时目录，loadDir 入参顺序错误；目标已存在时 catch 会误删原目录。必须改为宿主 hostEntry 与事务落盘，默认不执行未经确认的新代码。
 - `?v=...&ns=...` 只改变入口 URL，不会自动传播到子模块；之前热更新已完成的说法不成立。以真实多层 helper 更新验证修复。
-- Kernel stop 改为无条件杀外置 QQ/SnowLuma 违背规格中“退出默认不杀用户 QQ”；需恢复仅停止本应用拥有的子进程，并补测试。
 - Kernel 同 pid 锁会被当 stale 清理；prices/blocklist/telemetry 在网络 await 后可能停机重排；telemetry-totals 只读首次缓存会冻结统计。均需以行为复查补齐，源码匹配测试不作为完成凭证。
 
 ### 第六轮 UI 收口
@@ -449,7 +438,7 @@ M1 14/14、M2 8/8、M3 33/33、M4 10/10、headless 12/12；`verify:preview` 仍�
   状态色用 is-* 类；布局用 head/toolbar/row/grid/card/list 组合。
 
 ### 各面板样式收敛为"纯增量"
-chats/sessions/memory/snowluma/usage 原本的 `body{...}` 全删，改为只放本页独有结构
+chats/sessions/memory/usage 原本的 `body{...}` 全删，改为只放本页独有结构
 （如 usage 新增 .bar-row/.bar-track/.bar-fill 图表类）；plugins 复用 skills；
 settings 去掉与common.css 重复的控件样式，仅保留 settings-nav/fields/secret 等专有排布。
 
@@ -730,4 +719,4 @@ M1 14/14、M2 8/8、M3 40/40、M4 10/10、smoke 12/12。
 M1 14/14、M2 8/8、M3 40/40、M4 10/10、smoke 12/12。
 
 
-用量页 0.4 交互迁移（2026-10-15T10:51:55.471Z，UTC）：已读取 develop 中的旧版实现，将五指标卡、可悬停/键盘查看的柱图、时间范围切换、按天/会话/模型的整宽表格、模型展开和工具/分组明细弹窗迁入 0.5 沙箱面板。保留主题继承与声明 API；运行次数和实际模型调用分别统计，同模型按渠道拆分，历史未记渠道的总量明确未分渠道，不能据此钻取其它渠道。增量刷新保持行节点、焦点和滚动，旧异步响应与新明细失败不显示前一范围数值。163、106、80及5份相关测试通过，164最终有头回归 exit0；新163/164纳入M3，本轮未重跑完整M3/M4。主合成QA备份142份静止数据后同步191份core源码并以原离线wrapper启动100528/15967；原空数据只读15987预览也已更新并实际点击复验，未种入模拟用量。主旧进程退出已观察，退出码和最终关闭者未知；预览被exec中断exit1，旧锁由生产内核正常识别恢复，未手工删锁。配置字节保持，静止复制时数据字节一致不代表运行后所有缓存/日账原字节均不变。详见[本轮证据](.qa-local/usage-v04-20261015/final-verification.json)。不提升真实QQ/SnowLuma、账号或外部模型验收结论，186项11/96/2/76/0/1保持；没有打包或远程部署。
+用量页 0.4 交互迁移（2026-10-15T10:51:55.471Z，UTC）：已读取 develop 中的旧版实现，将五指标卡、可悬停/键盘查看的柱图、时间范围切换、按天/会话/模型的整宽表格、模型展开和工具/分组明细弹窗迁入 0.5 沙箱面板。保留主题继承与声明 API；运行次数和实际模型调用分别统计，同模型按渠道拆分，历史未记渠道的总量明确未分渠道，不能据此钻取其它渠道。增量刷新保持行节点、焦点和滚动，旧异步响应与新明细失败不显示前一范围数值。163、106、80及5份相关测试通过，164最终有头回归 exit0；新163/164纳入M3，本轮未重跑完整M3/M4。主合成QA备份142份静止数据后同步191份core源码并以原离线wrapper启动100528/15967；原空数据只读15987预览也已更新并实际点击复验，未种入模拟用量。主旧进程退出已观察，退出码和最终关闭者未知；预览被exec中断exit1，旧锁由生产内核正常识别恢复，未手工删锁。配置字节保持，静止复制时数据字节一致不代表运行后所有缓存/日账原字节均不变。详见[本轮证据](.qa-local/usage-v04-20261015/final-verification.json)。不提升真实QQ、账号或外部模型验收结论，186项11/96/2/76/0/1保持；没有打包或远程部署。

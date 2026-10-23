@@ -20,7 +20,7 @@ export const PLACEHOLDER = {
 // D-4 兼容生死线）；DSH §6.1 的三段式 `<platform>:<kind>:<id>` 由 parseChatKey 兼容读取。
 // qq-agent 是 QQ 专用机器人（2026-10-04 决策：已删除「换平台」目标，qq-agent 定位为 QQ 专用）。
 // 三段式读取能力保留即可，不为跨平台服务——它在这里只是 0.4 存量数据的兼容兜底。
-// 换协议端（SnowLuma→NapCat 等 OneBot 实现互替）走 provider，差异在 provider 内消化。
+// 换协议端（不同 OneBot 实现互替）走 provider，差异在 provider 内消化。
 export function parseChatKey(chatKey) {
   const s = String(chatKey);
   const m3 = s.match(/^([a-z][a-z0-9_-]*):(group|private):(.+)$/i); // 三段式兼容

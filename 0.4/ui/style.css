@@ -654,8 +654,8 @@ tr.chat-del-selected td { background: var(--err-soft); box-shadow: inset 2px 0 0
 }
 #test-send-text:focus { border-color: var(--ac); box-shadow: 0 0 0 3px var(--ac-soft); }
 
-/* ══ 7. 全宽页（用量/技能/插件/SnowLuma） ══ */
-.usage-pane, .snowluma-pane, .fullpage {
+/* ══ 7. 全宽页（用量/技能/插件） ══ */
+.usage-pane, .fullpage {
   flex: 1; overflow-y: auto; overflow-x: hidden; padding: 20px 24px 40px;
   background: var(--bg0); min-width: 0; min-height: 0;
   overscroll-behavior: contain;
@@ -1688,59 +1688,6 @@ kbd {
 }
 .inp.mono, .inp.mono input { font-family: var(--font-mono); font-size: 12px; }
 
-/* SnowLuma 页：状态卡 / 分区 / 日志框 */
-.snowluma-page-card {
-  display: flex; flex-direction: column; gap: 14px;
-  max-width: 920px;
-  margin: 0 auto; /* 整列内容卡水平居中 */
-  width: 100%;
-}
-.snowluma-page-card h2 { font-size: 18px; margin: 0 0 2px; }
-.snowluma-qq-section {
-  background: var(--bg1); border: 1px solid var(--bd); border-radius: var(--r-md);
-  padding: 14px 16px; display: flex; flex-direction: column; gap: 8px;
-}
-.snowluma-state-row {
-  display: flex; align-items: center; gap: 10px; flex-wrap: wrap;
-  font-size: 13.5px; color: var(--tx2); line-height: 1.5;
-}
-.snowluma-state-row strong { color: var(--tx); font-weight: 650; }
-.snowluma-state-row .dot { flex-shrink: 0; }
-.snowluma-actions {
-  display: flex; align-items: center; gap: 8px; flex-wrap: wrap;
-  margin-top: 4px;
-}
-.snowluma-actions .btn { flex-shrink: 0; }
-.snowluma-logs-view {
-  background: var(--bg0); border: 1px solid var(--bd); border-radius: var(--r-md);
-  padding: 12px 14px; margin: 0;
-  font-family: var(--font-mono); font-size: 11.5px; line-height: 1.7;
-  color: var(--tx2); overflow: auto; max-height: 260px;
-  white-space: pre-wrap; word-break: break-all;
-}
-.sl-log-block { display: flex; flex-direction: column; gap: 6px; }
-.sl-log-head {
-  display: flex; align-items: center; gap: 10px; flex-wrap: wrap;
-  margin: 0; font-size: 12px; font-weight: 600; color: var(--tx3);
-}
-.sl-log-level {
-  margin-left: auto; display: flex; align-items: center; gap: 6px;
-}
-.sl-log-level select {
-  background: var(--bg2); border: 1px solid var(--bd); color: var(--tx);
-  border-radius: var(--r-xs); padding: 3px 8px; font-size: 12px;
-}
-.sl-app-logs { margin-top: 4px; }
-.sl-sep {
-  border: none; border-top: 1px solid var(--bd);
-  margin: 2px 0;
-}
-
-/* 快速启动区（SnowLuma） */
-.quick-start-section {
-  background: var(--bg1); border: 1px solid var(--bd); border-radius: var(--r-md);
-  padding: 16px; margin-bottom: 16px;
-}
 .skill-form .field { min-width: 0; margin: 0; }
 .skill-form .field--wide { grid-column: 1 / -1; }
 .page, .settings-section { max-width: 1020px; }

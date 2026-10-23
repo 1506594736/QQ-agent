@@ -6,7 +6,7 @@ import { fileURLToPath } from 'node:url';
 const root = path.resolve(process.argv[2] || path.join(path.dirname(fileURLToPath(import.meta.url)), '..'));
 const findings = [];
 let scanned = 0;
-const ignored = /^(?:\.git|node_modules|dist|\.qa-local|\.shots|\.extension-management-v1|data(?:[-.].*)?|snowluma)$/i;
+const ignored = /^(?:\.git|node_modules|dist|\.qa-local|\.shots|\.extension-management-v1|data(?:[-.].*)?)$/i;
 const textFile = /\.(?:[cm]?js|json|ya?ml|md|txt|html|css|svg|ps1|bat|cmd|toml|ini|env|pem|key)$/i;
 const patterns = [
   ['personal-home-path', /[A-Z]:[\\/]+Users[\\/]+([^\\/\s"'`<>]+)[\\/]+/gi, match => !/^(?:Public|Default|example|user|private|synthetic|test|a)$/i.test(match[1])],

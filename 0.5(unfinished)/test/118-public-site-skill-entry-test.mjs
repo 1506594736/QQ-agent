@@ -70,7 +70,7 @@ const kernel = createKernel({
   priceUpdates: { refresh: async () => ({ok:true}), updateCheck: async () => ({ok:true,current:'0.5.0',latest:'0.5.0',hasUpdate:false}) },
   communityMarket: { syncGlobalBlocklist: async () => ({ ok: true, ids: [] }), getBlocklist: () => ({ ok: true, ids: [] }), listAccounts: () => ({ ok: true, accounts: [] }), listCatalog: async ({kind}) => ({ok:true,kind,items:[],categories:{}}) },
 });
-kernel.config.update({ server: { port: 0, token }, telemetry: { enabled: false }, proactive: {enabled:false}, snowluma: {autoLaunch:false}, api: { apiKey: 'private-config-secret-118' } });
+kernel.config.update({ server: { port: 0, token }, telemetry: { enabled: false }, proactive: {enabled:false}, api: { apiKey: 'private-config-secret-118' } });
 kernel.loader.startWatchers = () => {};
 let browser;
 try {

@@ -218,7 +218,7 @@ function autoFoldSettings(root) {
       else if (/白名单|允许/.test(t)) { groupIcon = '✅'; }
       else if (/聊天|消息|发送|响应|触发|活跃/.test(t)) { groupIcon = '💬'; }
       else if (/桌面|启动|更新|数据/.test(t)) { groupIcon = '🖥'; }
-      else if (/OneBot|SnowLuma|连接/.test(t)) { groupIcon = '🔌'; }
+      else if (/OneBot|连接/.test(t)) { groupIcon = '🔌'; }
       else if (/工具|技能|插件/.test(t)) { groupIcon = '🧰'; }
       else if (/成本|价格|费用/.test(t)) { groupIcon = '💰'; }
       else if (/备选|降级|故障/.test(t)) { groupIcon = '🔄'; groupGray = true; }

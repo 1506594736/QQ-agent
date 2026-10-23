@@ -1,7 +1,7 @@
 // 覆盖测试 E：界面接线（真实 DOM）
 //
 // 用 jsdom 加载真实的 ui/index.html 并执行 ui/app.js，然后按**用户的真实操作路径**遍历：
-//   - 8 个页签（点 .tab[data-tab]）：会话/存档/记忆/用量/技能/插件/SnowLuma/设置
+//   - 8 个页签（点 .tab[data-tab]）：会话/存档/记忆/用量/技能/插件/OneBot/设置
 //     （技能与插件是**两个独立页签**：同构的渲染逻辑、不同的类型过滤，都要走一遍）
 //   - 8 个设置分区（点 .settings-menu-item[data-section]）
 //   - 若干主要弹窗（点开后再扫）
@@ -158,7 +158,7 @@ cov['首屏'] = scan('首屏');
 // ⚠️ 这份列表必须与 index.html 里的 .tab 保持一致 —— 漏掉一个页签，
 // 那一页的按钮就永远不会被接线检查覆盖（skills/plugins 曾经就是这样被漏掉的）。
 const visitedTabs = [];
-for (const t of ['sessions', 'chats', 'memory', 'usage', 'skills', 'plugins', 'snowluma', 'settings']) {
+for (const t of ['sessions', 'chats', 'memory', 'usage', 'skills', 'plugins', 'settings']) {
   const tabBtn = window.document.querySelector(`.tab[data-tab="${t}"]`);
   if (tabBtn) tabBtn.click(); else { try { window.switchTab(t); } catch { /* ignore */ } }
   await sleep(800);

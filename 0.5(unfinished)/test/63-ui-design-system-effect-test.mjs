@@ -28,7 +28,7 @@ const kernel = createKernel({
   communityMarket: { syncGlobalBlocklist: async () => ({ok:true,ids:[]}) },
 });
 kernel.loader.startWatchers = () => {};
-kernel.config.update({server:{port:0,token:'design63-synthetic'},telemetry:{enabled:false},proactive:{enabled:false},snowluma:{autoLaunch:false}});
+kernel.config.update({server:{port:0,token:'design63-synthetic'},telemetry:{enabled:false},proactive:{enabled:false},});
 let browser;
 try {
   const port = await kernel.start();

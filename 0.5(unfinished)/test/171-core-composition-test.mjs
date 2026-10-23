@@ -62,8 +62,7 @@ async function fixture(t, { components = {}, composition = null } = {}) {
     api: { model: 'composition-fixture', maxRounds: 3 },
     persona: { botName: 'fixture bot', roleText: 'fixture persona' },
     allowAllWhenEmpty: true, telemetry: { enabled: false }, proactive: { enabled: false },
-    memory: { consolidateEnabled: false }, snowluma: { autoLaunch: false },
-    send: { minGapMs: 0, maxGapMs: 0, byLengthMs: 0, dedupeWindowMs: 0 },
+    memory: { consolidateEnabled: false }, send: { minGapMs: 0, maxGapMs: 0, byLengthMs: 0, dedupeWindowMs: 0 },
     sessionRetryAttempts: 0,
   });
   t.after(async () => {

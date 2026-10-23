@@ -10,18 +10,17 @@
 ; 而覆盖安装的流程是「先跑旧版卸载器，再铺新文件」（installSection.nsh 先调 uninstallOldVersion）。
 ; 本项目的用户数据恰好就在 $INSTDIR 里面：
 ;     $INSTDIR\data                            ← 配置 / 记忆 / 聊天记录 / 表情包 / 遥测 ID
-;     $INSTDIR\resources\app\snowluma\config   ← SnowLuma 登录态 + OneBot 令牌
 ; 所以「覆盖升级」会把数据一起删掉。修法：在旧版卸载器跑之前先备份，装完再还原。
 ;
 ; 【完整流程】
 ;   1. 双击安装包 → .onInit 阶段（customInit）先查注册表「上次装到哪」
 ;   2. 查到了 → 先关掉正在运行的 QQ Agent（否则 data/logs 里的文件被占用复制不全），
-;      再把上面两个目录整体备份到 $LOCALAPPDATA\QQ Agent\upgrade-backup
+;      再把应用数据目录整体备份到 $LOCALAPPDATA\QQ Agent\upgrade-backup
 ;   3. 迁移页：自动检测到的展示「将直接覆盖升级，数据已备份」，也可手动指定别的旧版目录
 ;   4. 目录页会预填上次的安装路径（electron-builder 从注册表 ReadRegStr InstallLocation
 ;      赋值给 $INSTDIR），直接「下一步」就等于覆盖安装
 ;   5. 安装段：旧版卸载器先跑（把 $INSTDIR 整个删掉）→ 再铺新文件
-;   6. customInstall：把第 2 步的备份 robo 回 $INSTDIR → 数据零丢失，再把手动指定的目录并进来
+;   6. customInstall：把第 2 步的备份 robo 回 $INSTDIR ，再把手动指定的目录并进来
 ;
 ; 数据目录约定：应用根目录/data（见 electron/main.js resolveDataDir，exe 旁边）。
 ; asar 已关闭（开源式分发，文件平铺可改），程序文件在 resources/app/ 下。
@@ -39,9 +38,11 @@
 ;   ② 明确的递归语义（/E 含空目录）
 ;   ③ 退出码 0~7 都算成功，>7 才是真失败
 !macro ROBOTREE SRC DST
-  nsExec::ExecToLog '"$SYSDIR\robocopy.exe" "${SRC}" "${DST}" /E /R:0 /W:0 /NFL /NDL /NJH /NJS /NP'
+  nsExec::ExecToLog '"$SYSDIR\robocopy.exe" "${SRC}" "${DST}" /E /XJ /R:0 /W:0 /NFL /NDL /NJH /NJS /NP'
   Pop $R9
-  ${If} $R9 > 7
+  ${If} $R9 == "error"
+  ${OrIf} $R9 == "timeout"
+  ${OrIf} $R9 > 7
     DetailPrint "⚠ 复制失败（robocopy 返回 $R9）：${SRC}"
   ${EndIf}
 !macroend
@@ -52,7 +53,6 @@ Var OldDataDir        ; 用户手动指定的旧版目录（压缩包版迁移�
 Var DetectedDir       ; 注册表检测到的上次安装目录
 Var BackupDir         ; 升级备份落点
 Var BackupData        ; "1" = data/ 备份成功
-Var BackupLogin       ; "1" = SnowLuma 登录态备份成功
 
 Function OnOldDirChange
   ${NSD_GetText} $1 $OldDataDir
@@ -76,10 +76,10 @@ Function AskOldVersionPage
   ${EndIf}
 
   ${If} $DetectedDir != ""
-    ${NSD_CreateLabel} 0 0 100% 54u "检测到本机已安装 QQ Agent：$\r$\n$DetectedDir$\r$\n$\r$\n将直接覆盖升级。你的用户数据（配置 / 记忆 / 聊天记录 / 表情包 / 登录状态）已在安装前自动备份，装完会原样放回，不会丢失。$\r$\n$\r$\n如果还想从别的位置并入数据（例如压缩包版），可在下面指定；不需要就留空，直接点「下一步」。"
+    ${NSD_CreateLabel} 0 0 100% 54u "检测到本机已安装 QQ Agent：$\r$\n$DetectedDir$\r$\n$\r$\n将直接覆盖升级。你的用户数据（配置 / 记忆 / 聊天记录 / 表情包）已在安装前自动备份，装完会尝试恢复应用数据；备份保留在本地供核对。$\r$\n$\r$\n如果还想从别的位置并入数据（例如压缩包版），可在下面指定；不需要就留空，直接点「下一步」。"
     Pop $0
   ${Else}
-    ${NSD_CreateLabel} 0 0 100% 54u "如果你的电脑上已经有旧版本的 QQ Agent（比如压缩包版），在下面选择它所在的文件夹：$\r$\n$\r$\n安装完成后，会自动把旧版里的用户数据（配置 / 记忆 / 聊天记录 / 表情包 / 登录状态）迁移到新安装位置，无缝接管。$\r$\n$\r$\n没有旧版本的话，直接点「下一步」。"
+    ${NSD_CreateLabel} 0 0 100% 54u "如果你的电脑上已经有旧版本的 QQ Agent（比如压缩包版），在下面选择它所在的文件夹：$\r$\n$\r$\n安装完成后，会自动把旧版里的用户数据（配置 / 记忆 / 聊天记录 / 表情包）迁移到新安装位置。$\r$\n$\r$\n没有旧版本的话，直接点「下一步」。"
     Pop $0
   ${EndIf}
 
@@ -110,7 +110,6 @@ FunctionEnd
   StrCpy $DetectedDir ""
   StrCpy $BackupDir ""
   StrCpy $BackupData "0"
-  StrCpy $BackupLogin "0"
 
   ; 1) 找上次安装位置。
   ; ⚠️ electron-builder 写的键是 "Software\<APP_GUID>"（GUID 由 appId 哈希而来，
@@ -135,17 +134,45 @@ FunctionEnd
   ${If} $DetectedDir != ""
     StrCpy $BackupDir "$LOCALAPPDATA\QQ Agent\upgrade-backup"
 
+    ; 备份目录不可位于旧安装目录中，否则卸载会连备份一起删除。
+    StrLen $R0 "$DetectedDir\"
+    StrCpy $R1 "$BackupDir\" $R0
+    ${If} $R1 == "$DetectedDir\"
+      MessageBox MB_OK|MB_ICONSTOP "备份位置位于旧安装目录内，已停止升级。请先自行备份并迁移旧安装。"
+      Abort
+    ${EndIf}
+
     ; 先关掉正在运行的 QQ Agent。必须在复制之前做：
     ; 程序开着时 data\logs\*.log 是打开状态，不关就会复制不全
     nsExec::Exec '"$SYSDIR\taskkill.exe" /IM "QQ Agent.exe" /F /T'
     Pop $R9
     Sleep 600
 
+    ; 旧卸载器可能递归清理安装目录。先保存整个旧应用目录，
+    ; 包括用户自行放入的文件；不自动把这些旧程序文件恢复到新应用。
+    ${If} ${FileExists} "$DetectedDir\resources\app\*.*"
+      CreateDirectory "$BackupDir\previous-app"
+      !insertmacro ROBOTREE "$DetectedDir\resources\app" "$BackupDir\previous-app"
+      ${If} $R9 == "error"
+      ${OrIf} $R9 == "timeout"
+      ${OrIf} $R9 > 7
+        MessageBox MB_OK|MB_ICONSTOP "旧应用目录备份失败，已停止升级。请先自行备份原安装目录。"
+        Abort
+      ${EndIf}
+      DetailPrint "旧应用目录已保存在：$BackupDir\previous-app（不会自动加载）"
+    ${EndIf}
+
     ; ⚠️ 备份是否成功必须靠「目标目录里真的有东西」来判定，
     ;    不能假设 robocopy 一定成功 —— 否则失败时静默丢数据
     ${If} ${FileExists} "$DetectedDir\data\*.*"
       CreateDirectory "$BackupDir\data"
       !insertmacro ROBOTREE "$DetectedDir\data" "$BackupDir\data"
+      ${If} $R9 == "error"
+      ${OrIf} $R9 == "timeout"
+      ${OrIf} $R9 > 7
+        MessageBox MB_OK|MB_ICONSTOP "应用数据备份失败，已停止升级。请先自行备份原安装目录。"
+        Abort
+      ${EndIf}
       ${If} ${FileExists} "$BackupDir\data\*.*"
         StrCpy $BackupData "1"
         DetailPrint "已备份旧版用户数据：$DetectedDir\data → $BackupDir\data"
@@ -153,17 +180,10 @@ FunctionEnd
         ${IfNot} ${Silent}
           MessageBox MB_OK|MB_ICONSTOP "备份旧版用户数据失败：$\r$\n$DetectedDir\data$\r$\n$\r$\n继续安装可能丢失聊天记录与配置。建议先关掉 QQ Agent 再重试，或先把该文件夹手动复制出来。"
         ${EndIf}
+        Abort
       ${EndIf}
     ${EndIf}
 
-    ${If} ${FileExists} "$DetectedDir\resources\app\snowluma\config\*.*"
-      CreateDirectory "$BackupDir\snowluma-config"
-      !insertmacro ROBOTREE "$DetectedDir\resources\app\snowluma\config" "$BackupDir\snowluma-config"
-      ${If} ${FileExists} "$BackupDir\snowluma-config\*.*"
-        StrCpy $BackupLogin "1"
-        DetailPrint "已备份 SnowLuma 登录状态：→ $BackupDir\snowluma-config"
-      ${EndIf}
-    ${EndIf}
   ${EndIf}
 !macroend
 
@@ -173,27 +193,25 @@ FunctionEnd
   ${AndIf} ${FileExists} "$BackupDir\data\*.*"
     CreateDirectory "$INSTDIR\data"
     !insertmacro ROBOTREE "$BackupDir\data" "$INSTDIR\data"
+    ${If} $R9 == "error"
+    ${OrIf} $R9 == "timeout"
+    ${OrIf} $R9 > 7
+      MessageBox MB_OK|MB_ICONSTOP "应用数据恢复失败。备份仍在 $BackupDir\data，请核对后手动恢复。"
+      Abort
+    ${EndIf}
     DetailPrint "已还原用户数据：$BackupDir\data → $INSTDIR\data"
   ${EndIf}
-  ${If} $BackupLogin == "1"
-  ${AndIf} ${FileExists} "$BackupDir\snowluma-config\*.*"
-    CreateDirectory "$INSTDIR\resources\app\snowluma\config"
-    !insertmacro ROBOTREE "$BackupDir\snowluma-config" "$INSTDIR\resources\app\snowluma\config"
-    DetailPrint "已还原 SnowLuma 登录状态（免重新扫码）"
-  ${EndIf}
-
   ; ② 用户手动指定的旧版目录（压缩包用户）：显式选择优先，覆盖上面的还原
   ${If} $OldDataDir != ""
   ${AndIf} ${FileExists} "$OldDataDir\data\*.*"
     CreateDirectory "$INSTDIR\data"
     !insertmacro ROBOTREE "$OldDataDir\data" "$INSTDIR\data"
+    ${If} $R9 == "error"
+    ${OrIf} $R9 == "timeout"
+    ${OrIf} $R9 > 7
+      MessageBox MB_OK|MB_ICONSTOP "旧版本数据迁移失败。原目录未删除，请核对 $OldDataDir\data 后手动迁移。"
+      Abort
+    ${EndIf}
     DetailPrint "已迁移旧版本用户数据：$OldDataDir\data"
-  ${EndIf}
-  ; SnowLuma 登录态 + OneBot 令牌一并带走，免重新扫码
-  ${If} $OldDataDir != ""
-  ${AndIf} ${FileExists} "$OldDataDir\snowluma\config\*.*"
-    CreateDirectory "$INSTDIR\resources\app\snowluma\config"
-    !insertmacro ROBOTREE "$OldDataDir\snowluma\config" "$INSTDIR\resources\app\snowluma\config"
-    DetailPrint "已迁移 SnowLuma 登录状态"
   ${EndIf}
 !macroend

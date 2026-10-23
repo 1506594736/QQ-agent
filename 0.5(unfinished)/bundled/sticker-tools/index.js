@@ -1,12 +1,7 @@
 // sticker-tools：表情工具（SPEC §8 T-03/T-05/T-06/T-07 + send_sticker）。
 // 仅消费表情、存档、发送与媒体公共能力。
 //
-// ★ 2026-10-06 表情库归属改造：收藏走 **QQ 随账号收藏表情包**（协议端 add_custom_face +
-// modify_custom_face），备注直接写 QQ 侧——QQ 客户端里就能看到，本地只是索引。
-// 因此：
-//   · sticker_note 已删除（多余——备注在 collect_sticker 时一次写进 QQ 侧）。
-//   · collect_sticker 必须确认「写入 QQ 库成功 + 备注成功」才算成功；QQ 表情库有上限
-//     （通常 1000），超限时协议端拒绝 → 视为失败并回报上限话术，不写本地索引。
+// 默认读取本地表情库；远端账号收藏需要独立插件提供可选能力。
 export default {
   setup(ctx) {
     const K = {
@@ -19,8 +14,8 @@ export default {
     // list_stickers
     ctx.registerTool({
       id: 'list_stickers', name: '查表情库', category: 'sticker',
-      description: '查看我的表情库（收藏在 QQ 账号表情包里，备注在 QQ 侧可见）。',
-      params: { type: 'object', properties: { query: { type: 'string', description: '匹配 QQ 备注/本地笔记/标签' }, limit: { type: 'number', description: '条数（默认 24，最大 100）' } }, required: [] },
+      description: '查看本地表情库；安装相应能力插件时也可同步账号收藏。',
+      params: { type: 'object', properties: { query: { type: 'string', description: '匹配备注/本地笔记/标签' }, limit: { type: 'number', description: '条数（默认 24，最大 100）' } }, required: [] },
       scopes: [],
       execute: async (args, c) => {
         const sync = await K.stickers.syncFromQQ?.({ signal: c?.signal });
@@ -56,7 +51,8 @@ export default {
     // collect_sticker（收藏到 QQ 账号表情包 + 同时写备注）
     ctx.registerTool({
       id: 'collect_sticker', name: '收藏表情', category: 'sticker',
-      description: '把消息里的图片收藏进我的 QQ 表情包，并写一句备注（备注在 QQ 里可见）。QQ 表情包满了会失败。',
+      requires: ['qq.emoji-favorites'],
+      description: '通过已安装的账号收藏能力插件保存消息图片并写备注。需要 qq.emoji-favorites 能力；远端收藏上限或写入错误会导致失败。',
       params: {
         type: 'object',
         properties: {

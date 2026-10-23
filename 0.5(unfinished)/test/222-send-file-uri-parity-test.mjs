@@ -186,7 +186,7 @@ export default options => {
         priceUpdates: { resolve() { return null; }, refresh: async () => ({ ok: true, remote: false }) }, fetchImpl: globalThis.fetch,
       });
       try {
-        app.config.update({ telemetry: { enabled: false }, proactive: { enabled: false }, memory: { consolidateEnabled: false }, snowluma: { autoLaunch: false } });
+        app.config.update({ telemetry: { enabled: false }, proactive: { enabled: false }, memory: { consolidateEnabled: false }, });
         assert.deepEqual(app.loader.listEntries(), []);
         await app.services.start();
         assert.equal((await app.send.sendImage('group:222-composition', { file: 'FILE:///C:/synthetic.png' })).ok, true);

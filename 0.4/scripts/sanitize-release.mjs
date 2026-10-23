@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 /**
- * 发布脱敏：把当前项目恢复成"可以发给别人"的出厂状态。
+ * 发布前清理：清理本应用已知的配置凭据与使用痕迹。
  *
  * 用法：
  *   node scripts/sanitize-release.mjs --dry-run   # 只报告会清理什么，不改文件
@@ -8,12 +8,11 @@
  *   node scripts/sanitize-release.mjs --scan      # 只做敏感信息扫描
  *
  * 清理范围：
- *   1. API Key / 令牌（顶层 apiKey、dshProviderKeys、各搜索服务 Key、自定义搜索服务 Key、SnowLuma 令牌）
+ *   1. API Key / 令牌（顶层 apiKey、dshProviderKeys、各搜索服务 Key、自定义搜索服务 Key、OneBot 令牌）
  *   2. 使用痕迹（聊天存档、会话留档、记忆、今日用量、会员备注）
  *   3. 个人配置（模型选择、接口地址、白名单、人设角色卡）
- *   4. SnowLuma 登录态与日志、WebUI 密码
  *
- * ⚠️ 只动 data/ 下的运行时文件与配置，不碰源码。
+ * ⚠️ 仅清理本应用 data/ 与根目录 community.key，不清理外部程序账号目录。
  */
 import fs from 'node:fs';
 import path from 'node:path';
@@ -97,6 +96,20 @@ function resetConfig() {
     if (obj && key in obj && obj[key] !== val) { obj[key] = val; cleared.push(key); }
   };
 
+  // 按字段含义清理所有层级的凭据，包括已停用功能遗留的未知配置容器。
+  // 不用旧功能名定位，也不读取或改写任何外部程序的账号配置。
+  const wipeCredentials = (node) => {
+    if (!node || typeof node !== 'object') return;
+    for (const [key, value] of Object.entries(node)) {
+      if (typeof value === 'string' && /token|password|passwd|secret|cookie|api[_-]?key|private[_-]?key|^key$/i.test(key)) {
+        if (value) { node[key] = ''; cleared.push(key); }
+      } else if (value && typeof value === 'object') {
+        wipeCredentials(value);
+      }
+    }
+  };
+  wipeCredentials(cfg);
+
   // ── API 凭据 ──
   cfg.api = cfg.api || {};
   for (const k of ['apiKey', 'baseUrl', 'model', 'provider', 'priceRemoteUrl']) set(cfg.api, k, '');
@@ -130,10 +143,10 @@ function resetConfig() {
     }
   }
 
-  // ── SnowLuma 令牌 / 密码 ──
-  if (cfg.snowluma) {
-    for (const k of ['accessToken', 'httpAccessToken', 'webuiPassword', 'dir']) {
-      set(cfg.snowluma, k, '');
+  // ── OneBot 连接令牌 ──
+  if (cfg.onebot) {
+    for (const k of ['accessToken', 'httpAccessToken']) {
+      set(cfg.onebot, k, '');
     }
   }
 
@@ -188,10 +201,10 @@ function resetConfig() {
 
 /**
  * 全项目敏感信息扫描。
- * 只扫文本类源码与配置，跳过 node_modules / 二进制 / snowluma 第三方目录。
+ * 只扫文本类源码与配置，跳过 node_modules / 二进制。
  */
 function scanSecrets() {
-  const SKIP_DIR = new Set(['node_modules', '.git', 'snowluma', 'backups', '.trash', 'dist', 'out']);
+  const SKIP_DIR = new Set(['node_modules', '.git', 'backups', '.trash', 'dist', 'out']);
   // 测试文件里的假 key 是固定样例，不算泄露
   const SKIP_FILE = new Set([
     'test/selftest.mjs', 'test\\selftest.mjs',
@@ -210,7 +223,6 @@ function scanSecrets() {
     { name: 'Anthropic Key', re: /sk-ant-[A-Za-z0-9\-_]{20,}/g },
     { name: 'DeepSeek Key', re: /\bsk-[0-9a-f]{32}\b/gi },
     { name: '通用 API Key 赋值', re: /(?:api[_-]?key|apikey)\s*[:=]\s*['"][^'"]{16,}['"]/gi },
-    // 令牌/密钥类赋值：SnowLuma 的 accessToken、搜索服务的 key、自定义字段等
     { name: '令牌赋值', re: /(?:access[_-]?token|http[_-]?token|bearer|token|secret|password|passwd|private[_-]?key)\s*[:=]\s*['"][^'"]{12,}['"]/gi },
     // Authorization: Bearer xxx（日志/调试残留）
     { name: 'Bearer 头', re: /bearer\s+[A-Za-z0-9\-._~+/]{16,}/gi }
@@ -320,56 +332,6 @@ if (!SCAN_ONLY) {
     try { fs.rmSync(trashRoot, { recursive: true, force: true }); } catch { /* ignore */ }
   }
 
-  // SnowLuma 登录态 / 日志
-  const slDir = path.join(ROOT, 'snowluma');
-  // ⚠️ 真正带令牌的是 per-uin 的 onebot_<QQ号>.json：SnowLuma 给每个登录过的账号
-  //    生成一份且**永久保留**。原实现只清模板 onebot_0.json，等于把带 token 的
-  //    文件原样分发出去（拿到的人可以直接收发消息、读群）。
-  let slConfigFiles = [];
-  try {
-    slConfigFiles = fs.readdirSync(path.join(slDir, 'config'))
-      .filter((f) => /^onebot_\d+\.json$/.test(f))
-      .map((f) => `config/${f}`);
-  } catch { /* snowluma 目录不存在 */ }
-  for (const rel of [...slConfigFiles, 'config/onebot_0.json', 'config/consent.json', 'config/notifications.json']) {
-    const f = path.join(slDir, rel);
-    if (fs.existsSync(f)) {
-      // 只清里面的令牌字段，整体删除会让 SnowLuma 无法启动
-      try {
-        const j = JSON.parse(fs.readFileSync(f, 'utf8'));
-        let hit = false;
-        const wipe = (o) => {
-          if (!o || typeof o !== 'object') return;
-          for (const k of Object.keys(o)) {
-            if (/token|password|secret|key/i.test(k) && typeof o[k] === 'string' && o[k]) { o[k] = ''; hit = true; }
-            else if (o[k] && typeof o[k] === 'object') wipe(o[k]);
-          }
-        };
-        wipe(j);
-        if (hit) {
-          actions.push(`SnowLuma 令牌：清理 ${rel}`);
-          if (!DRY) {
-            const tmp = f + '.tmp';
-            fs.writeFileSync(tmp, JSON.stringify(j, null, 2), 'utf8');
-            fs.renameSync(tmp, f);
-          }
-        }
-      } catch { /* ignore */ }
-    }
-  }
-  // 日志目录
-  const logsDir = path.join(slDir, 'logs');
-  if (fs.existsSync(logsDir)) {
-    let n = 0;
-    try { n = fs.readdirSync(logsDir).length; } catch { /* ignore */ }
-    if (n) {
-      actions.push(`SnowLuma 日志：清理 ${n} 个文件`);
-      if (!DRY) {
-        try { fs.rmSync(logsDir, { recursive: true, force: true }); } catch { /* ignore */ }
-      }
-    }
-  }
-
   log('清理动作：');
   for (const a of actions) log('  •', a);
   log('');
@@ -452,4 +414,4 @@ if (!SCAN_ONLY && !DRY) {
     process.exit(1);
   }
 }
-log(DRY ? '演练结束。确认无误后去掉 --dry-run 再执行一次。' : '完成。现在可以压缩分享了（建议保留 node_modules，接收方无需 npm install）。');
+log(DRY ? '演练结束。确认无误后去掉 --dry-run 再执行一次。' : '本应用清理完成。分享前仍须检查扫描结果及未知数据；不要将外部程序、账号目录或备份加入分发副本。');

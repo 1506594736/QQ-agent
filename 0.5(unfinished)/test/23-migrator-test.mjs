@@ -40,7 +40,7 @@ function make04Source() {
   fs.writeFileSync(path.join(src, 'telemetry.json'), JSON.stringify({ installId: 'abc-123-uuid', createdAt: 1 }));
   fs.mkdirSync(path.join(src, 'sessions'), { recursive: true });
   fs.writeFileSync(path.join(src, 'sessions', 's1.json'), JSON.stringify({ id: 's1', status: 'done' }));
-  fs.mkdirSync(path.join(src, 'snowluma'), { recursive: true });
+  fs.mkdirSync(path.join(src, 'onebot'), { recursive: true });
   return src;
 }
 
@@ -121,10 +121,6 @@ section('sessions 可弃（不复制，只记录）');
 ok(!fs.existsSync(path.join(target, 'sessions')), 'sessions 不复制');
 ok(report.sections.sessions.note.includes('可弃'), '报告标注可弃');
 
-section('SnowLuma 登录态：只给指引不复制');
-ok(report.sections.snowlumaLogin.note.includes('snowluma'), '给指引文案');
-ok(!fs.existsSync(path.join(target, 'snowluma')), '不复制 snowluma 目录');
-
 section('只读源三断言（0.4 目录永不回写）');
 const after = snapshot(src);
 eq(Object.keys(after).length, Object.keys(before).length, '文件数不变');
@@ -174,11 +170,6 @@ eq(bad.sections.reminders.ok, false, '损坏提醒失败');
 ok(bad.errors.some((e) => e.section === 'config'), '汇总配置错误');
 ok(bad.errors.some((e) => e.section === 'reminders'), '汇总提醒错误');
 ok(!fs.existsSync(path.join(badTarget, 'reminders.json')), '不写假空提醒');
-
-section('登录态待人工确认，不伪报迁移成功');
-eq(report.sections.snowlumaLogin.ok, false, '未验证登录态不标成功');
-eq(report.sections.snowlumaLogin.status, 'manual', '明确手动步骤');
-eq(report.requiresAction, true, '总体标明需人工确认');
 
 section('dry-run 递归计数一致且目标完全不写入');
 const previewTarget = mktmp('qqa-preview-');

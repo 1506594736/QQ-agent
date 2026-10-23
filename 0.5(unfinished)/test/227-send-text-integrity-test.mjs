@@ -137,7 +137,7 @@ export function split(text){split.calls++;return splitText(text,3);};split.calls
         components:{'runtime.logger':options=>defaultComponents['runtime.logger']({...options,mirrorConsole:false})},
         transport:{id:'inert227',start(){starts++;},stop(){stops++;},actions:{},async send(chatKey,segments){const call={chatKey,segments:structuredClone(segments)};calls.push(call);if(calls.length===failAt)throw Error('227 controlled reminder chunk failure');successes.push(call);return{msgId:calls.length};}},
         priceUpdates:{refresh:async()=>({ok:true,remote:false}),resolve:()=>null},fetchImpl:globalThis.fetch});
-      app.config.update({telemetry:{enabled:false},proactive:{enabled:false},snowluma:{autoLaunch:false},memory:{consolidateEnabled:false},send:{hardSplitAt:4,minGapMs:200,maxGapMs:200,byLengthMs:1,dedupeWindowMs:0}});
+      app.config.update({telemetry:{enabled:false},proactive:{enabled:false},memory:{consolidateEnabled:false},send:{hardSplitAt:4,minGapMs:200,maxGapMs:200,byLengthMs:1,dedupeWindowMs:0}});
       await app.loader.loadAll();await app.services.start();assert.deepEqual(app.loader.listEntries().map(entry=>entry.id).sort(),['core-tools','system-tools']);assert.equal(app.httpServer.port,null);
       for(const key of['core.text.plain','core.text.split'])assert.equal(app.composition.owners[key],mode==='appended'?'text-integrity227':'defaults');
       const context={chatKey:'group:227-tools',senderId:'227',session:{id:'227',sent:[]},signal:new AbortController().signal};

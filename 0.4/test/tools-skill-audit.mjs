@@ -391,7 +391,7 @@ async function main() {
   console.log('\n=== 十四、孤儿能力（提供方有、消费方无）===');
   {
     // 消费方 = skills/ 与 plugins/ 之外的全部 JS（核心、脚本、electron）
-    const SKIP_DIRS = new Set(['node_modules', '.git', 'dist', 'dist.old', 'snowluma', 'data', 'data-2', 'runtime']);
+    const SKIP_DIRS = new Set(['node_modules', '.git', 'dist', 'dist.old', 'onebot', 'data', 'data-2', 'runtime']);
     const consumerFiles = [];
     (function walk(dir) {
       for (const e of fs.readdirSync(dir, { withFileTypes: true })) {

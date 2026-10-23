@@ -46,9 +46,6 @@ export function createRoutes(deps) {
     localVersion, compareSemver, UPDATE_INFO_URL,
     sanitizeConfig, keyEndpointAllowed, sanitizeProvider,
     readBody, authorize,
-    snowlumaDir, snowlumaWsPort, snowlumaWebuiUrl, snowlumaStatus, snowlumaLogs,
-    launchSnowluma, stopSnowluma,
-    qqPortableStatus, qqPortableLogs, launchPortableQQ, stopPortableQQ,
     visionScan,
     buildUsageStats, buildUsageBreakdown,
     reloadSkills
@@ -92,23 +89,11 @@ export function createRoutes(deps) {
         const usage = sessions.todayUsage(dayKey);
         const cfgNow = getConfig();
         const cost = estimateCost(usage, { model: cfgNow.api?.model });
-        // ┚ SnowLuma 运行判定用 WebUI 端口（进程即起即听）。
-        // WS 3001 要等账号登录后才监听，用它判"运行中"会把"起了但未登录"
-        // 误报成"未运行"（进而触发二次拉起 → 双实例管道冲突）。
-        const webuiPort = deps.snowlumaWebuiPort();
-        // 两个端口探测并行：串行时最坏 1.6s（各 800ms 超时），/api/status 每次都卡这么久
-        const [slRunning, obPortOpen] = await Promise.all([
-          deps.isPortOpen('127.0.0.1', webuiPort),
-          deps.isPortOpen('127.0.0.1', snowlumaWsPort())
-        ]);
-        // 诊断：把"连不上"拆成三种用户能看懂的原因（给 UI 就绪度体检用）。
-        let onebotDiagnosis = '';
-        if (!onebot.connected) {
-          if (!slRunning) onebotDiagnosis = 'SnowLuma 未运行：请到 SnowLuma 页签启动';
-          else if (!obPortOpen) onebotDiagnosis = 'SnowLuma 已运行但无账号登录：请在 QQ 里完成登录（登录后数秒内会自动连上）';
-          else if (String(onebot.lastConnectError || '').includes('401')) onebotDiagnosis = '访问令牌不匹配：正在自动轮换重试，若持续出现请在设置里核对 OneBot 令牌';
-          else onebotDiagnosis = onebot.lastConnectError ? `连接失败：${String(onebot.lastConnectError).slice(0, 120)}` : '连接中…';
-        }
+        const onebotDiagnosis = onebot.connected ? ''
+          : String(onebot.lastConnectError || '').includes('401')
+            ? '访问令牌不匹配：请在设置里核对 OneBot 令牌'
+            : onebot.lastConnectError ? `连接失败：${String(onebot.lastConnectError).slice(0, 120)}`
+              : '未连接：请自行启动协议端并核对 OneBot 地址与令牌';
         return json(res, 200, {
           onebot: {
             connected: onebot.connected,
@@ -117,13 +102,6 @@ export function createRoutes(deps) {
             diagnosis: onebotDiagnosis,
             self: onebot.selfInfo ? { userId: onebot.selfId, nickname: onebot.selfNickname } : null
           },
-          snowluma: {
-            dir: snowlumaDir(),
-            running: slRunning,
-            webuiUrl: snowlumaWebuiUrl(),
-            ...snowlumaStatus()
-          },
-          qqPortable: await qqPortableStatus(),
           orchestrator: orchestrator.statusSummary(),
           usage,
           cost,
@@ -235,84 +213,6 @@ export function createRoutes(deps) {
           current: resolveOfficialPrice(getConfig().api?.model || '')
         });
       }
-    },
-
-    // ── SnowLuma 进程管理 ────────────────────────────────────────────
-    {
-      method: 'POST', pattern: '/api/snowluma/launch',
-      handler: async ({ res, json }) => {
-        try {
-          const result = await launchSnowluma();
-          return json(res, result.ok ? 200 : 400, result);
-        } catch (error) {
-          return json(res, 500, { ok: false, error: String(error?.message ?? error) });
-        }
-      }
-    },
-    {
-      method: 'GET', pattern: '/api/snowluma/logs',
-      handler: async ({ res, json }) => json(res, 200, { logs: snowlumaLogs.slice(-200) })
-    },
-    {
-      method: 'POST', pattern: '/api/snowluma/stop',
-      handler: async ({ res, json }) => {
-        try {
-          const stopped = stopSnowluma();
-          return json(res, 200, { ok: true, stopped, embedded: snowlumaStatus().embedded, pid: snowlumaStatus().pid });
-        } catch (error) {
-          return json(res, 500, { ok: false, error: String(error?.message ?? error) });
-        }
-      }
-    },
-    {
-      method: 'POST', pattern: '/api/snowluma/open-folder',
-      handler: async ({ res, json }) => {
-        const dir = snowlumaDir();
-        if (!dir) return json(res, 400, { ok: false, error: '找不到 SnowLuma 目录' });
-        spawn('explorer.exe', [dir], { detached: true, stdio: 'ignore' }).unref();
-        return json(res, 200, { ok: true });
-      }
-    },
-    {
-      method: 'POST', pattern: '/api/snowluma/open-webui',
-      handler: async ({ res, json }) => {
-        const webuiUrl = snowlumaWebuiUrl();
-        if (!webuiUrl) return json(res, 400, { ok: false, error: '没有找到 SnowLuma WebUI 地址（等日志出现 listening 后再试）' });
-        spawn('cmd.exe', ['/c', 'start', '', webuiUrl], { detached: true, stdio: 'ignore' }).unref();
-        return json(res, 200, { ok: true, webuiUrl });
-      }
-    },
-
-    // ── 便携 QQ 进程管理 ─────────────────────────────────────────────
-    {
-      method: 'POST', pattern: '/api/qq-portable/launch',
-      handler: async ({ res, json }) => {
-        try {
-          const result = await launchPortableQQ();
-          return json(res, result.ok ? 200 : 400, result);
-        } catch (error) {
-          return json(res, 500, { ok: false, error: String(error?.message ?? error) });
-        }
-      }
-    },
-    {
-      method: 'POST', pattern: '/api/qq-portable/stop',
-      handler: async ({ res, json }) => {
-        try {
-          const result = await stopPortableQQ();
-          return json(res, result.ok ? 200 : 400, result);
-        } catch (error) {
-          return json(res, 500, { ok: false, error: String(error?.message ?? error) });
-        }
-      }
-    },
-    {
-      method: 'GET', pattern: '/api/qq-portable/logs',
-      handler: async ({ res, json }) => json(res, 200, { logs: qqPortableLogs.slice(-200) })
-    },
-    {
-      method: 'GET', pattern: '/api/qq-portable/status',
-      handler: async ({ res, json }) => json(res, 200, await qqPortableStatus())
     },
 
     // ── 体检 / 引导 ──────────────────────────────────────────────────
@@ -446,9 +346,9 @@ export function createRoutes(deps) {
       handler: async ({ req, res, json, url }) => {
         if (!keyEndpointAllowed(req)) return json(res, 403, { error: '请求来源不被信任，已拒绝读取明文密钥。' });
         const which = String(url.searchParams.get('which') || '');
-        const snow = getConfig().snowluma || {};
-        if (which === 'ws') return json(res, 200, { token: String(snow.accessToken || '') });
-        if (which === 'http') return json(res, 200, { token: String(snow.httpAccessToken || snow.accessToken || '') });
+        const connection = getConfig().onebot || {};
+        if (which === 'ws') return json(res, 200, { token: String(connection.accessToken || '') });
+        if (which === 'http') return json(res, 200, { token: String(connection.httpAccessToken || connection.accessToken || '') });
         return json(res, 400, { error: `未知令牌类型：${which}` });
       }
     },

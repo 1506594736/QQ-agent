@@ -124,25 +124,8 @@ function connectSSE() {
       loadMemoryView();
     }
   });
-  es.addEventListener('onebot-status', () => {
-    refreshStatus();
-    if (state.tab === 'snowluma') scheduleSnowlumaReload();
-  });
+  es.addEventListener('onebot-status', () => refreshStatus());
   es.addEventListener('status', () => refreshStatus());
-  es.addEventListener('snowluma-status', () => { refreshStatus(); if (state.tab === 'snowluma') scheduleSnowlumaReload(); });
-  es.addEventListener('qq-portable-status', () => { refreshStatus(); if (state.tab === 'snowluma') scheduleSnowlumaReload(); });
-  // 日志事件只刷日志文本，不整页重建（曾经每条日志都 innerHTML 重绘整页）
-  es.addEventListener('qq-portable-log', () => { if (state.tab === 'snowluma') refreshSnowlumaLogs(); });
-  es.addEventListener('snowluma-log', (ev) => {
-    let d = {};
-    try { d = JSON.parse(ev.data); } catch { /* 坏数据跳过本条，不断流 */ }
-    if (!appReady && d?.text) {
-      setLoadingStatus(d.text);
-    }
-    if (appReady && state.tab === 'snowluma') {
-      refreshSnowlumaLogs();
-    }
-  });
   es.addEventListener('feedback', (ev) => {
     let d = {};
     try { d = JSON.parse(ev.data); } catch { return; }
@@ -327,10 +310,6 @@ function startListPoller() {
     // 即便有缓存也要几百毫秒，后台一直跑是纯浪费。会话/存档等轻页签不受影响。
     const skipUsage = document.hidden;
     if (state.tab === 'sessions' || state.tab === 'chats') scheduleListReload();
-    if (state.tab === 'snowluma') {
-      refreshSnowlumaLogs();
-      scheduleSnowlumaReload();
-    }
     // 用量页不自动刷新：打开/切范围/点「刷新」才请求
     if (state.tab === 'settings') refreshStatus();
   }, refreshIntervalMs());

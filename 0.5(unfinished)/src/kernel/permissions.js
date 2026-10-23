@@ -19,7 +19,7 @@ const SCOPES = {
 };
 const BUNDLED_SCOPE_EXCEPTIONS = {
   'data.sessions.read': ['query-tools'],
-  'proc.exec': ['transport-onebot', 'media-service', 'mcp-bridge', 'qq-portable'],
+  'proc.exec': ['media-service', 'mcp-bridge'],
   'mcp.connect': ['mcp-bridge'],
 };
 

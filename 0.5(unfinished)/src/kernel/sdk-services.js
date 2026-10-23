@@ -61,7 +61,7 @@ export function sanitizeProviderArguments(name, args, ownConfig = {}) {
 }
 const CONFIG_BINDINGS = {
   'core-tools': ['allow', 'deny'], 'media-tools': ['security'], 'web-tools': ['webSearch', 'security'],
-  'transport-onebot': ['snowluma', 'onebot'], 'media-service': ['api', 'security', 'send', 'sticker'],
+  'transport-onebot': ['onebot'], 'media-service': ['api', 'security', 'send', 'sticker'],
   'memory-service': ['memory', 'memberNotes', 'api', 'providers', 'blocklist', 'globalBlocklist', 'communityExemptions'],
   community: ['globalBlocklist', 'communityExemptions'], telemetry: ['telemetry'],
 };

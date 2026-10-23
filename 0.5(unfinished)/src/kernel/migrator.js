@@ -1,10 +1,9 @@
 // migrator：0.4 data/ 导入器（D-4 六类只读导入，目标空 + detect 双闸）。
-// 必保：config.json、记忆、表情库、提醒、聊天记录及经路径/版本校验的 SnowLuma 登录配置。
+// 保留应用配置、记忆、表情库、提醒和聊天记录；外部协议端独立管理。
 // 登录配置独立复制到新运行时，不复用会回写旧安装的目录；未具备双侧版本证据则 manual。
 // 可弃：sessions/*.json（用量统计从迁移点起算）。0.4 目录只读，永不回写。
 import fs from 'node:fs';
 import path from 'node:path';
-import { planLoginMigration, copyPlannedLogin } from './login-migration.js';
 
 const OBSOLETE_KEYS = [
   ['api', 'stream'], ['api', 'priceRemoteUrl'], ['budget'], ['providersImported'],
@@ -128,17 +127,15 @@ export function detectMigrationSource(targetDataDir, explicitSource = null) {
   return { eligible: false, reason: '未发现 0.4 数据目录' };
 }
 
-export function migrateFrom04({ source, targetDataDir, appRoot = null, profile = 1, snowlumaDir = null, qqPortableDir = null, log = console, dryRun = false } = {}) {
+export function migrateFrom04({ source, targetDataDir, log = console, dryRun = false } = {}) {
   const report = { source, target: targetDataDir, at: new Date().toISOString(), sections: {}, errors: [], dryRun: !!dryRun };
   if (typeof source !== 'string' || !source.trim() || typeof targetDataDir !== 'string' || !targetDataDir.trim()) return { ...report, ok: false, requiresAction: true, eligible: false, sections: { preflight: { ok: false, requiresAction: true, status: 'blocked', note: '源或目标 data 路径无效' } } };
   const src = path.resolve(source);
   const target = path.resolve(targetDataDir);
-  const targetAppRoot = appRoot ? path.resolve(appRoot) : path.dirname(target);
   if (!sourceSafe(src, target) || !targetEmpty(target)) {
     return { ...report, ok: false, requiresAction: true, eligible: false, sections: { preflight: { ok: false, requiresAction: true, status: 'blocked', note: '源/目标路径不安全或目标 data 非空，未覆盖任何现有数据' } } };
   }
   if (!dryRun) fs.mkdirSync(targetDataDir, { recursive: true });
-  let loginPlan;
 
   // ① config.json（键迁移/废弃键剔除/派生标记丢弃/未知键忽略由 config.load 兜底）
   try {
@@ -146,8 +143,6 @@ export function migrateFrom04({ source, targetDataDir, appRoot = null, profile =
     if (raw && typeof raw === 'object' && !Array.isArray(raw)) {
       const cleaned = stripObsolete(stripKeys(raw));
       delete cleaned.$schema;
-      loginPlan = planLoginMigration({ sourceDataDir: src, targetDataDir: target, appRoot: targetAppRoot, legacyConfig: raw, profile, snowlumaDir, qqPortableDir });
-      cleaned.snowluma = { ...(cleaned.snowluma && typeof cleaned.snowluma === 'object' && !Array.isArray(cleaned.snowluma) ? cleaned.snowluma : {}), dir: loginPlan.configDir ?? '' };
       if (!dryRun) atomicWrite(path.join(targetDataDir, 'config.json'), cleaned);
       report.sections.config = { ok: true, note: `已导入（废弃键剔除，派生标记丢弃）` };
     } else {
@@ -203,13 +198,6 @@ export function migrateFrom04({ source, targetDataDir, appRoot = null, profile =
       report.sections.reminders = { ok: true, total: data?.reminders?.length ?? 0, pending: pending.length };
     } else report.sections.reminders = { ok: true, note: '无提醒' };
   } catch (err) { report.sections.reminders = { ok: false, note: String(err?.message) }; }
-
-  // ⑥ SnowLuma 登录配置：与旧安装器相同的 config 范围，先路径+版本校验再原子独立复制。
-  try {
-    report.sections.snowlumaLogin = loginPlan && report.sections.config.ok
-      ? copyPlannedLogin(loginPlan, { dryRun })
-      : { ok: false, status: 'manual', requiresAction: true, loginCopied: false, loginVerified: false, note: '配置未成功导入，snowluma 登录配置未复制' };
-  } catch (err) { report.sections.snowlumaLogin = { ok: false, note: String(err?.message) }; }
 
   // sessions/*.json 可弃（D-4）：只记录条数
   try {

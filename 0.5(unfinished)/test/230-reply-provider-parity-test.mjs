@@ -121,7 +121,7 @@ test('230 optional reply contracts and normal tool path',{timeout:45000},async t
         components:{'runtime.logger':options=>defaultComponents['runtime.logger']({...options,mirrorConsole:false})},
         transport:{id:'inert230',start(){},stop(){},actions:{},send:async(chatKey,segments)=>{physical.push({chatKey,segments:structuredClone(segments)});return{msgId:physical.length};}},
         priceUpdates:{refresh:async()=>({ok:true}),resolve:()=>null},fetchImpl:globalThis.fetch});
-      app.config.update({telemetry:{enabled:false},proactive:{enabled:false},snowluma:{autoLaunch:false},allowAllWhenEmpty:true,send:{dedupeWindowMs:0},api:{model:'synthetic230',maxRounds:2}});
+      app.config.update({telemetry:{enabled:false},proactive:{enabled:false},allowAllWhenEmpty:true,send:{dedupeWindowMs:0},api:{model:'synthetic230',maxRounds:2}});
       await app.loader.loadAll();await app.services.start();assert.deepEqual(app.loader.listEntries().map(entry=>entry.id).sort(),['core-tools','reply230']);assert.equal(app.httpServer.port,null);
       assert.equal(app.composition.owners['core.reply.rescue'],mode==='appended'?'reply230-layer':'defaults');
       const session=app.sessions.create('group:230'),controller=new AbortController(),context={chatKey:session.chatKey,session,senderId:'230',signal:controller.signal};
@@ -152,7 +152,7 @@ test('230 optional reply contracts and normal tool path',{timeout:45000},async t
         transport:{id:'inert-queue230',start(){},stop(){},actions:{},async send(chatKey,segments){physical.push({chatKey,segments:structuredClone(segments)});
           if(segments[0]?.text==='队列占位'){occupied.resolve();await gate.promise;}return{msgId:physical.length};}},
         priceUpdates:{refresh:async()=>({ok:true}),resolve:()=>null},fetchImpl:globalThis.fetch});
-      app.config.update({telemetry:{enabled:false},proactive:{enabled:false},snowluma:{autoLaunch:false},allowAllWhenEmpty:true,api:{model:'synthetic230',maxRounds:2}});
+      app.config.update({telemetry:{enabled:false},proactive:{enabled:false},allowAllWhenEmpty:true,api:{model:'synthetic230',maxRounds:2}});
       await app.loader.loadAll();await app.services.start();assert.deepEqual(app.loader.listEntries().map(entry=>entry.id).sort(),['core-tools','reply230']);assert.equal(app.httpServer.port,null);
       const bundle=()=>app.components['core.tools.bundle']({c:app.config.get()},{registry:app.registry,loader:app.loader});
       const invoke=(session,controller,callLLM,maxRounds=1)=>{const tools=bundle();return app.components['core.agentRunner']({session,systemPrompt:'synthetic',userPrompt:'synthetic',tools:tools.tools,

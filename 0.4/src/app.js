@@ -1,10 +1,8 @@
 // 总装：OneBot 事件接入 → 存储 → 编排器；HTTP API + SSE 给 UI。
 // Electron 主进程与 headless 服务器都从这里启动。
 import http from 'node:http';
-import net from 'node:net';
 import fs from 'node:fs';
 import path from 'node:path';
-import { spawn } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
 import { getConfig, updateConfig, ROOT, DATA_DIR } from './config.js';
 import { OneBotClient, segmentsToText, extractMediaFromSegments, expandForwardNodes } from './onebot.js';
@@ -130,453 +128,7 @@ export function createApp({ log = console.log } = {}) {
      时锁文件残留，下次启动要靠"PID 已死"探测才能清掉，多一层失败面。 */
   instanceLockModule.registerLockCleanup();
   const sseClients = new Set();
-
-  // ── SnowLuma 程序目录与进程管理 ──
-  function snowlumaDir() {
-    const configured = String(getConfig().snowluma?.dir || '').trim();
-    if (configured) return configured;
-    const bundled = path.join(ROOT, 'snowluma');
-    if (fs.existsSync(bundled)) return bundled;
-    // 安装版：asar 里的文件不可执行，electron-builder 会把 snowluma/ 解包到
-    // resources/app.asar.unpacked/snowluma（见 package.json asarUnpack）
-    const unpacked = bundled.replace('app.asar', 'app.asar.unpacked');
-    if (unpacked !== bundled && fs.existsSync(unpacked)) return unpacked;
-    return '';
-  }
-
-  function snowlumaWsPort() {
-    try {
-      const wsUrl = String(getConfig().snowluma?.wsUrl || 'ws://127.0.0.1:3001');
-      const u = new URL(wsUrl);
-      if (u.port) return Number(u.port);
-    } catch { /* ignore */ }
-    return 3001;
-  }
-
-  /** SnowLuma 的 WebUI 端口：进程一启动就监听，与是否登录无关。
-   * 用来判定「SnowLuma 进程活着」。 */
-  function snowlumaWebuiPort() {
-    try {
-      const dir = snowlumaDir();
-      if (dir) {
-        const rtPath = path.join(dir, 'config', 'runtime.json');
-        if (fs.existsSync(rtPath)) {
-          const rt = JSON.parse(fs.readFileSync(rtPath, 'utf8'));
-          if (Number(rt.webuiPort)) return Number(rt.webuiPort);
-        }
-      }
-    } catch { /* ignore */ }
-    return 5099;
-  }
-
-  /** 从 SnowLuma 的 runtime.json 读取 WebUI 地址（http(s)://host:port/）。拿不到就返回空串。 */
-  function snowlumaWebuiUrl() {
-    try {
-      const dir = snowlumaDir();
-      if (!dir) return '';
-      const rtPath = path.join(dir, 'config', 'runtime.json');
-      if (!fs.existsSync(rtPath)) return '';
-      const rt = JSON.parse(fs.readFileSync(rtPath, 'utf8'));
-      const host = String(rt.webuiHost || '127.0.0.1');
-      const port = Number(rt.webuiPort) || 5099;
-      const tls = !!(rt.webuiTls && rt.webuiTls.enabled);
-      return `${tls ? 'https' : 'http'}://${host}:${port}/`;
-    } catch {
-      // 配置读不到时，从最近日志里找 "listening http(s)://…" 兜底
-      for (const line of [...snowlumaLogs].reverse()) {
-        const m = /listening\s+(https?:\/\/[\w.:-]+)/i.exec(line.text || '');
-        if (m) return m[1];
-      }
-      return '';
-    }
-  }
-
-  function isPortOpen(host, port, timeoutMs = 800) {
-    return new Promise((resolve) => {
-      const socket = new net.Socket();
-      const done = (result) => { try { socket.destroy(); } catch { /* ignore */ } resolve(result); };
-      socket.setTimeout(timeoutMs);
-      socket.once('connect', () => done(true));
-      socket.once('timeout', () => done(false));
-      socket.once('error', () => done(false));
-      socket.connect(port, host);
-    });
-  }
-
-  // SnowLuma 内置控制台日志（环形缓冲，最近 500 行）
-  // 内置 SnowLuma 状态与日志。未采用多进程方案：由 Electron 主进程提供 IPC 控制与日志转发，
-  // 确保 SnowLuma 随 QQ Agent 退出、无需单独管理窗口。
-  const snowlumaLogs = [];
-  let snowlumaProc = null;
-  let snowlumaLaunching = false;   // SnowLuma 启动互斥标记（防连点「运行」按钮并发拉起多个）
-  let snowlumaStopping = false;
-  let pluginWatcher = null;        // 开发模式热重载 watcher（stop() 时要 close，否则句柄泄漏）
-  let obPortPollTimer = null;      // OneBot WS 端口就绪轮询（stop() 时要 clear，start() 里赋值）
-
-  function pushSnowlumaLog(text, stream = 'stdout') {
-    const line = { at: Date.now(), stream, text: String(text ?? '').replace(/\r?\n$/, '') };
-    if (!line.text) return;
-    snowlumaLogs.push(line);
-    if (snowlumaLogs.length > 500) snowlumaLogs.splice(0, snowlumaLogs.length - 500);
-    emit('snowluma-log', line);
-  }
-
-  function snowlumaStatus() {
-    return { embedded: !!snowlumaProc, pid: snowlumaProc?.pid ?? null };
-  }
-
-  /** 关闭 SnowLuma。内置拉起的直接 kill；外部启动的（launcher.bat / 手动 node）按
-   *  「命令行含 <snowluma目录>\index.mjs」匹配进程后 taskkill —— 否则 UI 的「停止」
-   *  对外启动实例毫无作用，用户只能去任务管理器，而残留实例会继续抢占管道与端口。
-   *  返回是否执行了关闭动作。 */
-  async function stopSnowluma() {
-    const proc = snowlumaProc;
-    if (proc) {
-      try {
-        proc.kill();
-        pushSnowlumaLog('已请求关闭 SnowLuma。', 'stdout');
-        return true;
-      } catch (error) {
-        pushSnowlumaLog(`关闭 SnowLuma 失败：${error?.message ?? error}`, 'stderr');
-        throw error;
-      }
-    }
-    // 外部启动的实例：通过 WMIC 查命令行匹配（只杀 SnowLuma 自己的 node，
-    // 决不按进程名乱杀）。WMIC 输出按 ANSI 代码页读会乱码（qqPortable 的教训），
-    // 这里只用纯 ASCII 匹配路径（snowluma 目录路径若含中文，Windows 上 WMIC
-    // 的 PUT 扩展拿不到命令行——返回未找到，UI 如实显示"未在运行"，安全降级）。
-    try {
-      const queryCmd = 'wmic process where "name=\'node.exe\'" get ProcessId,CommandLine /format:list';
-      const { exec } = await import('node:child_process');
-      const list = await new Promise((resolve) => {
-        exec(queryCmd, { windowsHide: true, timeout: 8000 }, (err, stdout) => resolve(err ? '' : String(stdout)));
-      });
-      const target = [];
-      const blocks = String(list || '').split(/\r?\n\s*\r?\n/);
-      const dirNorm = path.resolve(String(snowlumaDir() || '')).toLowerCase();
-      for (const b of blocks) {
-        const cmdM = /CommandLine=(.*)/i.exec(b);
-        const pidM = /ProcessId=(\d+)/i.exec(b);
-        if (!cmdM || !pidM) continue;
-        const cmdline = cmdM[1].trim();
-        if (!/index\.mjs/i.test(cmdline)) continue;
-        if (dirNorm && !cmdline.toLowerCase().includes(dirNorm)) continue;
-        target.push(Number(pidM[1]));
-      }
-      if (!target.length) return false;
-      for (const pid of target) {
-        try { process.kill(pid); } catch { /* 已退出 */ }
-      }
-      pushSnowlumaLog(`已请求关闭外部启动的 SnowLuma（pid=${target.join(',')}）。`, 'stdout');
-      snowlumaProc = null;
-      emit('snowluma-status', { running: false, embedded: false, pid: null });
-      return true;
-    } catch (error) {
-      pushSnowlumaLog(`关闭外部 SnowLuma 失败：${error?.message ?? error}`, 'stderr');
-      return false;
-    }
-  }
-
-  // ── 便携 QQ 进程管理 ──
-  // 便携 QQ 与用户日常 QQ 完全隔离：独立安装目录 + 独立 user-data-dir。
-  // 绝不 taskkill QQ.exe 全名——只杀路径匹配 runtime/qq-portable 的进程。
-  const qqPortableLogs = [];
-  let qqPortableProc = null;
-  let qqPortableLaunching = false;   // 便携 QQ 启动互斥标记（防连点「启动 QQ」并发拉起）
-
-  function qqPortableDir() {
-    return path.join(ROOT, 'runtime', 'qq-portable');
-  }
-
-  function qqPortableDataDir() {
-    return path.join(ROOT, 'runtime', 'qq-portable-data');
-  }
-
-  function qqPortableExe() {
-    return path.join(qqPortableDir(), 'QQ.exe');
-  }
-
-  function pushQqLog(text, stream = 'stdout') {
-    const line = { at: Date.now(), stream, text: String(text ?? '').replace(/\r?\n$/, '') };
-    if (!line.text) return;
-    qqPortableLogs.push(line);
-    if (qqPortableLogs.length > 500) qqPortableLogs.splice(0, qqPortableLogs.length - 500);
-    emit('qq-portable-log', line);
-  }
-
-  /** 检查便携 QQ 是否已安装 */
-  function qqPortableReady() {
-    return fs.existsSync(qqPortableExe());
-  }
-
-  /** 列出所有 QQ.exe 进程，返回 [{ pid, path }]（Windows only） */
-  /**
-   * 列出所有 QQ.exe 进程，返回 [{ pid, path }]（Windows only）。
-   *
-   * ── 这里踩过一个很隐蔽的坑，务必别再改回去 ──────────────────────────
-   * 原来首选 `wmic process ... /format:csv`。它有两个问题：
-   *
-   * 1. **编码**：wmic 按**系统 ANSI 代码页（中文系统是 GBK）**输出，
-   *    而 Node 按 UTF-8 读 —— 路径里的中文会变成乱码。
-   *    实测：`qq-agent - 副本` → `qq-agent - ????`。
-   *    于是拿乱码路径去和真实路径比，**永远比不上**，
-   *    表现就是"QQ 明明在跑，界面却说未启动"。
-   *    ⚠️ 纯英文路径下这个 bug 完全不暴露，所以特别难查。
-   * 2. **CSV**：路径里有逗号就会错位。
-   * 3. 而且 wmic 在 Win11 24H2+ 已被移除，本来也不能当主路径。
-   *
-   * 现在改用 PowerShell + **显式强制 UTF-8 输出** + JSON。
-   * ⚠️ 只写 PowerShell 是不够的：PS 5.1 默认同样按 ANSI 输出，
-   *    必须带上 `[Console]::OutputEncoding=[Text.Encoding]::UTF8`
-   *    （这行是实测对比出来的，去掉就又是乱码）。
-   * 用 JSON 而不是 CSV，顺带解决逗号错位。
-   */
-  async function listQqProcesses() {
-    if (process.platform !== 'win32') return [];
-    const { execFile } = await import('node:child_process');
-    const { promisify } = await import('node:util');
-    const execFileAsync = promisify(execFile);
-    try {
-      const { stdout } = await execFileAsync('powershell', [
-        '-NoProfile', '-NonInteractive', '-Command',
-        '[Console]::OutputEncoding=[Text.Encoding]::UTF8; '
-          + 'Get-CimInstance Win32_Process -Filter "name=\'QQ.exe\'" | '
-          + 'Select-Object ProcessId,ExecutablePath | ConvertTo-Json -Compress'
-      ], { timeout: 20000, windowsHide: true, maxBuffer: 4 * 1024 * 1024 });
-      const txt = String(stdout).trim();
-      if (!txt) return [];
-      const data = JSON.parse(txt);
-      const arr = Array.isArray(data) ? data : [data];
-      return arr
-        .map((p) => ({ pid: Number(p.ProcessId), path: String(p.ExecutablePath ?? '') }))
-        .filter((p) => p.pid > 0);
-    } catch {
-      // 查不到就当没有。**不要**在这里退回 wmic —— 它给的乱码路径会导致
-      // "误判为别的 QQ"或"漏判本机的便携 QQ"，比返回空更糟。
-      return [];
-    }
-  }
-
-  /** 检查便携 QQ 是否在运行（按路径匹配，不碰用户 QQ） */
-  // 进程查询（PowerShell Get-CimInstance）可达数秒；SnowLuma 页/SSE/轮询会反复打
-  // /api/status，每次都查一遍会把整页拖死。结果缓存 3 秒。
-  let qqPidCache = { at: 0, pid: undefined };
-  async function qqPortableRunningPid() {
-    // 1) 本进程拉起过的那个：spawn 时就拿到 pid 了，不用查系统 ——
-    //    最快，也不受任何编码/权限问题影响。
-    if (qqPortableProc && !qqPortableProc.killed) {
-      try {
-        process.kill(qqPortableProc.pid, 0);   // signal 0 = 只探测存活
-        qqPidCache = { at: Date.now(), pid: qqPortableProc.pid };
-        return qqPortableProc.pid;
-      } catch { /* 已退出，往下走 */ }
-    }
-    // 缓存：3 秒内复用上次结果（启动/关闭后靠 SSE 状态事件立即刷新）
-    if (qqPidCache.pid !== undefined && Date.now() - qqPidCache.at < 3000) {
-      return qqPidCache.pid;
-    }
-    // 2) 查系统：覆盖"上次启动的 QQ 还在跑，但应用重启过"的情况
-    const portableDir = qqPortableDir().toLowerCase();
-    const procs = await listQqProcesses();
-    const match = procs.find((p) => p.path.toLowerCase().startsWith(portableDir));
-    const pid = match?.pid ?? null;
-    qqPidCache = { at: Date.now(), pid };
-    return pid;
-  }
-
-  /** 启动便携 QQ（如已在运行则跳过） */
-  async function launchPortableQQ() {
-    if (!qqPortableReady()) {
-      return { ok: false, error: '便携 QQ 未安装：请先运行 npm run setup' };
-    }
-    // 启动互斥：连点「启动 QQ」时，第一次还在 spawn，第二次直接拒绝
-    if (qqPortableLaunching) {
-      pushQqLog('便携 QQ 正在启动中，忽略重复的启动请求');
-      return { ok: true, alreadyRunning: true, launching: true };
-    }
-    const existingPid = await qqPortableRunningPid();
-    if (existingPid) {
-      pushQqLog(`便携 QQ 已在运行（pid=${existingPid}），无需重复启动`);
-      return { ok: true, alreadyRunning: true, pid: existingPid };
-    }
-
-    qqPortableLaunching = true;
-    try {
-      const exe = qqPortableExe();
-      const dataDir = qqPortableDataDir();
-      fs.mkdirSync(dataDir, { recursive: true });
-
-      try {
-        const child = spawn(exe, [`--user-data-dir=${dataDir}`], {
-          cwd: qqPortableDir(),
-          stdio: ['ignore', 'pipe', 'pipe'],
-          windowsHide: false, // QQ 需要显示窗口让用户扫码
-          detached: true
-        });
-        qqPortableProc = child;
-        child.unref();
-        pushQqLog(`便携 QQ 启动中（pid=${child.pid}），数据目录：${dataDir}`);
-        child.stdout?.on('data', (d) => {
-          for (const line of String(d).split(/\r?\n/)) {
-            if (line.trim()) pushQqLog(line, 'stdout');
-          }
-        });
-        child.stderr?.on('data', (d) => {
-          for (const line of String(d).split(/\r?\n/)) {
-            if (line.trim()) pushQqLog(line, 'stderr');
-          }
-        });
-        child.on('exit', (code, signal) => {
-          qqPortableProc = null;
-          pushQqLog(`便携 QQ 进程已退出（code=${code ?? ''} signal=${signal ?? ''}）`, 'stderr');
-          emit('qq-portable-status', { running: false, pid: null });
-        });
-        child.on('error', (error) => {
-          pushQqLog(`便携 QQ 启动失败：${error?.message ?? error}`, 'stderr');
-        });
-        emit('qq-portable-status', { running: true, pid: child.pid });
-        return { ok: true, launched: true, pid: child.pid };
-      } catch (error) {
-        pushQqLog(`便携 QQ 启动失败：${error?.message ?? error}`, 'stderr');
-        return { ok: false, error: String(error?.message ?? error) };
-      }
-    } finally {
-      qqPortableLaunching = false;
-    }
-  }
-
-  /** 关闭便携 QQ（只杀路径匹配的 PID，绝不碰用户 QQ） */
-  async function stopPortableQQ() {
-    const pid = await qqPortableRunningPid();
-    if (!pid) {
-      pushQqLog('便携 QQ 未在运行');
-      return { ok: true, stopped: false, reason: 'not_running' };
-    }
-    try {
-      process.kill(pid, 'SIGTERM');
-      pushQqLog(`已请求关闭便携 QQ（pid=${pid}）`);
-      // 等待进程退出
-      for (let i = 0; i < 10; i++) {
-        await new Promise((r) => setTimeout(r, 500));
-        const still = await qqPortableRunningPid();
-        if (!still) {
-          pushQqLog('便携 QQ 已退出');
-          emit('qq-portable-status', { running: false, pid: null });
-          return { ok: true, stopped: true, pid };
-        }
-      }
-      // 还没退，强制 kill
-      process.kill(pid, 'SIGKILL');
-      pushQqLog(`便携 QQ 已强制结束（pid=${pid}）`);
-      emit('qq-portable-status', { running: false, pid: null });
-      return { ok: true, stopped: true, pid, forced: true };
-    } catch (error) {
-      pushQqLog(`关闭便携 QQ 失败：${error?.message ?? error}`, 'stderr');
-      return { ok: false, error: String(error?.message ?? error) };
-    }
-  }
-
-  /** 便携 QQ 状态摘要 */
-  async function qqPortableStatus() {
-    const pid = await qqPortableRunningPid();
-    return {
-      ready: qqPortableReady(),
-      running: pid !== null,
-      pid,
-      dir: qqPortableDir(),
-      dataDir: qqPortableDataDir()
-    };
-  }
-
-  /** 拉起 SnowLuma。优先用项目内置 node.exe 直接运行（日志进内置控制台）；失败再回退到独立窗口 launcher.bat。 */
-  async function launchSnowluma() {
-    const dir = snowlumaDir();
-    if (!dir) return { ok: false, error: '找不到 SnowLuma 目录：请确认项目内 snowluma/ 文件夹存在，或在设置里填写 SnowLuma 目录' };
-    // ⚠️ 端口探测必须用 WebUI 端口（2026-09-19）：WS 3001 是 OneBot 实例开的，
-    // OneBot 实例只有**账号登录后**才创建 —— "SnowLuma 起了但还没登录"是常态
-    // （用户先启动 QQ Agent，再扫码）。用 3001 判"运行中"会把正常状态误判成
-    // "未运行"，于是又拉起第二个 SnowLuma 实例 → 两个进程抢 mojo 管道与端口，
-    // 用户看到的是"管道异常/连接不上/时好时坏"这类无法自圆其说的现象。
-    // WebUI 端口进程一启动就监听，与登录无关，才是"进程活着"的准确信号。
-    const probePort = snowlumaWebuiPort();
-
-    // ── 启动互斥（防多次点击「运行 SnowLuma」端口冲突 / 多实例）──
-    // 三道防线，按成本从低到高：
-    //   1. 本进程正在启动中（用户连点按钮）→ 直接拒绝
-    //   2. 本进程已拉起过 SnowLuma（snowlumaProc 活着）→ 已在运行
-    //   3. 端口已被任何进程占用（包括上次残留 / 别的实例）→ 已在运行
-    if (snowlumaLaunching) {
-      pushSnowlumaLog('SnowLuma 正在启动中，忽略重复的启动请求', 'stdout');
-      return { ok: true, alreadyRunning: true, launching: true };
-    }
-    if (snowlumaProc && !snowlumaProc.killed) {
-      pushSnowlumaLog(`SnowLuma 已由本实例拉起（pid=${snowlumaProc.pid}），无需重复启动`, 'stdout');
-      return { ok: true, alreadyRunning: true, pid: snowlumaProc.pid };
-    }
-    if (await isPortOpen('127.0.0.1', probePort)) {
-      pushSnowlumaLog(`SnowLuma 已在运行（WebUI 端口 ${probePort} 已就绪），无需重复启动`, 'stdout');
-      return { ok: true, alreadyRunning: true };
-    }
-
-    snowlumaLaunching = true;
-    try {
-      const indexMjs = path.join(dir, 'index.mjs');
-      const nodeExe = path.join(dir, 'node.exe');
-      if (fs.existsSync(indexMjs) && fs.existsSync(nodeExe)) {
-        try {
-          // 用 Windows 的 CREATE_NEW_PROCESS_GROUP + 独立进程方式启动，
-          // 让 SnowLuma 真正独立于 Electron 主进程（Electron 退出时不会拖垮它）。
-          const child = spawn(nodeExe, [indexMjs], {
-            cwd: dir,
-            stdio: ['ignore', 'pipe', 'pipe'],
-            windowsHide: true,
-            detached: false
-          });
-          snowlumaProc = child;
-          child.unref();
-          pushSnowlumaLog(`SnowLuma 启动中（内置模式，pid=${child.pid}）…`, 'stdout');
-          child.stdout.on('data', (d) => {
-            for (const line of String(d).split(/\r?\n/)) {
-              if (line.trim()) pushSnowlumaLog(line, 'stdout');
-            }
-          });
-          child.stderr.on('data', (d) => {
-            for (const line of String(d).split(/\r?\n/)) {
-              if (line.trim()) pushSnowlumaLog(line, 'stderr');
-            }
-          });
-          child.on('exit', (code, signal) => {
-            snowlumaProc = null;
-            pushSnowlumaLog(`SnowLuma 进程已退出（code=${code ?? ''} signal=${signal ?? ''}）`, 'stderr');
-            emit('snowluma-status', { running: false, embedded: false, pid: null });
-          });
-          child.on('error', (error) => {
-            pushSnowlumaLog(`SnowLuma 启动失败：${error?.message ?? error}`, 'stderr');
-          });
-          emit('snowluma-status', { running: true, embedded: true, pid: child.pid });
-          return { ok: true, launched: true, embedded: true, pid: child.pid };
-        } catch (error) {
-          pushSnowlumaLog(`内置模式启动失败，尝试回退独立窗口：${error?.message ?? error}`, 'stderr');
-          snowlumaProc = null;
-        }
-      }
-      // 回退：launcher.bat 独立控制台窗口（老行为，日志无法内置）
-      const launcher = path.join(dir, 'launcher.bat');
-      if (!fs.existsSync(launcher)) return { ok: false, error: `目录里没有 index.mjs / node.exe，也没有 launcher.bat：${dir}` };
-      const child = spawn('cmd.exe', ['/c', launcher], {
-        cwd: dir,
-        detached: true,
-        stdio: 'ignore',
-        windowsHide: false // 保留 SnowLuma 自己的控制台窗口
-      });
-      child.unref();
-      pushSnowlumaLog('SnowLuma 已用独立控制台窗口启动（此模式下日志不进内置控制台）', 'stdout');
-      return { ok: true, launched: true, embedded: false };
-    } finally {
-      // 启动动作结束后释放互斥标记（端口就绪与否由上面的端口探测兜底）
-      snowlumaLaunching = false;
-    }
-  }
+  let pluginWatcher = null; // 扩展热重载资源随应用停止而释放。
 
   const emit = (type, payload) => {
     // 说明：这里曾经先走一个进程内事件总线（createEventBus），但全项目**没有任何订阅者**，
@@ -631,10 +183,10 @@ export function createApp({ log = console.log } = {}) {
   const memory = new MemoryStore();
   const sessions = new SessionRegistry(cfg.store?.keepSessionFiles ?? 0);   // 0 = 不限
   const onebot = new OneBotClient({
-    wsUrl: cfg.snowluma?.wsUrl,
-    httpUrl: cfg.snowluma?.httpUrl,
-    accessToken: cfg.snowluma?.accessToken,
-    httpToken: cfg.snowluma?.httpAccessToken || cfg.snowluma?.accessToken,
+    wsUrl: cfg.onebot?.wsUrl,
+    httpUrl: cfg.onebot?.httpUrl,
+    accessToken: cfg.onebot?.accessToken,
+    httpToken: cfg.onebot?.httpAccessToken || cfg.onebot?.accessToken,
     onEvent: (event) => handleOneBotEvent(event).catch((error) => log('[ingest] 处理事件出错:', error?.message ?? error))
   });
   const stickers = new StickerManager(onebot);
@@ -656,135 +208,6 @@ export function createApp({ log = console.log } = {}) {
 
   // OneBot 连接状态推送
   onebot.onStatus((status) => emit('onebot-status', status));
-
-  // ── 从 SnowLuma 配置自动同步 OneBot 令牌 ──
-  // SnowLuma 给每个登录过的账号生成独立随机 token（config/onebot_<uin>.json），
-  // 且**永久保留**——不表示"当前在线"。多账号场景下"取第一个文件"会拿错 token
-  // （WS 401 无限重试）。策略改为：收集所有 per-uin 文件的 token 作为候选，
-  // 401 时轮换下一个重连，连上后记住生效的那个（天然支持 SnowLuma 里切账号）。
-  let lastSyncTokenSig = '';
-
-  /** 从单个配置对象里提取 ws/http token（找不到网络段时返回 null）。 */
-  function extractTokens(data) {
-    const http = (data?.networks?.httpServers || []).find((s) => (s.port === 3000) || (s.name === 'http-default')) || (data?.networks?.httpServers || [])[0];
-    const ws = (data?.networks?.wsServers || []).find((s) => (s.port === 3001) || (s.name === 'ws-default')) || (data?.networks?.wsServers || [])[0];
-    return { wsToken: String(ws?.accessToken ?? ''), httpToken: String(http?.accessToken ?? '') };
-  }
-
-  /** 收集所有候选 token（含 onebot_0.json 的空令牌兜底），按"最可能正确"排序。
-   *
-   * ⚠️ 排序规则（2026-09-19 修订）：以前按文件名排序，多账号时 candidates[0]
-   * 几乎总是错的（账号A的QQ号 < 账号B的QQ号，但在线的是后者），每次启动都要
-   * 先吃一轮 401 再轮换到正确令牌。现在排序：
-   *   1. 当前配置里已保存的 token（上次连成功过的，最可信）
-   *   2. 文件序的其余候选
-   *   3. 空令牌兜底（SnowLuma 允许无 token 连接，永远排最后）
-   * 去重保持首次出现的顺序。
-   */
-  function readSnowlumaTokenCandidates() {
-    const out = [];
-    const seen = new Set();
-    const push = (c) => {
-      const key = `${c.wsToken}|${c.httpToken}`;
-      if (seen.has(key)) return;
-      seen.add(key);
-      out.push(c);
-    };
-    try {
-      const dir = snowlumaDir();
-      if (!dir) return out;
-      const cfgDir = path.join(dir, 'config');
-      // 当前配置的令牌优先：上次连接成功时 applyTokens 已把它写进 data/config.json。
-      const cur = getConfig().snowluma || {};
-      const curWs = String(cur.accessToken || '');
-      const curHttp = String(cur.httpAccessToken || cur.accessToken || '');
-      if (curWs || curHttp) push({ wsToken: curWs, httpToken: curHttp });
-      let files = [];
-      try {
-        files = fs.readdirSync(cfgDir).filter((f) => /^onebot_\d+\.json$/.test(f) && !/^onebot_0\.json$/.test(f)).sort();
-      } catch { /* ignore */ }
-      for (const f of files) {
-        try {
-          const data = JSON.parse(fs.readFileSync(path.join(cfgDir, f), 'utf8'));
-          push(extractTokens(data));
-        } catch { /* 单个文件坏了跳过，不影响其他候选 */ }
-      }
-      // 空令牌兜底：SnowLuma 允许无 token 连接（onebot_0.json 模板就是空）
-      push({ wsToken: '', httpToken: '' });
-    } catch (error) {
-      log('[onebot] 读取 SnowLuma OneBot 配置失败:', error?.message ?? error);
-    }
-    return out;
-  }
-
-  /** 候选游标：401 时递增轮换。连上后会钉住当前生效下标。 */
-  let tokenCandidateIndex = 0;
-
-  function applyTokens({ wsToken, httpToken }) {
-    onebot.accessToken = wsToken;
-    onebot.httpToken = httpToken || wsToken;
-    const cur = getConfig();
-    if (cur.snowluma?.accessToken !== wsToken || cur.snowluma?.httpAccessToken !== (httpToken || wsToken)) {
-      updateConfig({ snowluma: { ...cur.snowluma, accessToken: wsToken, httpAccessToken: httpToken || wsToken } });
-      log(`[onebot] 应用 OneBot 访问令牌（WS ${wsToken ? '有' : '无'} / HTTP ${httpToken ? '有' : '无'}）`);
-    }
-  }
-
-  /** 把候选列表同步进配置 + 挂到 onebot 实例（不立即连接）。返回是否有变化。 */
-  function syncSnowlumaTokens() {
-    try {
-      const candidates = readSnowlumaTokenCandidates();
-      if (!candidates.length) return false;
-      const sig = candidates.map((c) => `${c.wsToken}|${c.httpToken}`).join(';');
-      if (sig === lastSyncTokenSig) return false;
-      // 游标重置：候选集变化了，从头开始试
-      tokenCandidateIndex = 0;
-      applyTokens(candidates[0]);
-      onebot.tokenCandidates = candidates;   // 401 轮换用
-      lastSyncTokenSig = sig;
-      log(`[onebot] 已收集 ${candidates.length} 个 OneBot 令牌候选（当前配置令牌优先，401 时自动轮换）`);
-      return true;
-    } catch (error) {
-      log('[onebot] 同步 SnowLuma 令牌失败:', error?.message ?? error);
-      return false;
-    }
-  }
-
-  // 401 / 未连接时：轮换下一个候选 token 重连（3 秒重连循环已有，轮换成本为零）
-  let tokenSyncRetryAt = 0;
-  function maybeRecoverOnebot() {
-    const now = Date.now();
-    if (now - tokenSyncRetryAt < 5000) return;   // 限频
-    tokenSyncRetryAt = now;
-    // ⚠️ 先重读磁盘：全新安装是"先启动后登录"，候选集是启动时的 [空令牌]；
-    // 登录后 per-uin 文件才带着真令牌落盘。不回读就会拿空令牌 401 到天荒地老。
-    const refreshed = syncSnowlumaTokens();
-    const candidates = onebot.tokenCandidates || [];
-    if (!candidates.length) return;
-    if (refreshed) {
-      // 候选集变了（sig 变化时内部已重置游标并应用候选[0]）→ 直接拿新集合的第一个试
-      onebot.reconnect();
-      return;
-    }
-    // 磁盘没变化：指向下一个候选（首次触发也从 0→1 开始换：刚被 401 拒的就是当前这个）
-    tokenCandidateIndex = (tokenCandidateIndex + 1) % candidates.length;
-    const c = candidates[tokenCandidateIndex];
-    applyTokens(c);
-    onebot.reconnect();
-  }
-  onebot.onStatus((status) => {
-    if (status.connected) {
-      // 连上了：把当前生效的候选钉住 —— 写进游标，并把该令牌挪到候选列表首位，
-      // 这样下次断线重连（无论是否 401）第一个试的就是它，不再无谓地先撞错误令牌。
-      const cands = onebot.tokenCandidates || [];
-      const cur = { wsToken: String(onebot.accessToken || ''), httpToken: String(onebot.httpToken || '') };
-      const hit = cands.findIndex((c) => c.wsToken === cur.wsToken && c.httpToken === cur.httpToken);
-      tokenCandidateIndex = hit >= 0 ? hit : 0;
-      if (cands.length > 1) log('[onebot] 连接成功，当前令牌候选已生效');
-      return;
-    }
-    if (String(status.error || '').includes('401')) maybeRecoverOnebot();
-  });
 
   // ── 入站事件处理 ──
   let atNameCache = new Map(); // groupId:userId -> name
@@ -854,7 +277,7 @@ export function createApp({ log = console.log } = {}) {
     }
 
     // 合并转发：占位符 → 展开真实内容（模型要读懂、看懂转发的聊天记录）
-    // 实测结论（2026-09-05，SnowLuma/NapCat）：get_forward_msg 只认 message_id；
+    // 实测结论（2026-09-05，OneBot/NapCat）：get_forward_msg 只认 message_id；
     // res_id（转发卡片里那个 id）会过期，报 "payload is empty"。
     // 媒体里的 url 此时是新鲜的，一并收进 media（取图/金句都能用）。
     // 展开失败时占位符留在存档里，模型可用 read_forward 工具稍后重试。
@@ -1293,10 +716,7 @@ export function createApp({ log = console.log } = {}) {
     localVersion, compareSemver, UPDATE_INFO_URL,
     sanitizeConfig, keyEndpointAllowed, sanitizeProvider,
     readBody, authorize,
-    snowlumaDir, snowlumaWsPort, snowlumaWebuiUrl, snowlumaWebuiPort, snowlumaStatus, snowlumaLogs,
-    launchSnowluma, stopSnowluma,
-    qqPortableStatus, qqPortableLogs, launchPortableQQ, stopPortableQQ,
-    visionScan, isPortOpen,
+    visionScan,
     buildUsageStats, buildUsageBreakdown,
     reloadSkills
   });
@@ -1468,13 +888,7 @@ export function createApp({ log = console.log } = {}) {
   }
 
   async function start() {
-    // ── 启动顺序（2026-09-18 按耗时画像重排）────────────────────────────
-    // 旧顺序的瓶颈：HTTP → 遥测 → Skill加载(串行import) → SnowLuma启动(最长20s等端口)
-    //              → OneBot连接 → 就绪日志。Skill 与 SnowLuma 互不依赖却串行，
-    //              白白把两段等待加在一起。
-    // 新顺序：HTTP（页面先活）→ 遥测(纯后台) → **Skill 与 SnowLuma 并行** →
-    //         OneBot 连接 → 就绪。会话索引的磁盘对账（reconcileInBackground）
-    //         在 HTTP 起来后就排上，不占启动关键路径。
+    // 先启动控制台，再加载扩展并连接用户配置的外部 OneBot 服务。
     const basePort = Number(getConfig().server?.port) || 3210;
     let port = null;
     let lastError = null;
@@ -1502,7 +916,7 @@ export function createApp({ log = console.log } = {}) {
     // 只剩窗口过滤（毫秒级）。不 await；失败静默（用量页会自己再算）。
     collectUsageRows({ range: '7' }).catch(() => {});
 
-    // ── Skill 加载 与 SnowLuma 拉起并行（互不依赖）──
+    // ── 先完成 Skill 加载，再连接外部 OneBot 服务 ──
     const skillsReady = (async () => {
       try {
         const pluginResult = await reloadSkills({ reason: 'boot' });
@@ -1531,74 +945,13 @@ export function createApp({ log = console.log } = {}) {
       }
     })();
 
-    const snowlumaReady = (async () => {
-      if (!getConfig().snowluma?.autoLaunch) return;
-      try {
-        // 等待就绪用 WebUI 端口（进程即起即听）；OneBot WS 端口要等账号登录，
-        // 在这里等 3001 是"永远等不到"的（没人扫码就一直挂着 20 秒）。
-        const webuiPort = snowlumaWebuiPort();
-        if (!(await isPortOpen('127.0.0.1', webuiPort))) {
-          const r = await launchSnowluma();
-          if (r.ok && r.launched) {
-            for (let i = 0; i < 20 && !(await isPortOpen('127.0.0.1', webuiPort)); i++) {
-              await new Promise((resolve) => setTimeout(resolve, 1000));
-            }
-          }
-        }
-      } catch (error) {
-        log('[snowluma] 自动启动失败:', error?.message ?? error);
-      }
-    })();
-
-    await Promise.all([skillsReady, snowlumaReady]);
-
-    // OneBot 连接前先尝试从 SnowLuma 配置同步令牌（脱敏副本/首次登录场景尤其重要）
-    if (syncSnowlumaTokens()) {
-      const c = getConfig();
-      onebot.wsUrl = String(c.snowluma?.wsUrl || onebot.wsUrl);
-      onebot.httpUrl = String(c.snowluma?.httpUrl || onebot.httpUrl).replace(/\/+$/, '');
-      // accessToken/httpToken 已由 applyTokens 直接挂到实例（候选[0]）
-    }
+    await skillsReady;
     await onebot.connect();
 
-    // ── OneBot 端口就绪轮询（2026-09-19）────────────────────────────────────
-    // WS 3001 只有「QQ 登录 → Hook 检出 → OneBot 实例拉起」后才监听。常见时序：
-    // QQ Agent 先启动（此时 3001 未开）→ connectLoop 吃 ECONNREFUSED → 退避
-    // 涨到 30 秒 → 用户在这中间扫码登录 → 3001 开了，但下一次重试可能还要等
-    // 二十多秒，用户看到的就是"登录了半天连不上 / 重启就好了"。
-    // 这里加一个主动轮询：每 2 秒探一次 WS 端口，端口一开立即触发重连（走
-    // connectLoop 的代际互斥，不会产生并发连接）。已连接后轮询自动停止；
-    // 断线（SnowLuma 重启等）时轮询自动恢复 —— 恢复延迟从"最多 30 秒"降到
-    // "最多 2 秒 + 一次连接建立"。
-    const obWsPort = snowlumaWsPort();
-    obPortPollTimer = setInterval(async () => {
-      if (onebot.connected) return;          // 连着：无事可做（轮询本身极廉价）
-      const open = await isPortOpen('127.0.0.1', obWsPort);
-      if (open && !onebot.connected) {
-        // 端口从关到开：立即重连（reconnect 会重置退避，秒级恢复）
-        onebot.reconnect();
-      }
-    }, 2000);
-    obPortPollTimer.unref?.();
-    // ── WS 就绪后的账号信息兜底（2026-09-19）────────────────────────────────
-    // SnowLuma 重启/换号后，QQ Agent 侧的 WS 可能先于 OneBot 实例完全就绪连上，
-    // open 时的 get_login_info 失败 → selfInfo 恒空 → UI"检测不到账号"。
-    // onebot.js 里已有 15 秒延迟补拉；这里再挂一道 45 秒后的终检：
-    // 连着但仍没有 selfInfo 就强制补一次并广播状态（长期运行的兜底，幂等）。
-    setTimeout(() => {
-      if (!onebot.connected || onebot.selfInfo) return;
-      onebot.call('get_login_info').then((info) => {
-        if (info) {
-          onebot.selfInfo = info;
-          emit('onebot-status', { connected: true, everConnected: true, error: '' });
-          log('[onebot] 账号信息延迟恢复成功');
-        }
-      }).catch(() => { /* 仍失败：连接层已尽力，UI 状态如实反映 */ });
-    }, 45_000).unref?.();
     if (getConfig().proactive?.enabled) orchestrator.startProactiveLoop();
     orchestrator.startReminderLoop();   // 提醒（闹钟）调度：到点往群里发提醒
     log(`控制台已就绪：http://127.0.0.1:${port}`);
-    log(`OneBot（SnowLuma）: ws=${getConfig().snowluma?.wsUrl} http=${getConfig().snowluma?.httpUrl}`);
+    log(`OneBot: ws=${getConfig().onebot?.wsUrl} http=${getConfig().onebot?.httpUrl}`);
     log(`模型: ${getConfig().api.model || '（未设置，请在设置里选择）'} @ ${getConfig().api.baseUrl}`);
     return port;
   }
@@ -1640,7 +993,6 @@ export function createApp({ log = console.log } = {}) {
     await orchestrator.abortAll();
     orchestrator.stopReminderLoop();
     if (communitySyncTimer) clearInterval(communitySyncTimer);
-    if (obPortPollTimer) clearInterval(obPortPollTimer);
     // 索引缓存立刻落盘：正常运行中靠防抖（5s），退出前必须写一次，
     // 否则最后的会话变动丢失、下次启动要靠后台对账补（慢路径）
     sessions.flushIndexCache();
@@ -1651,19 +1003,13 @@ export function createApp({ log = console.log } = {}) {
     sseClients.clear();
     onebot.close();
     server.close();
-    // 内置启动的 SnowLuma：QQ Agent 退出时一并关掉，避免留一个无窗口的后台进程。
-    // 注意：SnowLuma 退出时不一定能立刻把 config 落盘，但我们的 stop 不会再去读它，
-    // 下次启动会读到完整文件。
-    try { snowlumaProc?.kill(); } catch { /* ignore */ }
-    // 便携 QQ：默认保留运行（避免误杀用户登录态），如需清理可在 UI 手动关闭
-    // try { await stopPortableQQ(); } catch { /* ignore */ }
     logger.flush();
     // 解绑本次 createApp 的日志转发器，避免 Electron/测试重复创建 app 时监听器累积。
     try { removeAppLogListener?.(); } catch { /* ignore */ }
     releaseInstanceLock();
   }
 
-  return { server, onebot, store, memory, stickers, sender, sessions, orchestrator, start, stop, emit, getConfig, updateConfig, launchSnowluma, stopSnowluma, snowlumaStatus, launchPortableQQ, stopPortableQQ, qqPortableStatus, reloadSkills };
+  return { server, onebot, store, memory, stickers, sender, sessions, orchestrator, start, stop, emit, getConfig, updateConfig, reloadSkills };
 }
 
 /**

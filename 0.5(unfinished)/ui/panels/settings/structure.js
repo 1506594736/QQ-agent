@@ -13,7 +13,7 @@ import {mountSendSettings,mountCompactSettings,PROACTIVE_SETTING_HELP} from './s
 export const SETTINGS_SECTIONS = [
   ['models','模型 API'], ['search','搜索服务'], ['memory','记忆'],
   ['persona','人设'], ['access','聊天白名单'], ['chat','聊天设置'],
-  ['desktop','桌面端'], ['onebot','OneBot（SnowLuma）'], ['tools','工具与技能'],
+  ['desktop','桌面端'], ['onebot','OneBot'], ['tools','工具与技能'],
 ];
 export const canonicalSettingsSection = id => ({api:'models',allow:'access',wake:'chat',send:'chat',active:'chat',security:'chat',prices:'models',uikit:'desktop'}[id] || id);
 

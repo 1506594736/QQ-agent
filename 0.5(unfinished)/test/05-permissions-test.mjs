@@ -19,8 +19,8 @@ eq(pm.check('any', 'net.raw', { kind: 'bundled' }).decision, 'deny', 'net.raw �
 pm.setOverride('any', 'net.raw', 'allow');
 eq(pm.check('any', 'net.raw', { kind: 'user' }).decision, 'deny', '管理员覆盖也放不开 net.raw（askable=false）');
 
-section('捆绑特权白名单（仅 transport/mcp 系可声明 proc.exec）');
-eq(pm.check('transport-onebot', 'proc.exec', { kind: 'bundled' }).decision, 'allow', 'transport-onebot 可 proc.exec');
+section('捆绑特权白名单（外部 OneBot 传输无需执行进程）');
+eq(pm.check('transport-onebot', 'proc.exec', { kind: 'bundled' }).decision, 'deny', 'transport-onebot 不可 proc.exec');
 eq(pm.check('market', 'proc.exec', { kind: 'bundled' }).decision, 'deny', 'market 不可 proc.exec');
 eq(pm.check('mcp-bridge', 'mcp.connect', { kind: 'bundled' }).decision, 'allow', 'mcp-bridge 可 mcp.connect');
 

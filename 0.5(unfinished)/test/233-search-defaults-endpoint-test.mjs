@@ -103,7 +103,7 @@ test('233 actual application default/config override/plugin selection/tool and d
       'runtime.http':options=>{const server=defaults['runtime.http'](options),scope=server.createRouteScope;server.createRouteScope=options=>{const s=scope(options),route=s.route;return{...s,route(method,pattern,handler,...rest){routes.set(method+' '+pattern,handler);return route(method,pattern,handler,...rest);}};};return server;},
       'console.routes':(http,deps)=>defaults['console.routes'](http,{...deps,dnsLookup,fetchImpl})}});
   assert.equal(app.config.get().webSearch.bocha.baseUrl,'https://configured233.invalid/exact?tenant=233');assert.equal(app.composition.owners['runtime.config.defaults'],'search233');
-  app.config.update({telemetry:{enabled:false},proactive:{enabled:false},snowluma:{autoLaunch:false},api:{model:'offline233',maxRounds:2}});
+  app.config.update({telemetry:{enabled:false},proactive:{enabled:false},api:{model:'offline233',maxRounds:2}});
   await app.loader.loadAll();await app.services.start();assert.equal(app.httpServer.port,null);
   const invoke=async()=>{const bundle=app.components['core.tools.bundle']({c:app.config.get()},{registry:app.registry,loader:app.loader});const session=app.sessions.create('group:233');let round=0;
     const result=await app.components['core.agentRunner']({session,systemPrompt:'synthetic',userPrompt:'query233',tools:bundle.tools,cfg:app.config.get(),components:app.components,capabilities:app.capability,invokeTool:bundle.invoke,execContext:{chatKey:session.chatKey,session},log:quiet,

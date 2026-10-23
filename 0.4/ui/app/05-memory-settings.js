@@ -754,8 +754,8 @@ function renderHealthCard() {
   const rows = checks.map((c, idx) => {
     let extra = '';
     if (!c.ok) {
-      if (c.fix === 'snowluma-tab') {
-        extra = ' <button class="btn btn-small hc-fix-btn" data-target="snowluma">前往启动</button>';
+      if (c.fix === 'settings-onebot') {
+        extra = ' <button class="btn btn-small hc-fix-btn" data-target="settings-onebot">去配置</button>';
       } else if (c.fix === 'settings-api') {
         extra = ' <button class="btn btn-small hc-fix-btn" data-target="settings-api">去填写</button>';
       } else if (c.fix === 'settings-allow') {

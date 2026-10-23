@@ -2,15 +2,9 @@
 // 契约：notes/12-data.md §3.14/§3.15（字段表 / md5 大写 / source 枚举 / normalize 丢运行期字段 /
 // basename 搬家自愈 / 原子写）。
 //
-// ★ 2026-10-06 表情库归属改造：表情本体与备注都在 **QQ 随账号收藏表情包**里
-//（协议端 add_custom_face / modify_custom_face / delete_custom_face，见 using/doc/
-// extend_development/snowluma-capabilities.md 「扩展」节）。本地 stickers.json 退化为
-// **索引**：记 emoji_id（QQ 侧唯一键）→ 用途笔记/标签/使用次数，供提示词与工具查询。
-// 原来的 sticker_note 工具因此多余——备注直接写QQ 侧，QQ 客户端里就能看到。
-//
-// 失败语义：QQ 表情库有上限（通常 1000），超限时协议端会拒绝。collect 走
-// collectIntoQQ()，**写入失败即视为收藏失败**，不写本地索引（避免出现"本地有、
-// QQ 侧没有"的幽灵条目）。
+// 本地表情库独立保存图片、备注和使用记录。
+// 可选 qq.emoji-favorites 插件可同步账号收藏；默认 OneBot 传输不提供此能力。
+// 对显式远端操作保留确认成功后再写本地索引的失败语义。
 import fs from 'node:fs';
 import path from 'node:path';
 import crypto from 'node:crypto';
@@ -194,10 +188,7 @@ export function createStickerManager({ dataDir, log = console, capability = null
     return entries;
   }
 
-  // ---- QQ 侧收藏表情（2026-10-06）------------------------------------------------
-  // qq 能力由 bundled 插件注入（qq.emoji-favorites.capability，走 protocol.actions 的
-  // add_custom_face / modify_custom_face / delete_custom_face）。缺能力时明确失败，
-  // 不静默退化成"只写本地"——那样会造出QQ 侧不存在的幽灵表情。
+  // 可选账号收藏能力由独立插件注入；没有能力时不执行远端操作。
   function requireQQ() {
     const cap = typeof capability?.providers === 'function'
       ? capability.providers('qq.emoji-favorites')[0]?.provider
@@ -457,7 +448,7 @@ export function createStickerManager({ dataDir, log = console, capability = null
     return { ok: true };
   }
 
-  /** 拉取 QQ 侧收藏表情列表（读接口，fetch_custom_face）。 */
+  /** 通过可选能力拉取账号收藏表情列表。 */
   async function listFromQQ(limit = 48) {
     const cap = requireQQ();
     const urls = await cap.fetchCustomFaces(limit);

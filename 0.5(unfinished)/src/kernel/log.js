@@ -6,7 +6,7 @@ import path from 'node:path';
 import { createLogPolicy } from './log-policy.js';
 
 const LEVELS = { debug: 0, info: 1, warn: 2, error: 3 };
-const RING_MAX = 500;          // SPEC §17.1：SnowLuma/QQ 日志环形缓冲 / atNameCache 防膨胀
+const RING_MAX = 500;          // SPEC §17.1：应用日志环形缓冲 / atNameCache 防膨胀
 
 export function createLogger({ dataDir, bus = null, level = 'info', mirrorConsole = true, policy = createLogPolicy() } = {}) {
   if (policy !== null && (typeof policy?.diskLine !== 'function' || typeof policy?.prepare !== 'function')) {

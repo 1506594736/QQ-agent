@@ -50,9 +50,7 @@ export function buildDefaultConfig({ portOffset = 0, personaText = '' } = {}) {
       browseLock: { enabled: false, hosts: [], siteSearchUrl: '' },
       imageSend: { requirePreview: true, maxPerRun: 3, maxPreviewsPerRun: 5, maxBytesMB: 5 },
     },
-    snowluma: {
-      dir: '', autoLaunch: false,
-      connectionMode: 'auto', accountId: '',
+    onebot: {
       wsUrl: `ws://127.0.0.1:${3001 + portOffset}`,
       httpUrl: `http://127.0.0.1:${3000 + portOffset}`,
       accessToken: '', httpAccessToken: '',

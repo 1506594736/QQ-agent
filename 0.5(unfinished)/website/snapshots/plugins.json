@@ -25,20 +25,6 @@
       "categoryName": "知识库"
     },
     {
-      "id": "account-persona",
-      "name": "QQ 号 ↔ 人格切换 (可以实现在线一键切换qq号和对应qq号的人格）",
-      "description": "一张表管理多个 QQ 号：每个号填对应人格 + SnowLuma 的 WebSocket/HTTP 地址与令牌。点「切换到此号」后，QQ Agent 会热切换 OneBot 连接并同步换人格，不用重启、不用改设置页。",
-      "category": "utility",
-      "version": "2.0.0",
-      "author": "社区作者",
-      "authorId": "",
-      "createdAt": "2026-10-20T17:36:01Z",
-      "updatedAt": "2026-10-20T17:36:01Z",
-      "type": "plugin",
-      "status": "pending",
-      "categoryName": "工具与运行控制"
-    },
-    {
       "id": "proactive-cadence",
       "name": "主动对话排期",
       "description": "让AI能够主动发起对话。对话结束后 5 分钟抽一个 1~70 的随机数，作为下一次 AI 主动开口的倒计时；每次主动开口后强制 30 分钟冷却；0:00~8:00 静默，落在静默时段的倒计时顺延为「晨间独立计时器」（抽 1~120 分钟，跨重启不丢）。",
@@ -194,22 +180,6 @@
       "downloads": 26,
       "categoryName": "工具与运行控制",
       "downloadUrl": "/api/community/plugins/tilpoca-inn/download"
-    },
-    {
-      "id": "snowluma-guard",
-      "name": "SnowLuma 守护",
-      "description": "效果简单说就是snowluma突然闪退，自动重新打开snowluma。盯着 SnowLuma 的 WebUI 端口，连续几次都连不上就判定崩溃并自动重新拉起，不用手动重启。只负责「QQ Agent 还活着、SnowLuma 掉了」这种情况——QQ Agent 自己退出时守护也停了。\r\n意外发现之前的skill有小bug，会弄崩snowluma，所以加急制作的这款插件，之前的插件bug已经修复好了，等待上传就行。",
-      "category": "utility",
-      "version": "1.0.3",
-      "author": "社区作者",
-      "authorId": "",
-      "createdAt": "2026-10-20T14:09:48Z",
-      "updatedAt": "2026-10-20T16:58:12Z",
-      "type": "plugin",
-      "status": "approved",
-      "installCode": "QDS8ML",
-      "categoryName": "工具与运行控制",
-      "downloadUrl": "/api/community/plugins/snowluma-guard/download"
     },
     {
       "id": "sticker-admin",
@@ -1812,23 +1782,6 @@
       "downloads": 95,
       "categoryName": "工具与运行控制",
       "downloadUrl": "/api/community/plugins/soulmate/download"
-    },
-    {
-      "id": "msg-pacing",
-      "name": "打字节奏（像真人一样打字）",
-      "description": "让她发消息的样子像真人打字：先把「对方正在输入」亮起来，等一个跟字数相称的打字时长，再把消息发出去。分条发送时整体等待会缩短（连着敲，不是重打一遍）。只做延迟与输入状态，不改变发送路径 —— 消息仍由核心的 send_message 发出，去重、限频、存档、引用/@ 全部照旧。需要网关支持 set_input_status（SnowLuma v1.14 实测支持）；不支持时自动停用「正在输入」，打字延迟仍然生效。",
-      "category": "message",
-      "version": "1.0.0",
-      "author": "社区作者",
-      "authorId": "",
-      "createdAt": "2026-10-17T15:56:43Z",
-      "updatedAt": "2026-10-17T17:13:36Z",
-      "type": "plugin",
-      "status": "approved",
-      "installCode": "3JNRUZ",
-      "downloads": 43,
-      "categoryName": "消息与身份",
-      "downloadUrl": "/api/community/plugins/msg-pacing/download"
     },
     {
       "id": "random-cat",
@@ -5718,23 +5671,6 @@
       "downloadUrl": "/api/community/plugins/qq-file-intake/download"
     },
     {
-      "id": "file-inbox",
-      "name": "文件自动入箱",
-      "description": "聊天里发来的 PDF / Word(.docx) / PowerPoint(.pptx) 自动下载进文档文件夹（data/documents/），「文档阅读」技能立刻就能读。监听 SnowLuma 的 OneBot 消息事件，纯本地下载，不转发、不上传、不进群公告。",
-      "category": "utility",
-      "version": "1.0.0",
-      "author": "社区作者",
-      "authorId": "",
-      "createdAt": "2026-10-03T15:07:06Z",
-      "updatedAt": "2026-10-03T16:12:46Z",
-      "type": "plugin",
-      "status": "approved",
-      "installCode": "EWQNFA",
-      "downloads": 61,
-      "categoryName": "工具与运行控制",
-      "downloadUrl": "/api/community/plugins/file-inbox/download"
-    },
-    {
       "id": "icebreaker",
       "name": "定时暖场",
       "description": "在睡觉时间（默认 23:30 ~ 次日 8:00）之外，每隔几小时自动往指定的私聊/群聊发一条符合当前人设的暖场消息。消息由模型按你的人设现场生成，发送走应用自己的发送通道（同样受白名单/限频保护）。",
@@ -5903,23 +5839,6 @@
       "downloads": 20,
       "categoryName": "工具与运行控制",
       "downloadUrl": "/api/community/plugins/dsh-bridge/download"
-    },
-    {
-      "id": "guardian",
-      "name": "防崩溃和记忆断层v1.1.0",
-      "description": "机器人\"不在的时候\"造成的一堆麻烦，都在这一个插件里：① **崩溃自愈**：主程序崩了（进程还在但锁没了）→ 自动把它拉起来，并用 QQ 私聊机主报一声（OneBot 是独立进程，主程序挂了它照样能发）；② **记忆断层提醒**：程序关掉/重启期间群里的消息机器人收不到，核心却不感知 → 它会在重启后补一句\"中间断过\"的内部提醒，免得模型接着旧话题答得毫不相干；③ **冒红自救**：进程活着但日志一串 ERROR 也会自动重启一次（20 分钟冷却，不反复动手）。★ **开箱通用**：不写死任何机器路径与私人 QQ 号；通知用的 OneBot 令牌优先取控制台里填的那份，没填就自动从 SnowLuma 的账号配置里挑一份可用的（多账号时不会拿错）。【本次更新 v1.1.0】修掉崩溃通知\"静默发不出去\"：原来控制台里没填 OneBot 令牌就直接放弃；现在会自动从 SnowLuma 的账号配置里挑一份可用的（优先\"文件名里的 QQ == 控制台账号\"，其次最近改动的），真的一份都没有才放弃并**写明日志**。审计确认本插件不写死任何机器路径与私人 QQ 号。",
-      "category": "utility",
-      "version": "1.1.0",
-      "author": "社区作者",
-      "authorId": "",
-      "createdAt": "2026-10-03T10:01:57Z",
-      "updatedAt": "2026-10-03T12:39:15Z",
-      "type": "plugin",
-      "status": "approved",
-      "installCode": "DJ3M5A",
-      "downloads": 896,
-      "categoryName": "工具与运行控制",
-      "downloadUrl": "/api/community/plugins/guardian/download"
     },
     {
       "id": "admin-roster",
@@ -6804,23 +6723,6 @@
       "downloads": 1610,
       "categoryName": "消息与身份",
       "downloadUrl": "/api/community/plugins/forward-summary/download"
-    },
-    {
-      "id": "speech-to-text-qq",
-      "name": "语音转文字（QQ 原生）",
-      "description": "把群友发的语音转成文字，让模型能读懂语音内容。\r\n\r\n用协议端（SnowLuma / NapCat）自带的 fetch_ptt_text 接口 —— 也就是 QQ 客户端的转写能力，所以**不用装 whisper、不用下模型、不占显存**，中文识别质量就是 QQ 自己的水平。\r\n\r\n【怎么用】\r\n· 装上并开启即可，无需额外配置（自动读 snowluma.httpUrl 与令牌）\r\n· 只转「机器人需要回应」的语音；没触发回复的语音不会去转，不浪费\r\n· 转写结果写回聊天记录：`[语音]` → `[语音转文字] 内容`，之后翻旧账也查得到\r\n\r\n【要求】协议端支持 fetch_ptt_text（SnowLuma 与 NapCat 均可）。",
-      "category": "media",
-      "version": "1.0.0",
-      "author": "社区作者",
-      "authorId": "",
-      "createdAt": "2026-09-27T10:49:42Z",
-      "updatedAt": "2026-09-28T16:55:53Z",
-      "type": "plugin",
-      "status": "approved",
-      "installCode": "EAVD5D",
-      "downloads": 1903,
-      "categoryName": "媒体与多媒体",
-      "downloadUrl": "/api/community/plugins/speech-to-text-qq/download"
     },
     {
       "id": "context-chime",

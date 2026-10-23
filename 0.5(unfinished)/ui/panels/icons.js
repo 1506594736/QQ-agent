@@ -37,13 +37,6 @@ const GLYPHS = Object.freeze({
     line('module', 'M14 4h4l3 3v13h-7v-5h-2V9h2z'),
     solid('contacts', 'M4 6h2v2H4zM4 16h2v2H4z'),
   ],
-  // Launcher terminal and a second endpoint linked by the OneBot bridge.
-  snowluma: [
-    line('terminal', 'M3 4h12l3 3v6M3 4v14h9'),
-    line('prompt', 'M6 8l3 3-3 3M11 12h3'),
-    line('bridge', 'M11 15h3v4h3'),
-    solid('endpoint', 'M17 16h3l2 2v4h-5z'),
-  ],
   settings: [
     line('rail', 'M3 6h18M3 12h18M3 18h18'),
     solid('control-a', 'M7 4h4v4H7z'),
@@ -84,26 +77,6 @@ const GLYPHS = Object.freeze({
   archive: [line('tray', 'M3 9h5l2 3h4l2-3h5v12H3zM8 17h8'), solid('payload', 'M10 3h4v3h3l-5 5-5-5h3z')],
   // Readiness decoration: a filled check/connected path versus an open block
   // and stop rails. The host's text label supplies the actual state meaning.
-  'status-qq-ready': [
-    line('shell', 'M3 3h11l4 4v5M3 3v18h9M14 3v4h4'),
-    solid('kernel', 'M6 9h4l2 2v5H6z'),
-    solid('ready', 'M15 17l2 2 4-5 1 1-5 6-3-3z'),
-  ],
-  'status-qq-pending': [
-    line('shell', 'M3 3h11l4 4v5M3 3v18h9M14 3v4h4'),
-    line('loader', 'M6 9h6v3M6 9v7h3M10 16h2v-1'),
-    line('gap', 'M15 16h7M15 20h4'),
-  ],
-  'status-snow-ready': [
-    line('container', 'M3 5h14l3 3v4M3 5v15h10M3 10h17'),
-    solid('process', 'M6 12l4 3-4 3zM11 17h2v1h-2z'),
-    solid('ready', 'M15 17l2 2 4-5 1 1-5 6-3-3z'),
-  ],
-  'status-snow-pending': [
-    line('container', 'M3 5h14l3 3v4M3 5v15h10M3 10h17'),
-    line('process', 'M6 13l3 2-3 2M11 17h2'),
-    line('gap', 'M16 16h5M16 20h3'),
-  ],
   'status-onebot-ready': [
     line('endpoints', 'M3 4h5v6H3zM16 14h5v6h-5z'),
     line('bridge', 'M8 7h5v10h3'),
@@ -125,7 +98,7 @@ const GLYPHS = Object.freeze({
     line('gap', 'M16 4h6M16 8h3'),
   ],
 });
-const ALIASES = Object.freeze({extension:'plugins',plugin:'plugins',chat:'chats',session:'sessions',profile:'community',globe:'community',chart:'usage',gear:'settings'});
+const ALIASES = Object.freeze({logs:'activity',extension:'plugins',plugin:'plugins',chat:'chats',session:'sessions',profile:'community',globe:'community',chart:'usage',gear:'settings'});
 
 /** Shared icons are decoration. The surrounding button/link must keep its text label. */
 export function createIcon(name, { size = 20 } = {}) {

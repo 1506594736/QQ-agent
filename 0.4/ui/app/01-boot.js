@@ -8,7 +8,7 @@ async function refreshStatus() {
     const dot = $('#onebot-dot');
     const label = $('#onebot-label');
     dot.className = 'dot ' + (s.onebot.connected ? 'dot-on' : (s.onebot.everConnected ? 'dot-wait' : 'dot-off'));
-    // 未连接时展示后端诊断（2026-09-19）：区分「SnowLuma 没起 / 没登录账号 / 令牌不匹配」，
+    // 未连接时展示后端诊断（2026-09-19）：区分「连接失败 / 令牌不匹配」，
     // 不再让用户面对一句干巴巴的"未连接"猜原因。
     label.textContent = s.onebot.connected
       ? `OneBot 已连接${s.onebot.self ? `（${s.onebot.self.nickname}）` : ''}`
@@ -32,41 +32,24 @@ async function refreshStatus() {
   } catch (e) { /* 忽略瞬时错误 */ }
 }
 
-/** 更新顶栏就绪进度指示器（4 圆点） */
+/** 更新外部连接与应用配置状态。 */
 function updateReadinessDots(s) {
   const dots = $$('#readiness-dots .rdot');
-  if (dots.length !== 4) return;
-
-  const qq = s?.qqPortable || {};
-  const qqRunning = !!qq.running;
-  const slRunning = !!s?.snowluma?.running;
-  const obConnected = !!s?.onebot?.connected;
+  if (dots.length !== 2) return;
+  const connected = !!s?.onebot?.connected;
   const cfg = state.config || {};
-  const cfgReady = !!(cfg.api?.baseUrl && cfg.api?.model && (cfg.allow?.groups?.length || cfg.allow?.private?.length || cfg.allowAllWhenEmpty));
-
-  // 圆点 0：QQ 内核
-  dots[0].className = 'rdot' + (qqRunning ? ' on' : '');
-  dots[0].title = qqRunning ? 'QQ 内核运行中' : 'QQ 内核未运行（点击前往启动）';
-
-  // 圆点 1：SnowLuma
-  dots[1].className = 'rdot' + (slRunning ? ' on' : '');
-  dots[1].title = slRunning ? 'SnowLuma 运行中' : 'SnowLuma 未运行（点击前往启动）';
-
-  // 圆点 2：OneBot
-  dots[2].className = 'rdot' + (obConnected ? ' on' : (slRunning ? ' wait' : ''));
-  dots[2].title = obConnected ? 'OneBot 已连接' : (s?.onebot?.diagnosis || (slRunning ? 'OneBot 连接中…' : 'OneBot 未连接'));
-
-  // 圆点 3：配置完成
-  dots[3].className = 'rdot' + (cfgReady ? ' on' : '');
-  dots[3].title = cfgReady ? '配置已完成' : '配置未完成（点击前往设置）';
+  const ready = !!(cfg.api?.baseUrl && cfg.api?.model && (cfg.allow?.groups?.length || cfg.allow?.private?.length || cfg.allowAllWhenEmpty));
+  dots[0].className = 'rdot' + (connected ? ' on' : '');
+  dots[0].title = connected ? 'OneBot 已连接' : (s?.onebot?.diagnosis || '请在设置中配置外部 OneBot 服务');
+  dots[1].className = 'rdot' + (ready ? ' on' : '');
+  dots[1].title = ready ? '配置已完成' : '配置未完成（点击前往设置）';
 }
 
 // 就绪圆点点击跳转
 $$('#readiness-dots .rdot').forEach((dot) => {
   dot.addEventListener('click', () => {
     const target = dot.dataset.target;
-    if (target === 'snowluma') switchTab('snowluma');
-    else if (target === 'settings') switchTab('settings');
+    if (target === 'settings') switchTab('settings');
   });
 });
 

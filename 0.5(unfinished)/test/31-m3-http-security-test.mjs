@@ -21,7 +21,7 @@ config.update({
   providers: [{ id: 'provider', apiKey: 'provider-plain' }],
   dshProviderKeys: { provider: 'provider-plain' },
   webSearch: { deepseek: { apiKey: 'search-plain' } },
-  snowluma: { accessToken: 'ws-plain', httpAccessToken: 'http-plain' },
+  onebot: { accessToken: 'ws-plain', httpAccessToken: 'http-plain' },
 });
 let fetchCalls = [];
 const fetchImpl = async (url, opts) => {
@@ -74,7 +74,7 @@ for (const [suffix, field, expected] of keyEndpoints) {
 const ordinaryConfig = await request('GET', '/api/config', { headers: { 'x-console-token': 'http-secret' } });
 const ordinaryConfigJson = await ordinaryConfig.json();
 ok(!('apiKey' in ordinaryConfigJson.api), '普通 config DTO 不返回主 API 明文');
-ok(!('accessToken' in ordinaryConfigJson.snowluma), '普通 config DTO 不返回 OneBot 明文');
+ok(!('accessToken' in ordinaryConfigJson.onebot), '普通 config DTO 不返回 OneBot 明文');
 
 section('R-90 guards run before forwarding');
 eq((await request('GET', '/api/captcha-forward?u=https%3A%2F%2Fa.aliyuncs.com%2Fok')).status, 401, 'token guard');
