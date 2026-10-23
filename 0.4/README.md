@@ -19,7 +19,7 @@
 4. 处理期间新来的消息只写存档；本次结束后发现未读 → 自动再开新会话，直到清空
 5. 长期信息走记忆工具持久化，跨运行生效
 **整体组成**
-- **协议端**：通过 OneBot v11 正向 WebSocket 接 QQ（默认配 SnowLuma，任何兼容协议端均可换）
+- **协议端**：通过 OneBot v11 正向 WebSocket 接 QQ（默认配 [SnowLuma](https://github.com/SnowLuma/SnowLuma)，任何兼容协议端均可换）
 - **大脑**：任意 OpenAI 兼容 API——官方 / 中转站 / 本地网关均可，模型在设置里自选
 - **桌面壳**：Electron，托盘常驻、开机自启、关窗不退出、端口被占自动让位
 - **控制台**：零框架原生 HTML/CSS/JS，明暗双主题 + 跟随系统，带完整设计 token 体系
@@ -100,7 +100,7 @@ npm run setup    # 自动下载 SnowLuma + 固定版本便携 QQ
 ```
 然后双击 `启动QQ机器人.bat`（或 `npm start`），在 SnowLuma 页签点「启动 QQ」，扫码登录即可。
 **手动安装**（如果 `npm run setup` 下载失败）：
-1. **装协议端**：SnowLuma 是独立第三方项目（自带 EULA，不随本仓库分发），从其官方渠道获取后解压到项目根目录，目录名保持 `snowluma`
+1. **装协议端**：[SnowLuma](https://github.com/SnowLuma/SnowLuma) 是独立第三方项目（自带 EULA、源码可见非商业许可，不随本仓库分发），从其 [官方 Releases](https://github.com/SnowLuma/SnowLuma/releases) 获取后解压到项目根目录，目录名保持 `snowluma`
 2. **装便携 QQ**（可选）：
    - **最省事**：机器上已经装过 QQ 的话，**先完全退出 QQ**，直接跑 `npm run setup` ——
      脚本会从注册表找到已装的 QQ 并复制一份到 `runtime/qq-portable/`（约 1.6 GB，会自动跳过聊天记录）
@@ -222,7 +222,7 @@ node scripts/sanitize-release.mjs             # 清空 Key / 白名单 / 存档 
 我爱你们。
 ## 致谢
 - **[Derpyu520/qq-bridge](https://github.com/Derpyu520/qq-bridge)**——本项目由其彻底改造而来，"仿真群友"的思路是这一切的起点
-- **SnowLuma**——QQ 协议端（OneBot v11）提供者，独立第三方项目，受其自身 EULA 约束
+- **[SnowLuma](https://github.com/SnowLuma/SnowLuma)**——QQ 协议端（OneBot v11）提供者，独立第三方项目；源码可见非商业许可（非 OSI 开源），二进制发行包另受其 EULA / PRIVACY 约束，本项目不分发其代码或二进制
 由 **Kondius** 开发与维护。
 ## 许可
-本项目以 MIT 许可发布（见 [LICENSE](LICENSE)）。前置依赖 SnowLuma 是独立项目，受其自身许可约束，不受本项目许可覆盖。
+本项目以 MIT 许可发布（见 [LICENSE](LICENSE)）。前置依赖 [SnowLuma](https://github.com/SnowLuma/SnowLuma) 是独立项目，采用**源码可见的非商业许可（非 OSI 开源）**，商业使用或公开发布修改版需取得其作者书面授权；它不受本项目 MIT 许可覆盖。
