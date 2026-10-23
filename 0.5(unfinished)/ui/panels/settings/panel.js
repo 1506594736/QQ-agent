@@ -929,7 +929,7 @@ function render() {
   // 方案模型：亮色/暗色是出厂基准（改了就是"已修改态"，可另存为独立自定义方案）；
   // 自定义方案与两个基准互不干扰，可任意多个、可切换/重命名/删除。
   // 值进 form → 随 config.json 持久化；预览请求宿主落地（面板是 opaque origin，够不着宿主 DOM）。
-  const kit = section('uikit', '组件库', '统一的工业设计系统：配色、图标与控件同步预览，背景、圆角和密度可实时调整；方案随配置保存。');
+  const kit = section('uikit', '组件库', '暖黑黄绿与骨白橄榄绿配色，图标与控件同步预览；背景、圆角和密度可实时调整，方案随配置保存。');
 
   const COLOR_FIELDS = [
     ['bg', '页面底色'], ['surface', '卡片底色'], ['surface2', '卡片底色 2'], ['surface3', '卡片底色 3'],
@@ -1195,7 +1195,7 @@ function render() {
     pick('density', '间距密度', [[0.85, '紧凑'], [1, '标准'], [1.25, '宽松']]);
     pick('sidebar', '侧边栏', [['left', '左侧'], ['right', '右侧'], ['hidden', '隐藏']]);
     pick('btnAlign', '按钮排布', [['left', '靠左'], ['center', '居中'], ['right', '靠右']]);
-    pick('styleMode', '视觉语言', [['endfield', '终末地（Endfield）· 默认'], ['classic', '0.4 经典'], ['signal', '信号仪表（0.5 机加工）'], ['flux', '实验 · Flux（前卫玻璃/荧光）']], '只改观感：形状/质感/配色，不影响任何功能；默认即终末地语言（暖黑 + 荧光黄绿 + 切角主按钮）');
+    pick('styleMode', '外观风格', [['endfield', '暖黑黄绿 · 默认'], ['classic', '经典靛蓝'], ['signal', '简洁线条'], ['flux', '深紫荧光']], '默认使用暖黑底色与荧光黄绿强调，浅色基准使用骨白与橄榄绿；外观模式调整控件形状和质感，具体颜色可单独设置。');
 
     const gradWrap = document.createElement('label'); gradWrap.className = 'setting-field is-switch';
     const gradTitle = document.createElement('span'); gradTitle.className = 'field-title'; text(gradTitle, '强调色用渐变');

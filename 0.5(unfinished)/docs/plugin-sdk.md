@@ -213,7 +213,7 @@ run.addEventListener('click', async () => {
 
 本机控制台自动认证属于宿主：`/api/console/bootstrap`不允许通过面板RPC代理，普通插件不能获取令牌。自动恢复只作用于宿主共享连接，不改变工具/面板权限；候选令牌验证客户端也不会自动替换其凭据。默认实现与来源合同见[本机认证](local-console-auth.md)。
 
-宿主现在合并面板清单刷新通知并复用未变的导航控件；同一面板只有在定义身份相同、桥已握手且未关闭、iframe仍连接时复用。插件定义或加载代际变化仍撤销旧桥/资产并创建新面板，过期刷新结果不替换新清单；这没有改变插件工具调用、配置保存或授权合同。共享图标、主题 DTO 与宿主去重的实际验证和测量限制见 [Endfield UI 设计记录](endfield-ui-design.md)。
+宿主现在合并面板清单刷新通知并复用未变的导航控件；同一面板只有在定义身份相同、桥已握手且未关闭、iframe仍连接时复用。插件定义或加载代际变化仍撤销旧桥/资产并创建新面板，过期刷新结果不替换新清单；这没有改变插件工具调用、配置保存或授权合同。共享图标、主题 DTO 与宿主去重的实际验证和测量限制见 [暖黑黄绿 UI 设计记录](theme-color-design.md)。
 
 宿主导航可以收起为图标栏，展开/收起偏好仅保存在宿主本地；它不改变面板定义或加载代际，不重新挂载iframe，不增加全局配置写入。插件面板的可访问名称与名称提示由当前注册标题生成，未知图标仍回退为共享panel图形；收纳状态不要求插件提供第二套界面。
 
@@ -229,7 +229,7 @@ run.addEventListener('click', async () => {
 
 现有安装包尚未按本轮源码重建；本文不表示新的桌面应用已经安装或发布。
 
-此前插件化阶段源码验收：`npm test` 返回 0，M3 61/61 个测试文件、M4 10/10；`npm run smoke` 12/12，`git diff --check` 返回 0。包括该阶段的 hook/prompt/provider 输入、事件出口、多提供者顺序及 managed 服务就绪改动。原始记录在系统临时目录的 `qq-agent-pluginization-acceptance-final.log` 和 `qq-agent-pluginization-acceptance-smoke.log`。这组历史数量不代表 2026-10-13 UI 重做后的最终验证，最新界面验证见 [Endfield UI 设计记录](endfield-ui-design.md)。
+此前插件化阶段源码验收：`npm test` 返回 0，M3 61/61 个测试文件、M4 10/10；`npm run smoke` 12/12，`git diff --check` 返回 0。包括该阶段的 hook/prompt/provider 输入、事件出口、多提供者顺序及 managed 服务就绪改动。原始记录在系统临时目录的 `qq-agent-pluginization-acceptance-final.log` 和 `qq-agent-pluginization-acceptance-smoke.log`。这组历史数量不代表 2026-10-13 UI 重做后的最终验证，最新界面验证见 [暖黑黄绿 UI 设计记录](theme-color-design.md)。
 ## 渐进删除按钮
 
 插件面板可选择使用控制台的共享组件与危险色变量。它只控制本面板的删除交互，不扩大工具权限，也不访问宿主 DOM。

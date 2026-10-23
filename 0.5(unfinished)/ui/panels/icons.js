@@ -1,4 +1,4 @@
-// Original Endfield-inspired glyphs: clipped corners, open rails and solid anchors.
+// Original theme-colored glyphs: clipped corners, open rails and solid anchors.
 // Constant geometry and a name allowlist keep plugin metadata inert.
 import { installIconMotion } from './icon-motion.js';
 const NS = 'http://www.w3.org/2000/svg';

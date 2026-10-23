@@ -56,7 +56,7 @@ export function holdThemeColorTransitions(doc) {
 /** 间距基准（4 的倍数），密度倍率在其上缩放。 */
 const SPACING = { 1: 4, 2: 8, 3: 12, 4: 16, 5: 20, 6: 24, 8: 32 };
 
-/** 项目亮色基准：骨白底 + 深橄榄黄绿，呼应终末地的工业界面语言。 */
+/** 项目亮色基准：骨白底色、深橄榄绿强调与浅灰分区。 */
 export const LIGHT_BASE = {
   bg: '#e4e6de', surface: '#eeefea', surface2: '#f7f8f3', surface3: '#dcdfd2',
   text: '#242620', muted: '#5c6156', faint: '#8f9585',
@@ -69,9 +69,8 @@ export const LIGHT_BASE = {
 };
 
 /**
- * 项目暗色基准：呼应终末地（Endfield）的工业界面语言。
- * 暖黑、骨白和荧光黄绿是本项目选定的配色，辅以薄线分区与强调色状态。
- * 这些数值是我们的主题令牌，不是官方公布的设计规范或逐像素复制。
+ * 项目暗色基准：暖黑底色、骨白文字与荧光黄绿强调。
+ * 相邻灰阶区分内容层级，状态使用独立的成功、提醒和错误色。
  */
 export const DARK_BASE = {
   bg: '#191a19', surface: '#202120', surface2: '#282927', surface3: '#312f30',
@@ -84,13 +83,13 @@ export const DARK_BASE = {
   bgRotate: 0, bgZoom: 1, bgOffsetX: 0, bgOffsetY: 0,
 };
 
-/** 视觉语言白名单（形状/质感层；配色另走颜色令牌）。endfield = 出厂默认。 */
+/** 外观模式白名单；保留既有配置标识，配色由颜色令牌控制。 */
 export const STYLE_MODES = new Set(['endfield', 'classic', 'signal', 'flux']);
 
 /** 成型风格预设：只作为配色起点（套用后仍需"另存为"才成为自定义方案）。 */
 export const PRESETS = {
   endfield: {
-    label: '终末地 · Endfield',
+    label: '暖黑黄绿',
     note: '荧光黄绿 + 暖黑 · 出厂默认',
     tokens: {
       bg: '#191a19', surface: '#202120', surface2: '#282927', surface3: '#312f30',
@@ -191,14 +190,14 @@ export const PRESETS = {
 export const DEFAULT_THEME = {
   preset: 'dark',
   ...DARK_BASE,
-  // 圆角基准（px），sm/md/lg 由此推导：6 对应终末地的刻度（sm 4 / md 6 / lg 8）——
-  // 工业语言以小圆角为主，切角主按钮另走 clip-path。走配置而不是在 CSS 里写死
+  // 圆角基准（px）：6 推导出 sm 4 / md 6 / lg 8。
+  // 默认使用小圆角，切角主按钮另走 clip-path；尺寸由配置决定。
   // --r-*，组件库的「圆角基准」滑条才能一直生效。
   radius: 6,
   density: 1,       // 间距倍率：0.85 紧凑 / 1 标准 / 1.25 宽松
   sidebar: 'left',  // left | right | hidden
   btnAlign: 'left', // left | center | right
-  // 视觉语言：endfield = 终末地（出厂默认，见 common.css / shell style.css 同名门控）
+  // 出厂默认外观模式；沿用既有存储标识以兼容已保存的主题。
   //            classic = 0.4 经典 | signal = 0.5 信号仪表 | flux = 实验（前卫玻璃/荧光）
   styleMode: 'endfield',
 };
@@ -507,8 +506,8 @@ export function applyTheme(t) {
     s.setProperty('color-scheme', light ? 'light' : 'dark');
     body.dataset.sidebar = theme.sidebar;
     body.dataset.btnAlign = theme.btnAlign;
-    // 视觉语言开关：endfield 终末地（默认）| classic 0.4 经典 | signal 信号仪表 | flux 实验前卫
-    // 未知值一律回落 endfield，避免配置里出现脏值时整站掉回默认皮肤
+    // 模式标识用于形状与质感；显示名称使用配色描述。
+    // 未知值回落到出厂默认模式。
     body.dataset.styleMode = STYLE_MODES.has(String(theme.styleMode)) ? String(theme.styleMode) : 'endfield';
     body.dataset.gradient = theme.gradient ? 'on' : 'off';
     body.dataset.bgImage = bgUrl ? 'on' : 'off';

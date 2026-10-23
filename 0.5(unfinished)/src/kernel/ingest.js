@@ -65,19 +65,22 @@ export function createIngest({
     const c = cfg();
     const senderId = String(event?.user_id ?? event?.sender?.user_id ?? '');
     const selfId = String(selfIdOf() ?? '');
+    const owner = readScope(), generation = nameGeneration;
+    const current = () => !signal?.aborted && !owner.signal?.aborted && readScope() === owner && generation === nameGeneration;
+    if (!current()) return { accepted: false, reason: 'cancelled' };
+    const signals = [...new Set([signal, owner.signal].filter(Boolean))];
+    const operationSignal = signals.length > 1 ? AbortSignal.any(signals) : signals[0];
 
     // ① 白名单
     if (!allowed(c, kind, id)) return { accepted: false, reason: 'whitelist' };
     // ② 全局屏蔽
-    if (await isGloballyBlocked(c, senderId, globalBlocklistOf, signal)) return { accepted: false, reason: 'global-blocklist' };
+    if (await isGloballyBlocked(c, senderId, globalBlocklistOf, operationSignal)) return { accepted: false, reason: 'global-blocklist' };
+    if (!current()) return { accepted: false, reason: 'stale-identity' };
     // ③ 按群屏蔽
     if (kind === 'group' && isChatBlocked(c, id, senderId)) return { accepted: false, reason: 'chat-blocklist' };
 
     const chatKey = `${kind}:${id}`;
     const rawSegments = Array.isArray(event?.message) ? event.message : null;
-    const owner = readScope(), generation = nameGeneration;
-    const current = () => !signal?.aborted && !owner.signal?.aborted && readScope() === owner && generation === nameGeneration;
-    if (!current()) return { accepted: false, reason: 'cancelled' };
     const nameKey = userId => JSON.stringify([kind, String(id), String(userId)]);
     const resolveName = async userId => {
       if (!current()) return null;
@@ -86,7 +89,6 @@ export function createIngest({
       if (kind !== 'group' || typeof resolveAtName !== 'function' || pendingNames.size >= 500) return null;
       let pending = pendingNames.get(key);
       if (!pending) {
-        const operationSignal = signal && owner.signal ? AbortSignal.any([signal, owner.signal]) : signal ?? owner.signal;
         pending = abortable(Promise.resolve().then(() => resolveAtName(String(id), String(userId), { signal: operationSignal })), operationSignal).then(value => {
           const name = typeof value === 'string' ? value : value?.card || value?.nickname;
           if (current()) remember(key, name);
@@ -170,7 +172,7 @@ export function createIngest({
   }
 
   /** §6.3 拍一拍。 */
-  async function ingestPoke(event) {
+  async function ingestPoke(event, { signal } = {}) {
     const c = cfg();
     const chatId = String(event?.group_id ?? event?.user_id ?? '');
     const isGroup = event?.group_id != null;
@@ -178,9 +180,15 @@ export function createIngest({
     const operatorId = String(event?.user_id ?? '');
     const targetId = String(event?.target_id ?? '');
     const selfId = String(selfIdOf() ?? '');
+    const owner = readScope(), generation = nameGeneration;
+    const current = () => !signal?.aborted && !owner.signal?.aborted && readScope() === owner && generation === nameGeneration;
+    if (!current()) return { accepted: false, reason: 'cancelled' };
+    const signals = [...new Set([signal, owner.signal].filter(Boolean))];
+    const operationSignal = signals.length > 1 ? AbortSignal.any(signals) : signals[0];
     if (operatorId === selfId) return { accepted: false, reason: 'self-poke' }; // 自己拍的回显丢弃
     if (!allowed(c, kind, chatId)) return { accepted: false, reason: 'whitelist' };
-    if (await isGloballyBlocked(c, operatorId, globalBlocklistOf)) return { accepted: false, reason: 'global-blocklist' };
+    if (await isGloballyBlocked(c, operatorId, globalBlocklistOf, operationSignal)) return { accepted: false, reason: 'global-blocklist' };
+    if (!current()) return { accepted: false, reason: 'stale-identity' };
     if (isGroup && isChatBlocked(c, chatId, operatorId)) return { accepted: false, reason: 'chat-blocklist' };
 
     const chatKey = `${kind}:${chatId}`;

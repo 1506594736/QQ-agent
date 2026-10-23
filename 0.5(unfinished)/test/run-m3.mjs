@@ -111,5 +111,6 @@ files.push('288-send-settings-help-test.mjs');
 files.push('289-proactive-seconds-help-test.mjs');
 files.push('290-sticker-conditional-settings-test.mjs');
 let pass=0;let fail=0;
+files.push('291-composition-lifecycle-regression-test.mjs', '292-theme-description-test.mjs');
 for(const file of files){console.log(`\n=== ${file} ===`);const result=spawnSync(process.execPath,[path.join(here,file)],{stdio:'inherit',timeout:240000});if(result.status===0)pass++;else {fail++;console.error(`FAILED ${file}: status=${result.status} signal=${result.signal||'none'} ${result.error?.message||''}`);}}
 console.log(`\n${fail===0?'✓ M3 全部通过':'✗ M3 有失败'}：${pass}/${files.length} 个测试文件`);process.exit(fail===0?0:1);

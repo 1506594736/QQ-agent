@@ -410,12 +410,12 @@ M1 14/14、M2 8/8、**M3 43/43**、M4 10/10、smoke 12/12、`git diff --check` �
 - 预览首次受限启动报 Chromium IPC 拒绝访问/0x80000003，已核实并结束本轮失败进程 67340，关闭遗留错误提示，以正常权限启动 87820 成功。fixture PID58348，端口17667/17668；仅是记录时身份，之后仍需重新核实。
 - 独立预览仍打开，保留作用户查看；数据与服务均为 loopback 合成环境。截图和 `ui-changes.json` 位于该副本目录。原有测试数据/验收权威文档、UI 前快照保持。未打包安装包。
 
-## 2026-10-13 Endfield 主题重做与本地验收
+## 2026-10-13 暖黑黄绿 主题重做与本地验收
 
-用户要求先备份简约 UI，再研究 Arknights Endfield 的设计理念/语言，重做全部 UI 与组件库，加入完整动效、原创且可换色的图标，并保留插件化边界。原 186 项逐功能验收继续保留上述暂停进度；本节记录此次界面重做，不把新外观验收当成原规格全部完成。
+用户要求先备份简约 UI，再研究 暖黑黄绿主题 的设计理念/语言，重做全部 UI 与组件库，加入完整动效、原创且可换色的图标，并保留插件化边界。原 186 项逐功能验收继续保留上述暂停进度；本节记录此次界面重做，不把新外观验收当成原规格全部完成。
 
 - 改动前完成 `.qa-local/backups/minimal-ui-20261013-043341-5e701811` 源码快照：344 文件，其中 54 UI 文件，含 package-lock 与原验收文档，排除业务数据/依赖/构建产物。2026-10-13 逐项 SHA256 与长度复核全部一致。没有 reset 工作区。
-- 实际搜索并查看官方首页、2026-01-17 发布开发沟通与其装备 UI 图片，转译为工业分层、索引、薄线、切角主操作、小圆角及受控强调色。颜色与尺寸是本项目设计值，未冒称官方规范。研究/接入说明见 `docs/endfield-ui-design.md` 和 `docs/plugin-sdk.md`。
+- 实际搜索并查看官方首页、2026-01-17 发布开发沟通与其装备 UI 图片，转译为灰阶分层、索引、薄线、切角主操作、小圆角及受控强调色。颜色与尺寸是本项目设计值，未冒称官方规范。研究/接入说明见 `docs/theme-color-design.md` 和 `docs/plugin-sdk.md`。
 - 重做共享 `design-system.css/common.css`、外壳和九页私有布局；增加 `icons.js`、`motion.js` 与设置组件预览。原业务控件 ID 保留。恢复实时亮/暗、自定义主题、圆角、密度、侧栏、按钮排布和单宿主背景绘制；背景仍使用 16:9 参考平面，几何与像素回归保留。
 - 用内置 image_gen 生成两款原创透明图标并进行质量迭代；原生成文件保留，选用结果在 `ui/panels/assets/endfield`，提示词及选择记录在同目录 `generation-prompts.json`。实际浏览器比较 180px 与 32px 蒙版；PNG alpha 蒙版及 SVG currentColor 均实操验证随暗色、浅色、蓝紫方案换色，无 emoji 导航。
 - 用户面板在 ready 后只收到经过白名单过滤的视觉 DTO；背景路径/私有方案名/宿主配置/密钥不出宿主。用户 RPC 仍为 ctx.call/getConfig/notify，保留 opaque iframe、source/origin/nonce/面板 ID/代际检查。未知插件自愿接入共享样式与动效，没有全局注入。
@@ -505,7 +505,7 @@ M1 14/14、M2 8/8、**M3 43/43**、M4 10/10、smoke 12/12、`git diff --check` �
 - 用户明确追加“图标更复杂，聚焦期间持续而非只播放一次”，现共享图标改分层语义细节与浏览器原生循环：会话扫描、聊天信号、记忆数据、柱图、模块、接通、齿轮、社区节点、SnowLuma波形、徽记/存档。原PNG保持不变，仅小SVG细节运动并跟随currentColor；owner4/glyph3/doc8效果24上限、单委托observer、图标rAF0。离开与失焦、后台/hidden/DETAILS/reduced/禁用/移除/pagehide取消；窗口恢复有效可见键盘焦点时续播，CSS隐藏子glyph/wrapper/detail按事件回收。
 - 61前端模块、70五尺寸、72实际换色、110隐藏恢复、139刷新合并均通过；136实际独立UI/kernel与137八组Node DOM/RPC夹具、138真实Chromium也通过。138严格检查长hover/keyboard跨周期持续、12语义、8/24上限、去重、主题与CSS隐藏、生命周期、currentColor/opaque、observer1/disconnect1/rAF0/errors[]。证据`icon-continuous-focus-result.json`与`icon-focus-2026-10-13T08-03-21-300Z-0f323f27.json`在原performance-icons目录；本轮未重跑完整108文件，旧full仅为此前冻结源码记录。
 - 同一原生合成副本的IAB实际验证收纳/键盘、搜索保留、刷新记忆、360/520窄窗、right预览与hidden完整peek/ESC，再恢复left未保存；窄视口已reset。新最终图标栏62px、用量选中、outer overflow0，图标demo长focus不同transform且失焦none/.72；errors均[]，两个预览保留。实际源UI66+main1共67份hash一致；本轮测试中旧native实例已关闭并在同一合成副本恢复，未使用真实业务数据。新截图/观察在`.qa-local/collapsible-navigation-20261013`。
-- 插件增长设计已记录在`docs/endfield-ui-design.md`：固定常用+有限最近+全部目录的分类/搜索，新页面默认不自动固定；按插件集中设置、高级字段折叠；启用/设置常驻，热更/权限/卸载进更多；后续兼容增可选分类/关键词。纯工具插件目前不长导航。这些是建议，尚未实现，不改变原授权/RPC/opaque iframe和旧插件可用性。
+- 插件增长设计已记录在`docs/theme-color-design.md`：固定常用+有限最近+全部目录的分类/搜索，新页面默认不自动固定；按插件集中设置、高级字段折叠；启用/设置常驻，热更/权限/卸载进更多；后续兼容增可选分类/关键词。纯工具插件目前不长导航。这些是建议，尚未实现，不改变原授权/RPC/opaque iframe和旧插件可用性。
 - 原186功能验收继续paused、安装包未打包；原minimal快照及历史失败/negative bench/FPS限制保留。
 
 ## 2026-10-13 用户澄清选中页签：简洁放大图标重做
@@ -513,7 +513,7 @@ M1 14/14、M2 8/8、**M3 43/43**、M4 10/10、smoke 12/12、`git diff --check` �
 - “焦点”现明确为对应页签被选中，覆盖上一节hover持续/复杂图形要求。恢复最初简洁SVG路径/stroke1.6及两PNG单层alpha蒙版，取消细节叠层；主导航20→28px，图标列28px，vertical padding8后普通按钮仍46px、收纳栏62px。不会因图标变大增加菜单行高；QA-only预览改为真实单选tab，图标56px。
 - 当前动画仅DOM选择aria-current=page/aria-selected=true/data-icon-active=true驱动。hover/普通keyboard focus静止，无window blur门控，进入iframe输入仍播当前页；切页停旧播新。hidden/reduced/禁用/CSS/DETAILS/后台暂停，恢复从最新DOM selection续播；移除/pagehide/disposer释放，disposer不改ARIA。owner4/glyph3/doc8效果24、单同时observer/no图标逐帧JS保留，currentColor/opaque/plugin边界不扩。
 - 六个定向文件通过：61模块、70五尺寸、72实际换色、110hidden恢复、137八组Node DOM/RPC、重写138真实Chromium。138真实wait3100ms后会话selected原effect仍running、iteration1/currentTime约3134.768；hover其它项/输入焦点/window blur不丢loop，改选后旧idle。12语义/三种信号/嵌套普通动作静止/最新selected可见恢复/24effects与8glyph/CSS子元素/DETAILS/禁用/移除/重装均严格验证，累计observer2/disconnect2（显式dispose重装）、peak1/final0、iconRaf0/errors[]。证据`icon-selection-2026-10-13T08-44-05-819Z-5f7045df.json`、`icon-selected-138-first.log`、`icon-selected-137.log`在performance-icons目录；三源自root同步后未变。
-- 实际有头IAB同合成native内核也完成：activeElement=IFRAME搜索输入时sessions matrix/未选memory none；非选skills键盘focus仍none，Sessions继续；切Usage时Sessionsnone/Usage matrix。展开保留搜索值，收纳保持Usage选中，全部nav28×28/button46/rail62/outeroverflow0。demo选Usage再点配色（焦点移开）仍动、未选Sessions静止；SVG/原mask同blue，再恢复Endfield，附加SVG0。两页errors[]，67源hash一致，预览保留。`visible-evidence.json`及`app-selected-simple.png`、`gallery-selected-simple.png`位于`.qa-local/selected-icons-20261013`。
+- 实际有头IAB同合成native内核也完成：activeElement=IFRAME搜索输入时sessions matrix/未选memory none；非选skills键盘focus仍none，Sessions继续；切Usage时Sessionsnone/Usage matrix。展开保留搜索值，收纳保持Usage选中，全部nav28×28/button46/rail62/outeroverflow0。demo选Usage再点配色（焦点移开）仍动、未选Sessions静止；SVG/原mask同blue，再恢复暖黑黄绿，附加SVG0。两页errors[]，67源hash一致，预览保留。`visible-evidence.json`及`app-selected-simple.png`、`gallery-selected-simple.png`位于`.qa-local/selected-icons-20261013`。
 - 现SDK/设计文档已改选中契约；旧finite/hover记录保留历史。插件增长方案仍只为设计建议。原186清单继续暂停，未全量重跑/打包/FPS承诺，原备份与全部历史失败/测量限制保留。
 
 ## 2026-10-13 加强选中图标动作
@@ -522,7 +522,7 @@ M1 14/14、M2 8/8、**M3 43/43**、M4 10/10、smoke 12/12、`git diff --check` �
 - 首版137/138通过；试加记忆外壳第二效果后，138第132隐藏内部目标的waitStill超时：仍可见外壳继续运行。原失败final-138.log与source快照/SHA保留在.qa-local/stronger-icons-20261013。恢复单核心效果并加大幅度，原隐藏检查不改；verified-138.log和verified-137.log最终exit0。只适配原周期断言为2000–3400ms，无新增无意义样式测试或全量。
 - 有头同合成native内核重载最新源，恢复Memory/收纳；演示页重载并选Settings，点配色移开焦点后仍旋转矩阵，未选Memory静止。Cua不提供document.getAnimations，DOM样式有归位快照，不据此声称实时effect计数；实际持续/清理由138验证。UI66+main1共67源hash一致，截图memory-active.png/settings-rotation-preview.png及元数据在上述目录。SDK/设计说明更新，原186继续paused，未打包/帧率保证。
 
-## 2026-10-13 全套图标用途与终末地视觉重设计
+## 2026-10-13 全套图标用途与暖黑黄绿视觉重设计
 
 - 重画31款共享图标（九入口、操作、品牌、存档和扩展回退），统一24画布/1.65描边/切角/断轨/实心锚点；当前全SVG currentColor，旧PNG无生产消费但保留历史资产。会话执行路线、记忆人物印象、技能精密工具、插件插接模块、SnowLuma启动桥接、设置滑轨、社区扩展发布接收，各轮廓按实际职责区分。16px插件两半静态间隔扩大1单位，导航仍28px。
 - 动效改按data-icon-role定位，持续选择规则、数量预算、后台/减少动效/隐藏/卸载清理不改；品牌仅15°小幅转动，无描边越界，没有新增逐帧JS或重滤镜。SDK/createIcon/名称别名/未知回退和插件opaque/RPC/授权边界兼容。原最简备份不改，本轮前图形4文件备份在 `.qa-local/endfield-icon-reset-20261013/before`。
@@ -860,7 +860,7 @@ SnowLuma页实时日志修复（2026-10-15T11:35:12.361Z，UTC）：原面板丢
 
 最终定向批次22/22文件通过，79份UI运行前后源码散列相同；新增180有头/无头各14/14，合计23个不同测试文件，含168原13组行为与精确回退、169九项mock破坏请求、136临时合成数据真实备份/重置、172/177实际Chromium追加UI/沙箱验证。夹具仅补新模块或等待新的150ms色彩绘制，旧业务断言保留。既有第三方image-generate旧API错误单列，本轮不是新完整M3/M4或186项真实功能验收，不作满帧承诺。
 
-备份后仅将9个UI文件同步到当前独立控制台138608/15967，217份运行源码逐散列一致，配置/离线wrapper保持；无数据目录写入、服务重启、真实QQ/SnowLuma启动、打包或部署。未绕过当前15967浏览器权限限制读取页面，用户刷新即可加载新文件。[最终记录](.qa-local/visual-interactions180/final-verification.json)，视觉与SDK细节见[设计记录](docs/endfield-ui-design.md)及[插件SDK](docs/plugin-sdk.md)。
+备份后仅将9个UI文件同步到当前独立控制台138608/15967，217份运行源码逐散列一致，配置/离线wrapper保持；无数据目录写入、服务重启、真实QQ/SnowLuma启动、打包或部署。未绕过当前15967浏览器权限限制读取页面，用户刷新即可加载新文件。[最终记录](.qa-local/visual-interactions180/final-verification.json)，视觉与SDK细节见[设计记录](docs/theme-color-design.md)及[插件SDK](docs/plugin-sdk.md)。
 
 ### 2026-10-16 本机自动认证与连接恢复
 
@@ -1497,3 +1497,12 @@ JSON改为分组会话按钮，展示白名单所有群/私聊及允许全部模
 
 - 启用主动开话题改为语义卡片开关，成功/危险描边与 6px 内发光；关闭隐藏下方四项参数，开启从顶部向下裁切弹出，减少动态效果时直接展示。鼠标/键盘操作复用原 FormState/保存生命周期，隐藏不清值；后台逻辑与 DeepSeek Harness 组合边界未改。
 - 61 与 249 通过；249 无头/有头各 13 组，含 160 字段清单、整组显隐、实际保存/重读、参数保留、逐帧方向、窄屏及追加资产恢复检查。已查看三种截图，未重跑全套 M3/M4。证据 `.qa-local/proactive-card-toggle-20261019/`；同步与预览重载结果以 final-verification.json 为准。
+
+## 2026-10-23 生命周期修复与主题说明
+
+- 协议消息、拍一拍与自动媒体转发贯穿提供者取消信号与代际检查；名单查询前捕获原身份，替换或停止后拒绝旧结果入库或借新提供者发送。
+- 已获取的基础服务立即登记一次性清理，构造失败也等待回收；服务宿主停止后解除配置、能力与总线订阅，单独重新启动时仅绑定一次。能力注册表也释放配置选择观察器。
+- 重置保护改由宿主自己的 facade 承载，所选配置、仓库、命名空间和编排器可返回只读对象；保持私有字段接收者、迟到写入阻断、重置响应与最终退出清理。
+- 主题与组件库说明改为暖黑黄绿、骨白橄榄绿等颜色描述；颜色数值及旧配置标识兼容。设计记录更名为 `docs/theme-color-design.md`，对应文档引用同步更新；离线市场中的第三方游戏扩展及人设内容未作为产品主题文案改写。
+- 新增并登记 291/292 回归：旧消息与拍一拍跨代、迟到媒体、失败构造、重复停止与重新订阅、只读实现、私有字段及主题命名兼容。75 改为验证当次媒体操作的信号，177 补齐实际导入的设置生命周期资源。
+- 29 项定向验收全部通过，包含 170–179 组合、172/177 实际 Chromium、重置子进程、SDK 边界、默认界面端到端、启动/停止冒烟和隐私检查；另行完整 M4 为 10/10。完整 M3 尝试仍有旧 UI/夹具失败（例如 83 已移除的“管理分群档位”入口），在定向验收完成后停止该广泛运行；没有将整套回归标记为通过，也没有宣称真实 QQ、安装包或生产部署验收。

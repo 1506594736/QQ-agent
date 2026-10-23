@@ -48,10 +48,12 @@ export async function forwardLinkedMedia(chatKey, entry, { runtimeState, capabil
   return { claimed: true, sent: true, ownerId: result.ownerId, sentCount: sent?.sent?.length ?? 0 };
 }
 
-export async function handleProviderEvent({ kind, id, type, event }, { ingest, orchestrator, cfg, config, store, bus, log, capability, selfIdOf, forwardMedia }) {
+export async function handleProviderEvent({ kind, id, type, event }, { ingest, orchestrator, cfg, config, store, bus, log, capability, selfIdOf, forwardMedia, signal, current = () => true }) {
+  const active = () => !signal?.aborted && current();
+  if (!active()) return;
   if (type === 'message') {
-    const result = await ingest.ingestMessage({ kind, id, event });
-    if (result.accepted) {
+    const result = await ingest.ingestMessage({ kind, id, event, signal });
+    if (result.accepted && active()) {
       const c = cfg();
       const command = c.commandMute?.command;
       if (kind === 'group' && c.commandMute?.enabled !== false && result.entry?.atMe === true && command && String(result.entry.text).includes(command)) {
@@ -61,13 +63,15 @@ export async function handleProviderEvent({ kind, id, type, event }, { ingest, o
         log.info?.(`[kernel] 群 ${id} 触发指令禁言（${command}），${duration > 0 ? duration + ' 分钟后解除' : '直到手动解除'}`);
       }
       await orchestrator.onIncoming(result.chatKey, result.entry);
-      void Promise.resolve().then(() => forwardMedia(result.chatKey, result.entry)).catch((error) => log.warn?.(`[media] 链接媒体转发失败：${error?.message ?? error}`));
+      void Promise.resolve().then(() => active() && forwardMedia(result.chatKey, result.entry, { signal, current })).catch((error) => {
+        if (active()) log.warn?.(`[media] 链接媒体转发失败：${error?.message ?? error}`);
+      });
     }
     return;
   }
   if (type === 'poke') {
-    const result = await ingest.ingestPoke(event);
-    if (result.accepted) await orchestrator.onIncoming(result.chatKey, result.entry);
+    const result = await ingest.ingestPoke(event, { signal });
+    if (result.accepted && active()) await orchestrator.onIncoming(result.chatKey, result.entry);
     return;
   }
   if (type === 'recall') {

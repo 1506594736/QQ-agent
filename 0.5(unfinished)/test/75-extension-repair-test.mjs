@@ -373,7 +373,7 @@ try {
   kernel.send.sendSegments = (chatKey, segments, opts) => {
     const pending = originalSendSegments(chatKey, segments, opts);
     if (opts?.source === 'media.download') {
-      assert.equal(opts.signal, downloadSignals[0]);
+      assert.equal(opts.signal, downloadSignals.at(-1), '发送沿用当次下载的提供者信号');
       queuedMedia = pending;
     }
     return pending;

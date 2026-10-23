@@ -46,7 +46,7 @@ const {panels}=await api.request('GET','/api/panels');window.registry=new PanelR
 function populateShell(relative, source) {
   write(`${relative}/index.html`, shellHtml(source));
   write(`${relative}/app.js`, shellScript(`shell-script-${source}`));
-  for (const name of ['panel-registry.js', 'rpc-bridge.js', 'panel-view-state.js']) write(`${relative}/${name}`, fs.readFileSync(path.join(workspace, 'ui/shell', name), 'utf8'));
+  for (const name of ['panel-registry.js', 'rpc-bridge.js', 'panel-view-state.js', 'settings-save-lifecycle.js']) write(`${relative}/${name}`, fs.readFileSync(path.join(workspace, 'ui/shell', name), 'utf8'));
 }
 function populatePage(relative, id, source, badge = null) {
   write(`${relative}/index.html`, pageHtml(id, source));

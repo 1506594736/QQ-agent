@@ -6,6 +6,7 @@ import { APP_ROOT, resolveDataDir, resolveProfile } from './env.js';
 import { sanitizeLlmRequestNotice } from './sdk-services.js';
 import { resolveRequestApiKey } from './llm.js';
 import { createCompositionLifecycle } from './composition-lifecycle.js';
+import { createResetGuards } from './reset-guards.js';
 import { defaultComponents } from '../../bundled/runtime-defaults/components.js';
 
 const VERSION = '0.5.0';
@@ -31,11 +32,38 @@ export function createKernel({
     if (typeof implementation !== 'function') throw new TypeError(`运行时组件 ${name} 必须是函数`);
   }
   const lifecycle = suppliedLifecycle ?? createCompositionLifecycle();
+  let businessSealed = false, resetCoordinator, quiescingConsole = false;
+  const guards = createResetGuards({ isSealed: () => businessSealed, canConfigure: () => !resetCoordinator || resetCoordinator.canConfigure() });
+  const resourceDisposers = new Map();
+  const cleanupMethods = {
+    'runtime.capability': 'close', 'runtime.permissions': 'close', 'runtime.scheduler': 'stop',
+    'runtime.plugins': 'stopAll', 'runtime.services': 'stop', 'runtime.http': 'close',
+    'data.sessions': 'stop', 'core.orchestrator': 'stop', 'console.sse': 'close',
+  };
+  const release = (name, ...args) => resourceDisposers.get(name)?.(...args);
   const construct = (name, options) => {
     const value = components[name]({ ...options, components, composition, lifecycle });
     if (value && typeof value.then === 'function') {
       Promise.resolve(value).catch(() => {});
       throw new TypeError(`组件 ${name} 必须同步构造；异步装配请替换 runtime.kernel`);
+    }
+    const method = cleanupMethods[name];
+    if (method && typeof value?.[method] === 'function') {
+      let disposal, unregister;
+      const dispose = (...args) => {
+        if (!disposal) {
+          unregister?.();
+          disposal = Promise.resolve().then(() => value[method](...args));
+        }
+        return disposal;
+      };
+      resourceDisposers.set(name, dispose);
+      unregister = lifecycle.onStop(() => {
+        // Reset retains HTTP and SSE until the response has reached the shell.
+        // Final stop still calls their same one-shot disposers explicitly.
+        if (quiescingConsole && ['runtime.http', 'console.sse'].includes(name)) return;
+        return dispose();
+      });
     }
     return value;
   };
@@ -59,29 +87,29 @@ export function createKernel({
   const parsedPort = Number(portOverride);
   const envPort = portOverride && Number.isInteger(parsedPort) && parsedPort >= 0 && parsedPort <= 65535 ? parsedPort : null;
   if (portOverride && envPort === null) log.warn('[app] 忽略非法 QQ_AGENT_PORT：端口必须为 0–65535 的整数；沿用已保存的端口或 PROFILE 默认值');
-  const config = construct('runtime.config', { dataDir, defaults, log });
+  const config = guards.config(construct('runtime.config', { dataDir, defaults, log }));
   config.load();
   const cfg = () => config.get();
-  let businessSealed = false;
-  let resetCoordinator;
 
   const capability = construct('runtime.capability', { log, selection: () => cfg().extensions?.providers ?? {},
     subscribeSelection: listener => config.onChange?.(listener) });
   const permissions = construct('runtime.permissions', { log, bus, headless, dataDir });
   const registry = construct('runtime.tools', { log, bus, permissions, capabilities: capability });
   const scheduler = construct('runtime.scheduler', { log });
-  const storage = construct('runtime.storage', { dataDir, log });
+  const storage = guards.storage(construct('runtime.storage', { dataDir, log }));
   const priceUpdates = injectedPriceUpdates ?? construct('runtime.priceUpdates', { dataDir, config, version: VERSION });
   const usageDays = construct('data.usage', { dataDir, log, costFor: (session) => components['console.usageCost'](session.usage ?? {}, session.model, session.startedAt, cfg(), { resolveModelPrice: (model, current) => priceUpdates.resolve?.(model, current) ?? null }) });
 
   // ---- 数据仓 ----
-  const store = construct('data.messages', { dataDir, log, maxMessagesPerChat: () => cfg().store?.maxMessagesPerChat ?? 0 });
-  const memory = construct('data.memory', { dataDir, log, cfg });
-  const sessions = construct('data.sessions', {
+  const store = guards.methods(construct('data.messages', { dataDir, log, maxMessagesPerChat: () => cfg().store?.maxMessagesPerChat ?? 0 }),
+    ['appendIncoming', 'appendSelf', 'markRecalled', 'updateByMid', 'markEntryRead', 'markAllRead', 'markEntriesUnread', 'markUnreadInWindow', 'removeByLocalIds', 'clearChat']);
+  const memory = guards.methods(construct('data.memory', { dataDir, log, cfg }), ['append', 'remove', 'markConsolidated', 'replaceMember', 'removeMember', 'clearChat']);
+  const sessions = guards.methods(guards.methods(construct('data.sessions', {
     dataDir, log, bus, keepSessionFiles: () => cfg().store?.keepSessionFiles ?? 0,
     onFinishedSession: (session, previous) => usageDays.record(session, previous),
-  });
-  const reminders = construct('data.reminders', { dataDir, log });
+  }), ['create', 'delete', 'discard', 'clearFinished', 'setKeepFiles']),
+  ['update', 'finish', 'flushIndexCache', 'reconcileInBackground', 'stop'], { quiet: true });
+  const reminders = guards.methods(construct('data.reminders', { dataDir, log }), ['add', 'markFired', 'cancel', 'updatePendingTexts', 'prune']);
   let services;
   const mediaReader = serviceFacade(() => services?.get('media.reader'), ['image', 'imageParts', 'probe', 'framesAvailable'], { label: '媒体读取' });
   const providerLease = (ownerId, scopes = ['net.outbound']) => {
@@ -97,7 +125,8 @@ export function createKernel({
         &&receipts.every(receipt=>receipt.decision==='allow'&&receipt.isValid?.()!==false)};
     } catch {return {isValid:()=>false};}
   };
-  const stickers = construct('data.stickers', { dataDir, log, capability, cfg, providerLease, mediaReader: () => mediaReader });
+  const stickers = guards.methods(construct('data.stickers', { dataDir, log, capability, cfg, providerLease, mediaReader: () => mediaReader }),
+    ['note', 'markUsed', 'collect', 'mergeFromQQ', 'collectIntoQQ', 'renameInQQ', 'removeFromQQ']);
   const serviceLeaseOf = construct('runtime.serviceLease', { services: () => services, capability, providerLease, bus });
   let priceRefreshStop = null;
   let lifecycleGeneration = 0, lifecycleActive = false, lifecycleController = null;
@@ -244,7 +273,9 @@ export function createKernel({
         onStatus: (status) => { if (context.current()) transportStatus(status); },
         onEvent: (event) => {
           if (!context.current()) return;
-          Promise.resolve().then(() => context.current() && handleProviderEvent(event)).catch((error) => log.error?.(`[kernel] 事件处理异常：${error?.stack ?? error}`));
+          return Promise.resolve().then(() => context.current() && handleProviderEvent(event, context)).catch((error) => {
+            if (context.current() && !context.signal.aborted) log.error?.(`[kernel] 事件处理异常：${error?.stack ?? error}`);
+          });
         },
       };
     },
@@ -304,14 +335,14 @@ export function createKernel({
   });
 
   // ---- orchestrator ----
-  const orchestrator = construct('core.orchestrator', {
+  const orchestrator = guards.methods(construct('core.orchestrator', {
     cfg, store, sessions, memory, send, registry, loader, capability, transport: transportView, log, bus, components, globalBlocklistOf, serviceLeaseOf,
     buildToolsFor: (a) => buildToolBundle(a),
     execContextFor: ({ chatKey, session }) => ({
       chatKey, session, send, store, memory, transport: transportView, stickers, reminders, capability, mediaReader,
       cfg: cfg(), botName: cfg().persona?.botName,
     }),
-  });
+  }), ['onIncoming', 'wake', 'scheduleWake', 'resume', 'retrySession', 'startProactiveLoop', 'startReminderLoop']);
   // Install the lazy selected-store consumer during composition, not only when
   // HTTP starts. Merely constructing the application performs no remote sync.
   orchestrator._inject?.setStickerListProvider?.(async (chatKey, max, {signal} = {}) => {
@@ -330,17 +361,20 @@ export function createKernel({
     return components['core.tools.bundle'](args, { registry, loader, components, composition, lifecycle });
   }
 
-  function forwardLinkedMedia(chatKey, entry) {
+  function forwardLinkedMedia(chatKey, entry, source = {}) {
+    const signals = [...new Set([lifecycleController?.signal, source.signal].filter(Boolean))];
+    const signal = signals.length > 1 ? AbortSignal.any(signals) : signals[0];
     return components['core.media.forward'](chatKey, entry, {
       capability, cfg, send, components, composition, lifecycle,
-      runtimeState: () => ({ active: lifecycleActive, generation: lifecycleGeneration, signal: lifecycleController?.signal }),
+      runtimeState: () => ({ active: lifecycleActive && !signal?.aborted && (!source.current || source.current()), generation: lifecycleGeneration, signal }),
     });
   }
 
-  function handleProviderEvent(event) {
+  function handleProviderEvent(event, source = {}) {
     return components['core.events'](event, {
       ingest, orchestrator, cfg, config, store, bus, log, capability, components, composition, lifecycle,
       selfIdOf: currentSelfId, forwardMedia: forwardLinkedMedia,
+      signal: source.signal, current: source.current,
     });
   }
 
@@ -405,7 +439,6 @@ export function createKernel({
   };
   let consoleRoutesReady = null;
   let disposeConsoleRoutes = null;
-  let quiescingConsole = false;
   function prepareConsoleRoutes() {
     if (consoleRoutesReady) return consoleRoutesReady;
     // Synchronous registrars still populate routes during createKernel().
@@ -563,54 +596,15 @@ export function createKernel({
     priceRefreshStop?.stop?.(); priceRefreshStop = null;
   }
 
-  // Host objects only. Retained runner callbacks and old warehouse handles
-  // cannot mutate or persist after the reset snapshot.
-  const sealMethods = (target, names, { quiet = false } = {}) => {
-    for (const name of names) {
-      const method = target?.[name];
-      if (typeof method !== 'function') continue;
-      target[name] = function (...args) {
-        if (businessSealed) {
-          if (quiet) return undefined;
-          throw Object.assign(new Error('当前实例业务已封闭，请重启后继续'), { status: 409, expose: true, code: 'DATA_RESET' });
-        }
-        return method.apply(this, args);
-      };
-    }
-  };
-  sealMethods(store, ['appendIncoming', 'appendSelf', 'markRecalled', 'updateByMid', 'markEntryRead', 'markAllRead', 'markEntriesUnread', 'markUnreadInWindow', 'removeByLocalIds', 'clearChat']);
-  sealMethods(memory, ['append', 'remove', 'markConsolidated', 'replaceMember', 'removeMember', 'clearChat']);
-  sealMethods(sessions, ['create', 'delete', 'discard', 'clearFinished', 'setKeepFiles']);
-  // A cancelled LLM may still settle. Its late accounting must not rewrite the
-  // frozen snapshot; ordinary stop retains its normal accounting semantics.
-  sealMethods(sessions, ['update', 'finish', 'flushIndexCache', 'reconcileInBackground', 'stop'], { quiet: true });
-  sealMethods(reminders, ['add', 'markFired', 'cancel', 'updatePendingTexts', 'prune']);
-  sealMethods(stickers, ['note', 'markUsed', 'collect', 'mergeFromQQ', 'collectIntoQQ', 'renameInQQ', 'removeFromQQ']);
-  sealMethods(orchestrator, ['onIncoming', 'wake', 'scheduleWake', 'resume', 'retrySession', 'startProactiveLoop', 'startReminderLoop']);
-  const namespace = storage.namespace;
-  storage.namespace = (...args) => {
-    const scoped = namespace.apply(storage, args);
-    sealMethods(scoped, ['ensure', 'set', 'delete']);
-    return scoped;
-  };
-  sealMethods(storage, ['ensureDirs']);
-  for (const name of ['update', 'updateRawFields', 'reset', 'load']) {
-    const method = config[name];
-    if (name === 'updateRawFields' && typeof method !== 'function') continue;
-    config[name] = (...args) => {
-      if (resetCoordinator && !resetCoordinator.canConfigure()) throw Object.assign(new Error('已提交重置，请退出并重新打开应用'), { status: 409, expose: true });
-      return method.apply(config, args);
-    };
-  }
   resetCoordinator = construct('runtime.reset', { dataDir, log, quiesce: async () => {
     quiescingConsole = true;
     invalidateLifecycle();
     const errors = [];
     // HTTP and the instance lock survive to deliver the DTO and let the shell
     // quit normally. Business stops via existing private host lifecycle.
-    for (const action of [() => orchestrator.pause(), () => services.stop(), () => loader.stopAll(),
-      () => orchestrator.stop(), () => permissions.close?.('重置前停止'), () => scheduler.stop(),
-      () => sessions.stop(), () => lifecycle.close(), () => log.flush()]) {
+    for (const action of [() => orchestrator.pause(), () => release('runtime.services'), () => release('runtime.plugins'),
+      () => release('core.orchestrator'), () => release('runtime.permissions', '重置前停止'), () => release('runtime.scheduler'),
+      () => release('data.sessions'), () => lifecycle.close(), () => log.flush()]) {
       try { await action(); } catch (error) { errors.push(error); }
     }
     businessSealed = true;
@@ -623,14 +617,14 @@ export function createKernel({
   async function cleanup() {
     const errors = [];
     for (const action of [
-      () => services.stop(),
-      () => loader.stopAll(),
-      () => orchestrator.stop(),
-      () => permissions.close?.('内核已停止'),
-      () => sseBridge.close(),
-      () => sessions.stop(),
-      () => scheduler.stop(),
-      () => httpServer.close(),
+      () => release('runtime.services'),
+      () => release('runtime.plugins'),
+      () => release('core.orchestrator'),
+      () => release('runtime.permissions', '内核已停止'),
+      () => release('console.sse'),
+      () => release('data.sessions'),
+      () => release('runtime.scheduler'),
+      () => release('runtime.http'),
       cleanupConsoleRoutes,
       () => lifecycle.close(),
       () => log.flush(),

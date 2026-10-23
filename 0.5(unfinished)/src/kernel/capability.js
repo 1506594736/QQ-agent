@@ -165,8 +165,9 @@ export function createCapabilityRegistry({ log = console, isOwnerActive = () => 
   // Selection pins live outside registrations. Notify existing leases at the
   // first config transition, so a later A -> B -> A cannot revive old work.
   // Consumers compare their own selected row; unrelated config edits stay live.
+  let stopSelection;
   if (typeof subscribeSelection === 'function') {
-    try { subscribeSelection(changed); }
+    try { stopSelection = subscribeSelection(changed); }
     catch (error) { log.warn?.(`[capability] 选择变更订阅失败：${error?.message ?? error}`); }
   }
 
@@ -174,6 +175,7 @@ export function createCapabilityRegistry({ log = console, isOwnerActive = () => 
   function _setActiveProbe(fn) { if (typeof fn === 'function') activeProbe = fn; }
 
   return { register, unregister, unregisterOwner, snapshotOwner, restoreOwner, providers, has, consume, claim, claimAsync, explain, names, _setActiveProbe,
+    close() { const stop = stopSelection; stopSelection = null; try { if (typeof stop === 'function') stop(); } finally { listeners.clear(); } },
     options: (name, ownerId) => metadata.get(name)?.get(ownerId) ?? {},
     version: (name, ownerId) => registrations.get(name)?.get(ownerId) ?? null,
     onChange(fn) { listeners.add(fn); return () => listeners.delete(fn); },

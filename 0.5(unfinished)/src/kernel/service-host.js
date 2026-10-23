@@ -123,10 +123,9 @@ export function createServiceHost({ capability, config, bus, log = console, auth
     }
   }
   const wake = () => { cancelStale(); void refresh().catch(() => {}); };
-  capability.onChange?.(wake);
-  config.onChange?.(wake);
-  for (const event of ['plugin.loaded', 'plugin.unloaded', 'plugin.error']) bus?.on(event, wake, { internal: true });
-  bus?.on('permission.decision', (event) => {
+  const subscriptions = [];
+  let subscribed = false;
+  function permissionChanged(event) {
     // Routine authorization checks also emit audit records. Only decisions that
     // change authorization state should reconcile providers again.
     if (event?.detail !== '管理员显式决定' && (!event?.resolution || event.resolution === 'pending')) return;
@@ -140,17 +139,36 @@ export function createServiceHost({ capability, config, bus, log = console, auth
         if (!await awaitActive(entry, authorize(entry.name, { ownerId: entry.ownerId, provider: entry.definition }, { recheck: true }))) await trackDispose(entry);
       } catch (error) { if (current(entry)) throw error; }
     })).catch((error) => log.warn?.(`[services] 授权更新失败：${error?.message ?? error}`)).finally(wake);
-  }, { internal: true });
+  }
+  function subscribe() {
+    if (subscribed) return;
+    subscribed = true;
+    const keep = off => { if (typeof off === 'function') subscriptions.push(off); };
+    try {
+      keep(capability.onChange?.(wake));
+      keep(config.onChange?.(wake));
+      for (const event of ['plugin.loaded', 'plugin.unloaded', 'plugin.error']) keep(bus?.on(event, wake, { internal: true }));
+      keep(bus?.on('permission.decision', permissionChanged, { internal: true }));
+    } catch (error) { unsubscribe(); throw error; }
+  }
+  function unsubscribe() {
+    subscribed = false;
+    for (const off of subscriptions.splice(0).reverse()) {
+      try { off(); } catch (error) { stopFailures.push(error); }
+    }
+  }
+  subscribe();
 
   function invalidate() {
     running = false; epoch++;
     for (const entry of new Set([...instances.values(), ...pending])) void trackDispose(entry);
   }
   return {
-    async start() { if (!running) { running = true; epoch++; } await refresh(); },
+    async start() { if (!running) { subscribe(); running = true; epoch++; } await refresh(); },
     refresh,
     invalidate,
     async stop() {
+      unsubscribe();
       invalidate(); await Promise.allSettled([...stops]);
       const failures = stopFailures.splice(0);
       if (failures.length === 1) throw failures[0];
