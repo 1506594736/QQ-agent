@@ -147,17 +147,6 @@ export function createKernel({
     get segmentSupport() { return transport.segmentSupport; }, get everConnected() { return transport.everConnected; },
     status: () => services?.get('transport.provider')?.status?.() ?? transportStatusSnapshot,
   });
-  const processAdapters = Object.freeze(Object.fromEntries(['snowluma', 'qqPortable'].map((name) => [name, new Proxy({}, {
-    get(_target, key) {
-      if (key === 'statusSync') return () => services?.get('transport.provider')?.processes?.[name]?.statusSync?.() ?? { running: false, ready: false, configured: false };
-      if (key === 'then') return undefined;
-      return (...args) => {
-        const adapter = services?.get('transport.provider')?.processes?.[name];
-        if (typeof adapter?.[key] !== 'function') throw Object.assign(new Error('当前协议提供者未提供此进程管理能力'), { status: 503, code: 'CAPABILITY_MISSING', expose: true });
-        return adapter[key](...args);
-      };
-    },
-  })])));
   const send = construct('core.send', { transport: transportView, store, log, cfg, bus, mediaReader: () => mediaReader });
   const pick = (target, names, properties = []) => serviceFacade(() => target, names, { properties });
   const memoryAccess = { ...pick(memory, ['append', 'remove', 'query', 'stats', 'markConsolidated', 'lastConsolidatedAt', 'replaceMember', 'removeMember', 'clearChat', 'listFiles']) };
@@ -268,7 +257,7 @@ export function createKernel({
       if (name !== 'transport.provider') return context;
       return { ...context,
         emit: (event, payload) => {
-          if (['transport.status', 'snowluma.log', 'snowluma.status', 'qq-portable.log', 'qq-portable.status'].includes(event)) context.emit(event, payload);
+          if (['transport.status'].includes(event)) context.emit(event, payload);
         },
         onStatus: (status) => { if (context.current()) transportStatus(status); },
         onEvent: (event) => {
@@ -429,11 +418,6 @@ export function createKernel({
     marketClient: serviceFacade(() => services.get('market.client'), ['listCatalog', 'listAccounts', 'login', 'logout', 'publish', 'install'], { label: '扩展市场' }),
     communityClient: serviceFacade(() => services.get('community.client'), ['getBlocklist', 'syncGlobalBlocklist', 'updateBlocklist'], { label: '社区' }),
     bindInstallZip: (fn) => { installZip = fn; },
-    processAdapters,
-    statusProviders: {
-      snowluma: () => processAdapters.snowluma.statusSync?.() ?? { running: false, configured: false, webuiUrl: null },
-      qqPortable: () => processAdapters.qqPortable.statusSync?.() ?? { ready: false, running: false, pid: null, dir: '', dataDir: '' },
-    },
     selfId: currentSelfId,
     transportStatus: () => transportStatusSnapshot,
   };
@@ -650,7 +634,7 @@ export function createKernel({
   return {
     VERSION, APP_ID, dataDir, profile, components, composition, lifecycle,
     log, bus, config, capability, permissions, registry, scheduler, storage, loader, httpServer,
-    store, memory, sessions, send, ingest, orchestrator, transport: transportView, processAdapters, services,
+    store, memory, sessions, send, ingest, orchestrator, transport: transportView, services,
     /** @deprecated 使用 transport；0.5.x 保留兼容 */
     get onebot() { return transportView; },
     start, stop,

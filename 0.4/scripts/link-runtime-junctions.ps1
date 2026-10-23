@@ -1,6 +1,6 @@
 # QQ Agent 任务栏版运行时联接重建
 # 用途：dist\win-unpacked\QQ Agent.exe 是可以钉到任务栏的"正式身份"版本，
-#       通过 Junction 共享 dev 项目的 data/ 与 snowluma/（数据、登录态完全互通）。
+#       通过 Junction 共享 dev 项目的 data/（应用数据共享）。
 # ⚠️ 每次重新构建 electron-builder（dist 被清掉）后，本脚本要重跑一次。
 #
 # 改动说明：
@@ -52,10 +52,5 @@ Write-Host "项目根：$root"
 # data 联接：exe 旁边的 data → 项目 data
 Remove-LinkOnly -Path (Join-Path $unpacked 'data')
 New-Junction -Path (Join-Path $unpacked 'data') -Target (Join-Path $root 'data')
-
-# snowluma 联接：resources\app\snowluma → 项目 snowluma（含登录态 config/data）
-$slLink = Join-Path $unpacked 'resources\app\snowluma'
-Remove-LinkOnly -Path $slLink
-New-Junction -Path $slLink -Target (Join-Path $root 'snowluma')
 
 Write-Host "完成。把 dist\win-unpacked\QQ Agent.exe 固定到任务栏即可。"

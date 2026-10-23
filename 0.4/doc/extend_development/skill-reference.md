@@ -165,7 +165,7 @@ Skill = **可插拔能力模块**。核心代码通过**能力名（capability�
 > 能力和钩子是**核心代码确定性触发**。选错机制会出现"装了但一直不生效"。
 > 详见 [1.7 三种机制怎么选](#17-三种机制怎么选重要)。
 
-**能操作 QQ 到什么程度？** 通过 `ctx.onebot.call()` 可触达协议端的**全部 73 个 OneBot 接口**
+**能操作 QQ 到什么程度？** 通过 `ctx.onebot.call()` 可触达所连接协议端实际支持的 action
 （发消息、撤回、禁言、踢人、群文件、群相册、空间说说、语音转文字……）。
 完整清单见 [10.2.2](#1022-可用接口全表按分类)。
 
@@ -774,7 +774,7 @@ export const hooks = {
 `sender` 内置了发送队列（按会话串行）、限频、去重、真人式停顿；
 绕过它直发会破坏节奏控制，容易被风控或刷屏。
 
-#### 10.2.1 `call()` —— 73 个 OneBot 接口全部可达
+#### 10.2.1 `call()` —— 调用协议端支持的 action
 
 `call(action, params, timeoutMs = 15000)` 是**纯透传**：直接
 `POST {httpUrl}/{action}`，**没有 action 白名单**。也就是说协议端支持的所有接口，
@@ -792,45 +792,9 @@ const data = await ctx.onebot.call('set_group_ban', { group_id: 123, user_id: 45
 2. **没有白名单 = 没有护栏**：写操作（禁言/踢人/撤回/发说说）一旦调用就真的生效。
    请自行加权限判断。
 
-#### 10.2.2 可用接口全表（按分类）
+#### 10.2.2 接口兼容性
 
-**只读接口**（只查数据、不改状态，可放心频繁调用）：
-
-| 分类 | 接口 |
-|---|---|
-| 信息 | `get_login_info`（登录号与昵称）、`get_status`、`get_version_info`、`can_send_image`、`can_send_record` |
-| 好友 | `get_friend_list`、`get_stranger_info` |
-| 群信息 | `get_group_list`、`get_group_info`、`get_group_member_list`、`get_group_member_info` |
-| 消息 | `get_msg`、`get_group_msg_history`、`get_friend_msg_history` |
-| 媒体 | `get_image`、`get_record`、`fetch_ptt_text`（语音转文字） |
-| 群相册 | `get_group_album_list`、`get_qun_album_list`、`get_group_album_media_list` |
-| 空间 | `get_qzone_msg_list`、`get_qzone_feeds` |
-| 群管理 | `get_group_admin_settings` |
-| 群文件 | `get_group_file_url`、`get_group_root_files`、`get_group_files_by_folder` |
-| 系统表情 | `fetch_sys_faces`、`fetch_face_entity`、`search_sys_faces` |
-| 扩展 | `get_essence_msg_list`、`_get_group_notice`、`get_cookies` |
-
-**写操作接口**（会改 QQ 状态，用之前想清楚后果）：
-
-| 分类 | 接口 |
-|---|---|
-| 消息 | `send_msg`、`send_private_msg`、`send_group_msg`、`delete_msg`（撤回） |
-| 群管理 | `set_group_kick`、`set_group_kick_members`（批量踢）、`set_group_ban`（`duration=0` 解除）、`set_group_whole_ban`（全员禁言开关）、`set_group_admin`（设/撤管理）、`set_group_card`（群名片，空串清除）、`set_group_add_option` |
-| 请求处理 | `set_friend_add_request`（同意/拒绝加好友）、`set_group_add_request`（同意/拒绝加群） |
-| 文件 | `upload_group_file`、`upload_private_file` |
-| 互动 | `send_like`（点赞）、`friend_poke`、`group_poke`、`send_poke`、`set_group_reaction`（表情回应） |
-| 表情 | `add_custom_face`、`delete_custom_face`、`modify_custom_face` |
-| 精华消息 | `set_essence_msg`、`delete_essence_msg` |
-| 公告 | `_send_group_notice` |
-| 已读 | `mark_group_msg_as_read`、`mark_private_msg_as_read`、`mark_msg_as_read` |
-| 转发 | `upload_forward_msg` |
-| 群相册 | `upload_image_to_qun_album` |
-| 空间 | `send_qzone_msg`、`delete_qzone_msg`、`like_qzone` |
-| 流式 | `upload_file_stream`、`download_file_stream`、`download_file_image_stream`、`download_file_record_stream` |
-
-> 完整参数表（每个接口的字段、类型、必填）见
-> **[snowluma-capabilities.md](./snowluma-capabilities.md)** —— 73 个接口逐条列了参数与返回。
-> 那份是协议端能力清单，本文只做"Skill 怎么用"的索引。
+可用的 action、参数和返回值由所连接的协议端决定。标准能力与扩展能力应分别核对，不能把某个实现的接口清单当成所有 OneBot v11 实现的共同保证。使用前查阅所选协议端的官方文档，处理“不支持”与权限不足等错误；写操作还应加入相应的权限与确认逻辑。
 
 #### 10.2.3 消息段类型（`sendSegments` / `upload_forward_msg` 用）
 

@@ -154,8 +154,7 @@ test('overlapping disk wrappers retain independent features through disable, rem
     application.log.setLevel('error');
     application.config.update({
       server: { token: 'synthetic-overlap-179-token' }, allowAllWhenEmpty: true,
-      telemetry: { enabled: false }, proactive: { enabled: false }, memory: { consolidateEnabled: false }, snowluma: { autoLaunch: false },
-    });
+      telemetry: { enabled: false }, proactive: { enabled: false }, memory: { consolidateEnabled: false }, });
     application.orchestrator.pause();
     const port = await application.start();
     await application.services.idle();

@@ -46,4 +46,4 @@ prepare 仅检查日志目录直接子项的 .log 文件。日志目录必须是
 
 `test/246-logger-resilience-parity-test.mjs` 共九组：真实 SDK 同步回写/异常、UTF-8 JSONL 预算与全文保留、级别/环/child/stopWrites/null 策略、近期文件与保留期、精确行边界、行首 BOM 原始字节一致性、真实 junction/硬链接/非普通路径、六类隔离进程 I/O/变化故障，以及真实追加 policy+完整 logger replace → SDK/JSONL/鉴权 GET/SSE → 禁层恢复默认。
 
-所有数据为自建临时合成内容，HTTP 只使用系统分配的本机端口，远端 fetch 在夹具中直接失败；不启动浏览器、真实 QQ/SnowLuma、安装扩展或模型。fs 替身只在专用子进程中存在并在 finally 恢复。最终结果与源码散列见独占 QA 目录；定向通过不代替 root 后续源冻结完整回归。
+所有数据为自建临时合成内容，HTTP 只使用系统分配的本机端口，远端 fetch 在夹具中直接失败；不启动浏览器、真实 QQ、安装扩展或模型。fs 替身只在专用子进程中存在并在 finally 恢复。最终结果与源码散列见独占 QA 目录；定向通过不代替 root 后续源冻结完整回归。

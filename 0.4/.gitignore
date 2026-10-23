@@ -3,16 +3,13 @@
 # 分享给别人前用 `node scripts/sanitize-release.mjs` 生成干净副本。
 data/
 
-# SnowLuma 日志：可能含密钥片段与聊天内容
-snowluma/logs/
+# 本地日志与外部运行文件不纳入源码。
 *.log
-
-# SnowLuma 是**第三方独立项目**（作者 SnowLumaDevs，自带 EULA 与
-# "源码可见非商业许可"），不是本项目的代码。
-# 它只是运行 QQ 机器人的前置依赖，需使用者自行下载放进项目根目录。
-# 把 113MB 别人的代码推上来既误导人（以为是你写的），也可能违反其许可。
-# 安装方式见 README「安装 SnowLuma」一节。
-snowluma/
+/runtime/
+# 外部程序可能保留账号配置、缓存和日志；忽略这些目录，不读取或删除其内容。
+**/config/
+**/data/
+**/logs/
 
 # 依赖
 node_modules/
@@ -21,9 +18,6 @@ node_modules/
 .trash/
 *.tmp
 *.bak
-
-# 便携 QQ 运行时（setup 脚本下载/安装，不入库）
-runtime/
 
 # 系统文件
 .DS_Store

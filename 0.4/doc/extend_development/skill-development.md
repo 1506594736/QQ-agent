@@ -16,13 +16,13 @@
 | 需要实现什么 | 必须附加 | 里面有什么 |
 |---|---|---|
 | **任何功能**（建议总是附加） | [skill-reference.md](./skill-reference.md) | 共同机制完整参考：api 对象全表、ctx 全量字段（store/memory/stickers/session/reminders 的每个方法）、硬约束清单（§14）、完整示例（§16）。**本文为了篇幅只摘了常用部分** |
-| 调用 QQ 接口（查群成员、禁言、踢人、撤回、发说说、群文件、群相册……） | [snowluma-capabilities.md](./snowluma-capabilities.md) | 协议端全部 **73 个 OneBot 接口的逐条参数表与返回示例**（每个接口的字段名、类型、必填）。本文 §5.2 只讲了调用姿势，**不含参数表** |
+| 调用 QQ 接口 | 所选协议端的官方接口文档 | 核对 action、参数、返回值与权限；不要假定不同实现支持相同扩展接口。 |
 | 想让 AI 理解整个系统的设计（可选） | [skill-system.md](./skill-system.md) | 架构总览：状态模型、能力系统、判定链 |
 | 零基础人类阅读（可选，AI 不需要） | [skill-guide-for-beginners.md](./skill-guide-for-beginners.md) | 大白话教程 |
 
 **给小白的操作指引**：你只需要对 AI 说"按 skill-development.md 的规范生成一个 XXX 技能"，
 并**把上表中你用得到的文档内容一起粘贴/上传给 AI**（至少附加 skill-reference.md；
-功能涉及操作 QQ 就再加 snowluma-capabilities.md）。AI 输出的会是
+功能涉及操作 QQ 就再附上所选协议端的相关接口说明）。AI 输出的会是
 `skills/<id>/skill.json` + `skills/<id>/index.js` 两个文件的完整内容，
 你把它们保存到项目 `skills/<id>/` 目录下即自动生效（热重载默认开启）。
 
@@ -316,8 +316,7 @@ try {
 - `call()` 是**纯透传**：`POST {httpUrl}/{action}`，**没有任何白名单** → 协议端支持的接口全部可达
 - 失败**会抛错**（HTTP 非 2xx，或响应 `retcode !== 0`）→ 必须 `try/catch`
 - 没有白名单 = 没有护栏：禁言/踢人/撤回/发说说一旦调用就真生效。**涉及 QQ 写操作时自己加权限判断**
-- 接口清单（73 个）与**每个接口的参数表**见 [snowluma-capabilities.md](./snowluma-capabilities.md)
-  —— 本文不重复参数表；交给 AI 生成涉及 QQ 操作的技能时，**必须把那份文档一并附加**
+- action 的参数、返回值与权限要求请查阅所选协议端的官方文档；调用前核对其实际支持情况。
 
 ---
 
@@ -583,5 +582,4 @@ export function setup(api) {
 
 - [plugin-development.md](./plugin-development.md) —— 确定性型插件开发（能力 / 钩子）
 - [skill-reference.md](./skill-reference.md) —— 共同机制完整参考（清单、生命周期、能力系统、ctx 全量字段、硬约束清单）
-- [snowluma-capabilities.md](./snowluma-capabilities.md) —— 协议端 73 个接口的逐条参数表
 - [skill-system.md](./skill-system.md) —— 架构总览

@@ -73,7 +73,6 @@ function createMockOneBotHttp() {
         ]
       });
     }
-    if (action === 'fetch_custom_face_detail') return reply([{ emoji_id: 'st1', res_id: 'st1', md5: 'aaa', desc: '滑稽', url: `http://127.0.0.1:${PORTS.onebotHttp}/img.png` }]);
     if (action.startsWith('search')) {
       // 模拟 Bing 结果页（b_algo 块结构）
       res.writeHead(200, { 'content-type': 'text/html; charset=utf-8' });
@@ -279,7 +278,7 @@ refs:
     providersSourceYaml: fixtureYaml,
     webSearch: { enabled: true, searchUrl: `http://127.0.0.1:${PORTS.onebotHttp}/search`, maxResults: 6 },
     security: { allowPrivateImageHosts: false },
-    snowluma: { wsUrl: `ws://127.0.0.1:${PORTS.onebotWs}`, httpUrl: `http://127.0.0.1:${PORTS.onebotHttp}`, accessToken: '' },
+    onebot: { wsUrl: `ws://127.0.0.1:${PORTS.onebotWs}`, httpUrl: `http://127.0.0.1:${PORTS.onebotHttp}`, accessToken: '' },
     persona: { botName: '审计Bot', participation: 'medium', roleText: '你是审计群里的机器人。' },
     allow: { groups: ['456'], private: ['777'] },
     deny: { groups: [], private: [] },
@@ -446,8 +445,10 @@ refs:
   pass('群友印象跨运行持久化 + 相关成员注入');
 
   // ── 场景 6：表情包同步 + SSRF 拦截 + 发表情机制 ──
+  const { saveStickerStore } = await import('../src/stickers.js');
+  saveStickerStore([{ id: 'st1', source: 'manual', desc: '滑稽', url: `http://127.0.0.1:${PORTS.onebotHttp}/img.png` }]);
   const stickers = await app.stickers.sync(true);
-  assert.ok(stickers.entries.length >= 1, '从 mock OneBot 同步到收藏表情');
+  assert.ok(stickers.entries.length >= 1, '从本地读取收藏表情');
   // 6a. 本地/内网地址的图片必须被拒绝（防护生效即"不发送"）
   llm.state.script.push(
     { toolCalls: [{ name: 'send_sticker', args: { stickerId: 'st1' } }] },

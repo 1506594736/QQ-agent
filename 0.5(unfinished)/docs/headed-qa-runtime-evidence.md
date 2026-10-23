@@ -32,7 +32,6 @@ node test/98-message-contract-repair-test.mjs
 | B04 `send_poke`（core-tools） | 群缺参拒绝、群目标 20001 正确；修复后 98 验私聊省目标拍当前好友 20001，群目标仍不变。 | 真实 QQ 系统提示和不支持该 action 的平台。 |
 | B05 `list_stickers`（sticker-tools） | 真 sticker store 查询 `QA`、limit=1，返回已有 ID。 | QQ 账号真实收藏与备注同步。 |
 | B06 `get_sticker_image`（sticker-tools） | 真实本地 PNG 获取，返回独立 mediaParts；未知 ID 拒绝。 | 外部图床故障、全部视觉模型权限组合。 |
-| B07 `collect_sticker`（sticker-tools） | 存档图片消息→实际本地 `add_custom_face`→`modify_custom_face`，收到新 ID 并带备注。 | QQ 收藏实机确认、服务器失败的全部组合。 |
 | B08 `get_recent_messages`（query-tools） | 实际 store 的 limit/offset/pastStateCount 与 beforeId 边界核对。 | 全部历史容量/归档迁移组合。 |
 | B09 `read_forward`（query-tools） | 真 `get_forward_msg` 一次，转发内容入档；第二次使用缓存，无第二次 action。 | 真实多层嵌套、媒体与所有平台资源 ID 形式。 |
 | B10 `get_active_members`（query-tools） | 实际历史按次数排序，limit=2，QQ 是真实夹具发言者号码。 | 超长历史和全部时间边界。 |

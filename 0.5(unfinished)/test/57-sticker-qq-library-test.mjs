@@ -1,6 +1,6 @@
 // 57 · 表情库归属改造 + 插件增删 + 热更新（2026-06 三件功能的契约测试）
 //
-// 1. 表情：收藏走 QQ 随账号表情包（add_custom_face + modify_custom_face），
+// 1. 表情：默认本地库与可选账号收藏能力的边界，
 //    sticker_note 已删除；写入失败（如QQ 表情库 1000 上限）视为收藏失败且不落本地索引。
 // 2. 插件删除：只允许删用户域、必须先停用、realpath 复核防路径穿越。
 // 3. 插件新增：从 ZIP 走市场同一套受限解压，不自造解压逻辑。
@@ -20,40 +20,14 @@ import { createKernel } from '../src/kernel/kernel.js';
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const read = (p) => fs.readFileSync(path.join(root, p), 'utf8');
 
-console.log('=== A. 表情：协议端动作已就位 ===');
-const calls = []; let faceResult = { emoji_id: 'EMOJI' };
-class OfflineClient {
-  async call(action, params) {
-    calls.push({ action, params });
-    return { retcode: 0, data: action === 'add_custom_face' ? faceResult : action === 'fetch_custom_face' ? ['https://fixture/face.png', 7] : {} };
-  }
-}
-const provider = createOneBotProvider({ cfg: () => ({}), clientFactory: OfflineClient });
-for (const key of ['emoji_id', 'qianqian_emoji', 'emojiId']) {
-  faceResult = { [key]: 'EMOJI' }; assert.deepEqual(await provider.actions.addCustomFace('https://fixture/image.png'), { emojiId: 'EMOJI' });
-}
-assert.deepEqual(await provider.actions.modifyCustomFace('EMOJI', '用途备注'), { ok: true });
-assert.deepEqual(await provider.actions.deleteCustomFace('EMOJI'), { ok: true });
-assert.deepEqual(await provider.actions.fetchCustomFaces(12), ['https://fixture/face.png', '7']);
-assert.deepEqual(calls, [
-  ...Array.from({ length: 3 }, () => ({ action: 'add_custom_face', params: { file: 'https://fixture/image.png' } })),
-  { action: 'modify_custom_face', params: { emoji_id: 'EMOJI', desc: '用途备注' } },
-  { action: 'delete_custom_face', params: { emoji_id: 'EMOJI' } },
-  { action: 'fetch_custom_face', params: { count: 12 } },
-]);
-faceResult = {}; await assert.rejects(provider.actions.addCustomFace('https://fixture/image.png'), /未返回 emoji_id/);
-console.log('✓ 4 个QQ 表情库 action 已实现（含字段名兼容）');
-
-console.log('\n=== B. 表情：内核能力注册与严格失败语义 ===');
+console.log('=== 默认传输不提供额外收藏表情扩展；通用表情能力由插件提供 ===');
 const registeredCapabilities = new Map(); let definition;
 transportPlugin.setup({ capability: name => name === 'host.config' ? { get: () => ({}) } : { appRoot: root },
   registerTransport(value) { definition = value; }, registerCapability(name, value, options) { registeredCapabilities.set(name, { value, options }); },
   lifecycle: { onStop() {} }, log: {},
 });
 assert.equal(typeof definition.create, 'function'); assert.equal(definition.default, true);
-const favorites = registeredCapabilities.get('qq.emoji-favorites');
-assert.equal(favorites.options.default, true, '默认协议插件注册可替换的表情能力');
-for (const name of ['addCustomFace', 'modifyCustomFace', 'deleteCustomFace', 'fetchCustomFaces']) assert.equal(typeof favorites.value[name], 'function', name);
+assert.equal(registeredCapabilities.has('qq.emoji-favorites'), false);
 const stickersSrc = read('src/kernel/stickers.js');
 assert.ok(stickersSrc.includes('collectIntoQQ'), 'stickers 提供 collectIntoQQ');
 assert.ok(stickersSrc.includes('QQ_EMOJI_LIMIT'), '上限有独立错误码');
@@ -181,8 +155,8 @@ console.log('\n=== D. sticker_note 已删除且工具描述里不再提它===');
   const tool = read('bundled/sticker-tools/index.js');
   assert.ok(!/id: 'sticker_note'/.test(tool), 'sticker_note 已删除');
   assert.ok(!/id: 'sticker_note'/.test(read('test/25-bundled-tools-test.mjs')), '测试已改为断言其不存在');
-  // collect_sticker 的描述要说明"存进 QQ 表情包"和"满了会失败"
-  assert.match(tool, /QQ 表情包/, 'collect_sticker 描述提到 QQ 表情包');
+  // 账号收藏必须声明可选能力依赖，不暗示默认 OneBot 传输支持。
+  assert.match(tool, /requires: \['qq\.emoji-favorites'\]/, '账号收藏声明可选能力依赖');
   assert.match(tool, /满了会失败|上限/, 'collect_sticker 描述提示上限');
   // 工具层透传内核错误码，不硬编码字符串
   assert.match(tool, /code: res\.code/, '工具层透传内核错误码（QQ_EMOJI_LIMIT 等）');
@@ -250,7 +224,7 @@ console.log('\n=== E2. 热更新后的真实权限身份 ===');
     transport: { id: 'offline57', start() {}, stop() {}, status: () => ({ connected: true }), actions: {} },
     fetchImpl: async () => { throw new Error('57 fixture forbids external HTTP'); }, priceUpdates: { refresh: async () => ({ ok: true }) },
   });
-  kernel.config.update({ server: { port: 0, token }, telemetry: { enabled: false }, proactive: { enabled: false }, snowluma: { autoLaunch: false } });
+  kernel.config.update({ server: { port: 0, token }, telemetry: { enabled: false }, proactive: { enabled: false }, });
   kernel.log.setLevel('error'); kernel.loader.startWatchers = () => {};
   try {
     const port = await kernel.start();

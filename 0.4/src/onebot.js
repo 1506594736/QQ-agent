@@ -1,12 +1,11 @@
 // OneBot v11 客户端：WebSocket 只收事件，HTTP API 负责发送与查询。
-// （原版经 @snowluma/sdk 收事件；这里直接实现标准 OneBot v11，去掉 SDK 补丁依赖。）
 import WebSocket from 'ws';
 import { sanitizeUserText, escapeCqText } from './util.js';
 import { skillManager } from './skills/manager.js';
 
 const RECONNECT_MIN_MS = 3000;
 const RECONNECT_MAX_MS = 30000;
-// 连上 WS 但 get_login_info 失败（SnowLuma 还在启动/账号还没挂好）时的补拉间隔。
+// 连上 WS 但 get_login_info 失败（外部服务尚未就绪）时的补拉间隔。
 const SELF_INFO_RETRY_MS = 15000;
 
 /**
@@ -86,7 +85,7 @@ export class OneBotClient {
     this.wsUrl = String(wsUrl || 'ws://127.0.0.1:3001');
     this.httpUrl = String(httpUrl || 'http://127.0.0.1:3000').replace(/\/+$/, '');
     this.accessToken = String(accessToken || '');
-    // SnowLuma 允许给 WS 与 HTTP 配不同令牌；httpToken 缺省沿用 accessToken
+    // 本客户端支持分别配置 WS 与 HTTP 令牌；httpToken 缺省沿用 accessToken
     this.httpToken = String(httpToken || accessToken || '');
     this.onEvent = onEvent || (() => {});
     this.socket = null;
@@ -122,10 +121,10 @@ export class OneBotClient {
     this.#connectLoop();
   }
 
-  /** 连接配置可能变了（比如从 SnowLuma 配置同步到了新令牌），重连一次。 */
+  /** 连接配置更新后重连一次。 */
   async reconnect() {
     // 关键：先作废旧 socket，再启新连接。否则旧 socket 的 close 事件稍后到达时
-    // 会误以为需要再次重连，造成两个 WebSocket 同时连着 SnowLuma，所有事件收到两份。
+    // 会误以为需要再次重连，造成两个 WebSocket 同时连着 OneBot，所有事件收到两份。
     const old = this.socket;
     this.socket = null;
     this.#closedByUs = false;
@@ -139,16 +138,7 @@ export class OneBotClient {
   }
 
   #connectLoop() {
-    // 单连接互斥：同一时刻只允许一个连接循环存活。
-    // ── 为什么需要它（2026-09-19 401 风暴复盘）────────────────────────────
-    // 旧实现里每个 socket 的 close handler 都 setTimeout 一轮新的 connectLoop，
-    // 而 app.js 的令牌恢复逻辑（maybeRecoverOnebot）又会调 reconnect() 开另一轮。
-    // 两轮循环并发后：一轮拿着正确令牌连上了（connected=true、UI 显示正常），
-    // 另一轮还攥着被 401 拒过的旧令牌每 30 秒撞一次门 —— SnowLuma 日志里就是
-    // 一片成对出现的 "rejected unauthorized WebSocket upgrade"，且**永远不停**，
-    // 因为 401 的 error 事件在 everConnected=true 时不再广播状态，没人去杀它。
-    // 互斥做法：循环入口记录"代际号"；新一轮开始时把旧代际作废，旧循环的
-    // 定时器醒来后发现代际不匹配就自行退出，不再创建 socket。
+    // 每次连接循环使用新代际；旧连接的迟到事件不能重开连接。
     const generation = ++this.#connectGeneration;
     this.#scheduleConnect(generation, 0);
   }
@@ -207,7 +197,7 @@ export class OneBotClient {
         this.selfInfo = await this.call('get_login_info');
       } catch (error) {
         console.error('[onebot] 获取登录信息失败:', error?.message ?? error);
-        // get_login_info 失败不代表连接不可用（可能是 SnowLuma 还在启动中）。
+        // get_login_info 失败不代表连接不可用（可能是 外部服务尚未就绪）。
         // 挂一个延迟补拉：连着但 selfInfo 一直空 → /api/status 的 self 恒为 null，
         // UI 就"检测不到账号信息"（2026-09-19 排障记录）。
         this.#refreshSelfInfoLater();
@@ -241,7 +231,7 @@ export class OneBotClient {
     });
   }
 
-  /** 连接活着但 selfInfo 为空时，定期补拉 get_login_info（SnowLuma 慢启动场景）。 */
+  /** 连接活着但 selfInfo 为空时，定期补拉 get_login_info（外部服务延迟就绪场景）。 */
   #refreshSelfInfoLater() {
     if (this.#selfInfoTimer) return;
     const timer = setTimeout(async () => {
@@ -296,7 +286,7 @@ export class OneBotClient {
     }
     if (!res.ok) {
       const hint = res.status === 426
-        ? '（HTTP 426：httpUrl 可能指向了 WebSocket 端口，请检查 snowluma.httpUrl 是否为 OneBot HTTP API 地址）'
+        ? '（HTTP 426：httpUrl 可能指向了 WebSocket 端口，请检查 onebot.httpUrl 是否为 OneBot HTTP API 地址）'
         : '';
       throw new Error(`OneBot ${action} HTTP ${res.status}${hint}`);
     }

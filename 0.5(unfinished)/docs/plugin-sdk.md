@@ -195,7 +195,7 @@ run.addEventListener('click', async () => {
 
 `createIcon()` 为当前文档懒安装一次 `icon-motion.js`。只有选中控件的 `aria-current="page"`、`aria-selected="true"` 或显式 `data-icon-active="true"` 驱动持续语义动画；hover和普通键盘焦点不启动。取消选择后回到静止；后台、减少动效、隐藏、禁用、移除或pagehide时取消，恢复可见时仍选中的控件继续播放。窗口失焦和焦点进入iframe不取消当前可见页签。模块使用单文档清理observer和浏览器原生动画，JS没有逐帧任务。若插件需要显式清理，可导入 `/panels/icon-motion.js` 的 `installIconMotion(doc = document)`，返回幂等disposer，与重复安装及 `createIcon` 共用实例。现行约定按2026-10-13用户澄清改为“选中页签”，取代此前hover/键盘焦点循环；不增加插件权限或RPC，未使用模块的旧图标不受强制改写。
 
-每个控件最多4个活动图标，每个图标最多3条效果，整个文档最多8个活动图标和24条效果。图形按实际用途区分：会话是执行路线、记忆是成员印象、技能是工具、插件是插接模块、SnowLuma是终端桥接、设置是参数滑轨、社区是扩展交换。语义动效使用transform/opacity并跟随currentColor，以部件的 `data-icon-role` 寻址；普通循环采用动作、归位、短暂停顿。选中变化、CSS显隐和文档可见性通过相关事件与mutation处理，检查不在逐帧任务中执行。普通操作按钮默认静止；插件选择状态由其自身界面维护，宿主不会在其他插件文档代设选中项。
+每个控件最多4个活动图标，每个图标最多3条效果，整个文档最多8个活动图标和24条效果。图形按实际用途区分：会话是执行路线、记忆是成员印象、技能是工具、插件是插接模块、设置是参数滑轨、社区是扩展交换。语义动效使用transform/opacity并跟随currentColor，以部件的 `data-icon-role` 寻址；普通循环采用动作、归位、短暂停顿。选中变化、CSS显隐和文档可见性通过相关事件与mutation处理，检查不在逐帧任务中执行。普通操作按钮默认静止；插件选择状态由其自身界面维护，宿主不会在其他插件文档代设选中项。
 
 主题沿用已有握手和事件链路：配置是保存来源，shell 应用方案，在面板 ready 时发送当前主题，随后发送 `theme` 变更事件；`panel-client.js` 将已校验的事件转为文档内 `qq-theme`，`theme.js` 只写当前 iframe 的 CSS 变量及布局属性。用户面板收到 `publicPanelTheme()` 的纯视觉 DTO：仅明确列出的色值与布局，不含背景图片地址、私有方案名称、配置对象、密钥或未知字段。opaque-origin 面板不读取宿主存储、不访问宿主 DOM。用户面板只能消费主题，不能调用 bundled 专用的 `theme.apply` 或借此修改全局配置。旧面板和未知面板不会被强行注入样式或脚本，未引用设计系统的页面继续使用自己的界面。
 
@@ -219,7 +219,7 @@ run.addEventListener('click', async () => {
 
 宿主当前将内置页面的重复标题收起，仅保留紧凑运行控制栏与面板自己的标题。用户插件仍在控制栏中保留注册标题，避免自绘或canvas页面失去页面名称；宿主不读取iframe内容来判断标题，也不修改插件页面。`common.css` 的紧凑标题规则仅自动适用于九个内置 `body[data-panel]`；插件可在自己的body显式设置 `data-layout="compact"` 采用相同间距与标题规则，未知面板默认布局保持兼容。
 
-四项运行就绪状态属于宿主侧栏，不占插件内容区。共享名称 `status-qq-ready/pending`、`status-snow-ready/pending`、`status-onebot-ready/pending`、`status-model-ready/pending` 分别提供成功与未成功的两种轮廓；颜色和文字由调用方根据实际状态提供。宿主仅good使用ready，其它状态使用pending；模型ready只表示地址与模型已配置，详情明确尚未验证服务连通。这些状态控件显式 `data-icon-active="true"`，沿用已有动画预算和后台/隐藏/减少动效清理，不新增RPC或授权。
+OneBot 与模型配置状态属于宿主侧栏，不占插件内容区。共享名称 `status-onebot-ready/pending`、`status-model-ready/pending` 分别提供成功与未成功的两种轮廓；颜色和文字由调用方根据实际状态提供。宿主仅good使用ready，其它状态使用pending；模型ready只表示地址与模型已配置，详情明确尚未验证服务连通。这些状态控件显式 `data-icon-active="true"`，沿用已有动画预算和后台/隐藏/减少动效清理，不新增RPC或授权。
 
 ## 插件化阶段验证（UI 重做前的历史记录）
 

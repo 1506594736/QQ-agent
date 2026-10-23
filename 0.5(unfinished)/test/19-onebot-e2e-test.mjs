@@ -85,7 +85,7 @@ const cfgObj = {
   persona: { botName: '小鲸鱼', roleText: '人设', participation: 'medium' },
   allow: { groups: ['100'], private: [] }, deny: { groups: [], private: [] }, allowAllWhenEmpty: true,
   memory: { consolidateEnabled: false }, chatActive: { enabled: false },
-  snowluma: {}, commandMute: { enabled: true, command: '/安静', durationMin: 30, active: {} },
+  onebot: {}, commandMute: { enabled: true, command: '/安静', durationMin: 30, active: {} },
   globalBlocklist: [], communityExemptions: [], blocklist: {}, memberNotes: {}, tools: { enabled: true, categories: {}, overrides: {}, crossChatSend: false },
   webSearch: { enabled: true }, proactive: { enabled: false },
 };
@@ -97,7 +97,7 @@ const mockOneBot = await startMockOneBot({ onSendGroup: (action, params) => sent
 cfgObj.api.baseUrl = `http://127.0.0.1:${mockLlm.port}`;
 
 const provider = createOneBotProvider({
-  cfg: () => ({ ...cfgObj, snowluma: { wsUrl: `ws://127.0.0.1:${mockOneBot.port}`, httpUrl: `http://127.0.0.1:${mockOneBot.port}`, accessToken: '' } }),
+  cfg: () => ({ ...cfgObj, onebot: { wsUrl: `ws://127.0.0.1:${mockOneBot.port}`, httpUrl: `http://127.0.0.1:${mockOneBot.port}`, accessToken: '' } }),
   log: {},
   onEvent: (e) => { handleEvent(e); },
   onStatus: () => {},

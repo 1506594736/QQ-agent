@@ -363,58 +363,14 @@
       ]
     },
     {
-      "id": "snowluma",
-      "title": "SnowLuma",
+      "id": "logs",
+      "title": "应用日志",
       "kind": "bundled",
       "permissions": [],
       "api": [
         {
           "method": "GET",
-          "path": "/api/snowluma/status"
-        },
-        {
-          "method": "GET",
-          "path": "/api/status"
-        },
-        {
-          "method": "GET",
-          "path": "/api/snowluma/logs"
-        },
-        {
-          "method": "GET",
-          "path": "/api/qq-portable/logs"
-        },
-        {
-          "method": "GET",
-          "path": "/api/qq-portable/status"
-        },
-        {
-          "method": "GET",
           "path": "/api/logs"
-        },
-        {
-          "method": "POST",
-          "path": "/api/snowluma/launch"
-        },
-        {
-          "method": "POST",
-          "path": "/api/snowluma/stop"
-        },
-        {
-          "method": "POST",
-          "path": "/api/snowluma/open-folder"
-        },
-        {
-          "method": "POST",
-          "path": "/api/snowluma/open-webui"
-        },
-        {
-          "method": "POST",
-          "path": "/api/qq-portable/launch"
-        },
-        {
-          "method": "POST",
-          "path": "/api/qq-portable/stop"
         },
         {
           "method": "POST",
@@ -447,7 +403,8 @@
         "role": "configuration",
         "sections": [
           "models",
-          "access"
+          "access",
+          "onebot"
         ],
         "bootScripts": [
           "panel.js"

@@ -78,7 +78,7 @@ const kernel=createKernel({appRoot:isolation.appRoot,env:isolation.env,headless:
  priceUpdates:{refresh:async()=>({ok:true})},communityMarket:{syncGlobalBlocklist:async()=>({ok:true,ids:[]}),getBlocklist:()=>({ok:true,ids:[]})},
  fetchImpl:async(url,init)=>{assert.equal(String(url),QUOTE_ENDPOINT);calls.push({url:String(url),init:{...init,signal:undefined},body:JSON.parse(init.body)});if(delay)await new Promise(resolve=>{release=resolve;});return new Response(JSON.stringify({ok:true,ignored:'never return remote fields'}));},
 });
-const token='qa149-local-token';kernel.config.update({server:{port:0,token},telemetry:{enabled:false},proactive:{enabled:false},snowluma:{autoLaunch:false},security:{mediaRoots:[root]},api:{apiKey:'qa149-synthetic-key'}});
+const token='qa149-local-token';kernel.config.update({server:{port:0,token},telemetry:{enabled:false},proactive:{enabled:false},security:{mediaRoots:[root]},api:{apiKey:'qa149-synthetic-key'}});
 kernel.loader.startWatchers=()=>{};
 let port;
 const request=async(method,route,value)=>{const r=await fetch(`http://127.0.0.1:${port}${route}`,{method,headers:{'x-console-token':token,'content-type':'application/json'},...(value?{body:JSON.stringify(value)}:{})});return{status:r.status,body:await r.json()};};

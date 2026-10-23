@@ -2,31 +2,25 @@ import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
-import { EventEmitter } from 'node:events';
 import { createKernel } from '../src/kernel/kernel.js';
 import { createTelemetry } from '../src/kernel/telemetry.js';
 import { createSessionRegistry } from '../src/kernel/sessions.js';
-import { createRealProcessAdapters } from '../src/console/process-adapters.js';
 
 const root = fs.mkdtempSync(path.join(os.tmpdir(), 'qqa-t61-isolated-'));
 const dir = (name) => { const value = path.join(root, name); fs.mkdirSync(value, { recursive: true }); return value; };
 const deferred = () => { let resolve; let reject; const promise = new Promise((a, b) => { resolve = a; reject = b; }); return { promise, resolve, reject }; };
 const read = (file) => JSON.parse(fs.readFileSync(file, 'utf8'));
 const fakeKernel = (dataDir, { price = Promise.resolve({ ok: true }), blocklist = Promise.resolve({ ok: true, ids: [] }), connect = Promise.resolve() } = {}) => {
-  const calls = { transportStop: 0, snowStop: 0, snowShutdown: 0, qqStop: 0, close: 0 };
+  const calls = { transportStop: 0, close: 0 };
   const transport = { id: 'fixture', start: () => connect, actions: {}, toPlatformSegments: (x) => x,
-    processes: {
-      snowluma: { stop: async () => { calls.snowStop++; }, shutdown: async () => { calls.snowShutdown++; } },
-      qqPortable: { stop: async () => { calls.qqStop++; } },
-    },
-    stop: async () => { calls.transportStop++; await transport.processes.snowluma.shutdown(); },
+    stop: async () => { calls.transportStop++; },
   };
   const kernel = createKernel({
     env: { QQ_AGENT_DATA_DIR: dataDir, QQ_AGENT_PORT: '48061' },
     transport,
     priceUpdates: { refresh: () => price }, communityMarket: { syncGlobalBlocklist: () => blocklist },
   });
-  kernel.config.update({ snowluma: { autoLaunch: false }, telemetry: { enabled: false }, proactive: { enabled: false } });
+  kernel.config.update({ telemetry: { enabled: false }, proactive: { enabled: false } });
   kernel.httpServer.listen = async () => 48061;
   kernel.httpServer.close = async () => { calls.close++; };
   kernel.loader.loadAll = async () => {};
@@ -51,9 +45,6 @@ try {
     await first.kernel.stop();
     assert.equal(fs.existsSync(path.join(dataDir, 'qq-agent.lock')), false);
     assert.equal(process.listenerCount('exit'), base);
-    assert.equal(first.calls.snowStop, 0);
-    assert.equal(first.calls.qqStop, 0);
-    assert.equal(first.calls.snowShutdown, 1);
   }
   {
     const dataDir = dir('background-stop');
@@ -84,7 +75,6 @@ try {
     assert.equal(kernel.scheduler.count(), 0);
     assert.equal(fs.existsSync(path.join(dataDir, 'qq-agent.lock')), false);
     assert.equal(calls.close, 1);
-    assert.equal(calls.snowShutdown, 1);
   }
   {
     const dataDir = dir('cancel-start');
@@ -191,32 +181,6 @@ try {
     sessions.stop();
     assert.equal(read(path.join(dataDir, 'sessions', `${session.id}.json`)).promptChars, 44);
     assert.equal(session._throttleTimer, undefined);
-  }
-  {
-    const appRoot = dir('process-fixture');
-    const snow = path.join(appRoot, 'snowluma');
-    fs.mkdirSync(snow); fs.writeFileSync(path.join(snow, 'node.exe'), 'fixture'); fs.writeFileSync(path.join(snow, 'index.mjs'), 'const LIST_QQ_VERSION="9.9.33-51802";');
-    fs.mkdirSync(path.join(snow, 'native'));
-    for (const ext of ['node', 'dll']) fs.writeFileSync(path.join(snow, 'native', `snowluma-win32-x64.${ext}`), 'QA61_ONLY_NOT_NATIVE');
-    let spawnCalls = 0; let execCalls = 0; let killCalls = 0;
-    const children = [];
-    const adapters = createRealProcessAdapters({ appRoot, snowlumaPlatform: 'win32', snowlumaArch: 'x64', nativeProbe: async () => ({ ok: true }), fetchImpl: async () => ({ status: 503 }),
-      // This owned-child fixture has no listener; do not consult a real user's 5099 port.
-      netImpl: { createConnection() { return { once(name, fn) { if (name === 'error') queueMicrotask(() => fn(new Error('fixture closed'))); return this; }, setTimeout() {}, destroy() {} }; } },
-      spawn: () => { spawnCalls++; const child = new EventEmitter(); child.pid = spawnCalls; child.exitCode = null; child.kill = () => { killCalls++; child.killed = true; child.exitCode = 0; child.emit('exit', 0); }; children.push(child); return child; },
-      execFile: () => { execCalls++; throw new Error('不得探测真实进程'); }, kill: () => { throw new Error('不得杀真实进程'); },
-    });
-    await adapters.snowluma.shutdown();
-    assert.equal(execCalls, 0); assert.equal(killCalls, 0);
-    await adapters.snowluma.launch({}, {});
-    await adapters.snowluma.shutdown();
-    assert.equal(killCalls, 1);
-    await adapters.snowluma.launch({}, {});
-    children[0].emit('exit', 0);
-    assert.equal(adapters.snowluma.statusSync().running, true);
-    assert.equal(adapters.snowluma.statusSync().embedded, true);
-    await adapters.snowluma.shutdown();
-    assert.equal(killCalls, 2); assert.equal(execCalls, 0);
   }
   console.log('61 内核生命周期与遥测隔离回归：全部通过');
 } finally {

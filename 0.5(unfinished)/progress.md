@@ -1,5 +1,7 @@
 # progress.md — 会话日志
 
+> 范围更新（2026-10-23）：专属协议端与便携客户端的安装、启动和登录态迁移已从项目范围移除。本文保留其余历史记录；旧编号、测试数量与结果只对应当时范围，不代表当前版本已经完成验收。当前外部协议端由用户自行管理。
+
 ## 2026-09-30（路线 B 第二次开工会话）
 - M0 内核底座完成：提交 6906b00，9 文件 231 断言 + 12 冒烟全绿。
 - 用户终极指令：完成整个 0.5 至可日常长跑；插件化一切（追加文件 = 换平台/翻 UI/换协议端/改核心）。
@@ -14,9 +16,9 @@
 - **M3 控制台最终验收完成并已提交（a34790c；R52 安全补丁 0686b60）**：R01-R91 路由/事件/安全矩阵已收口；完整 `run-m3.mjs` 为 22/22 文件通过，真实 Chromium 为 27/27，headless smoke 为 12/12，定向 R01/R04/R05、价格与 R52 ZIP 安全回归通过，`git diff --check` 通过。状态 DTO 已脱敏，价格 resolver 遵守 custom → official cache/feed → manual/none；规格目录没有完整官方价格数值表，未凭空编造。
 
 ## 2026-10-01 M4 增量
-- 已提交 `182233c` Electron 壳修订、`d9c2523` SnowLuma/便携 QQ 适配器、`cf5c096` active/anchor/memory、`8d8faf2` MCP/compat、`e861cc5` MCP stop/权限修复。
-- M4 专项已通过：Electron 壳 mock 1/1，进程适配器、active-memory、MCP/compat 及 `run-m4` 均通过；真实 Electron（electron 依赖未安装）、真实 SnowLuma/QQ、Windows 托盘/注册表/双实例仍 BLOCKED。
-- M4 实现门已闭合：Electron `27fbb56`/`6ae7274`；MCP 正式装配/显式 adapter/legacy compat `e81aa53` + `16b242d`；loader/compat 事务 `c8994be`；MCP timeout/crash `2a7f879`；permission Ask broker/UI `2875ef6` + 生命周期/并发/脱敏修复 `25ff14b`/`5fcf9ad`/`671b788`/`2fbd330`/`7e1c4c2`/`8550437`。M4 runner 7/7 文件通过，MCP/compat/loader/permission专项全绿；M3 runner 22/22、headless smoke 12/12；用正确 bash export + managed Playwright/Chromium1228 实跑 test34 27/27。真实 Electron（依赖未安装）、SnowLuma/QQ/Windows GUI/注册表/双实例仍 BLOCKED；captcha诊断IPC、SnowLuma autoLaunch/token sync/2s poll/45s selfInfo、memory consolidate provider、proactive实际tick/anchor端到端、权限卡真实点击仍未完成，不能宣称真实运行时验收完成。
+- 已提交 `182233c` Electron 壳修订、`cf5c096` active/anchor/memory、`8d8faf2` MCP/compat、`e861cc5` MCP stop/权限修复。
+- M4 专项已通过：Electron 壳 mock 1/1，进程适配器、active-memory、MCP/compat 及 `run-m4` 均通过；真实 Electron（electron 依赖未安装）、真实 QQ、Windows 托盘/注册表/双实例仍 BLOCKED。
+- M4 实现门已闭合：Electron `27fbb56`/`6ae7274`；MCP 正式装配/显式 adapter/legacy compat `e81aa53` + `16b242d`；loader/compat 事务 `c8994be`；MCP timeout/crash `2a7f879`；permission Ask broker/UI `2875ef6` + 生命周期/并发/脱敏修复 `25ff14b`/`5fcf9ad`/`671b788`/`2fbd330`/`7e1c4c2`/`8550437`。M4 runner 7/7 文件通过，MCP/compat/loader/permission专项全绿；M3 runner 22/22、headless smoke 12/12；用正确 bash export + managed Playwright/Chromium1228 实跑 test34 27/27。真实 Electron（依赖未安装）、QQ/Windows GUI/注册表/双实例仍 BLOCKED；captcha诊断IPC、memory consolidate provider、proactive实际tick/anchor端到端、权限卡真实点击仍未完成，不能宣称真实运行时验收完成。
 
 ## 环境与坑（本次）
 - 3210 端口：用户 0.4 实例/孤儿进程占用，沙箱无权杀（taskkill 拒绝访问）；测试统一用 3987/3988。
@@ -29,10 +31,9 @@
 - `6e1cee1` 补齐验证码诊断 IPC：`qqa-captcha-net-probe`、`qqa-captcha-interceptor-status`、sender 校验、脱敏 DTO、探针错误分类和拦截统计；M4 runner 仍为 9/9。真实 Electron/公网反代仍 BLOCKED。
 - `a73da81` 增加 M5 前置桌面配置：electron/electron-builder devDependencies、NSIS build 配置、覆盖升级 `installer.nsh`、启动 bat；`f1ad06b` 同步 package-lock，`db9d50f`/`c04f990` 记录前置门禁。`assets/icon.png` 已在 `ababb12` 补齐；真实 electron-builder/NSIS 构建首次运行受 WorkBuddy safe-delete shim 的 `genie-trash.exe ETIMEDOUT` 阻塞，Windows 安装/升级验收仍 BLOCKED。
 - 最新回归证据：M4 9/9、M3 22/22、headless smoke 12/12、正确 managed Chromium 环境下 test34 27/27；图标静态配置检查通过；构建受 safe-delete shim 阻塞。
-- 真实服务只读探活（2026-10-01）：`o.alicdn.com` HEAD 401、`captcha.cn-shanghai.aliyuncs.com` HEAD 200、`www.aliyun.com` HEAD 200、`https://kondius.cn/qq-agent/captcha-api/` HEAD 200（根路径 HTML）；四目标由 `probeCaptchaNetwork()` 均判定可达。`version.json` 返回 JSON 200，但线上仍为 `0.4.0`，未做发布修改。实际本机未发现 3001 OneBot 或 5099 SnowLuma 监听；普通 `QQ.exe` 进程不等于 OneBot/NapCat。隔离 Electron 启动命令可执行但当前 WorkBuddy GUI 沙箱未形成 boot-diag/3987 HTTP/窗口证据，故真实 Electron GUI 门继续 BLOCKED；未发送 QQ 消息、未修改第三方服务或账号数据。
-- 隔离 headless 真实服务验收（临时 `<user-home>/AppData/Local/Temp/qqa-real-headless`，端口 3997）：`createKernel` 实际启动完整 loader/HTTP/OneBot reconnect loop；带 token `/api/status`=200 且 DTO 脱敏，缺 token=401，错误 Origin=403，`/api/snowluma/status`=200（running=false/configured=false），`/api/qq-portable/status`=200（ready=false/running=false），SSE hello=200；`kernel.stop()` 后 HTTP 关闭、lock 删除、临时数据保留。OneBot 3001 连接拒绝属于外部服务缺失，未触发任何副作用 action。
+- 真实服务只读探活（2026-10-01）：`o.alicdn.com` HEAD 401、`captcha.cn-shanghai.aliyuncs.com` HEAD 200、`www.aliyun.com` HEAD 200、`https://kondius.cn/qq-agent/captcha-api/` HEAD 200（根路径 HTML）；四目标由 `probeCaptchaNetwork()` 均判定可达。`version.json` 返回 JSON 200，但线上仍为 `0.4.0`，未做发布修改。实际本机未发现 3001 OneBot 监听；普通 `QQ.exe` 进程不等于 OneBot/NapCat。隔离 Electron 启动命令可执行但当前 WorkBuddy GUI 沙箱未形成 boot-diag/3987 HTTP/窗口证据，故真实 Electron GUI 门继续 BLOCKED；未发送 QQ 消息、未修改第三方服务或账号数据。
+- 隔离 headless 真实服务验收（临时 `<user-home>/AppData/Local/Temp/qqa-real-headless`，端口 3997）：`createKernel` 实际启动完整 loader/HTTP/OneBot reconnect loop；带 token `/api/status`=200 且 DTO 脱敏，缺 token=401，错误 Origin=403，SSE hello=200；`kernel.stop()` 后 HTTP 关闭、lock 删除、临时数据保留。OneBot 3001 连接拒绝属于外部服务缺失，未触发任何副作用 action。
 - 2026-10-02 沙箱外授权尝试有头 Electron：清除 `ELECTRON_RUN_AS_NODE`、临时目录、3998 端口、`electron.exe --disable-gpu .` 启动约 6 分钟仍无 stdout/stderr、boot-diag、electron-user-data 或 3998 监听，随后停止；隔离目录为空，仓库工作树 clean。即使沙箱外命令也未形成窗口/HTTP证据，当前有头初始化仍 BLOCKED，下一步需普通可见 Windows 桌面会话直接运行并观察窗口/日志。
-- 用户已复制真实 SnowLuma 到项目 `snowluma/` 并运行 QQ 账号 <已移除账号> 链路：3000 HTTP、3001 WS、5099 WebUI、Agent 3210 均监听；脱敏 status 显示 SnowLuma running/configured=true，QQ Portable 未安装。真实 WS 正确 token 可握手并收到 lifecycle/heartbeat，HTTP 正确 token `get_login_info` 返回 user_id=<已移除账号>；另一份账号配置 token 返回 401，已保留令牌候选轮换逻辑。`/api/onebot/groups` 曾因 Agent HTTP token候选与 WS token混用而 401，已在 `66448e9` 修复 HTTP call 候选令牌轮换。
 - 隔离真实 Agent + OneBot 验收（端口4020、临时数据目录）：等待候选 token 轮换后 WS connected=true/selfId=<已移除账号>，groups 200 共13个群且目标群1102382705存在，friends 200 共12个好友；按用户授权通过 `/api/chats/group_1102382705/test-send` 发送一条低频测试消息，返回 messageId=-668117058。未刷屏、未调用管理/上传/撤回动作。`4c2e671` 修复健康 WS 被轮询反复重连，`66448e9` 修复 HTTP action token 候选轮换；M3/M4 回归继续全绿。
 - 用户点击启动后无窗口的修复：`915e2ac` 让 Electron 主进程按 `process.versions.electron + process.type === 'browser'` 自动启动，不再依赖 `process.argv[1]` 恰好等于 `main.js`；ASCII 启动 bat 清除 `ELECTRON_RUN_AS_NODE`、固定 `ROOT`、`cd /d` 后传绝对项目目录，避免 Explorer cwd/宿主环境导致 Electron 空转；无 runtime 时 boot diag 回退写项目根 `boot-diag.log`。修复后真实隔离 Electron 已达到 `main.js loaded → app-ready → kernel-started 4000 → window-created`，3998/4000 HTTP 与 Renderer 仍因当前 GUI/Chromium 崩溃环境未持续，日志记录 `render-process-gone reason=crashed exitCode=143`。`npm test` M3 22/22、M4 9/9 通过。
 
@@ -43,7 +44,7 @@
   2. 数据层：`store.js` 的 `findByMid`/`markRecalled`/`updateByMid` 全靠 QQ mid 匹配（v0.4 有 `message-id-test.mjs` 专测负数 id），`memory.js:13` 用 `/^\d+$/` 判 QQ 号；
   3. 语义层：`ingest.js:90` 读 `sender.card`（群名片，QQ 独有），`orchestrator:172` 拿 QQ 禁言状态，语义与微信不对应。
 - **最致命一项**：`wake.js` 四档概率、`send.js` 限频参数、`prompt.js` 上下文档位是 2,256 安装实例 / 47 亿 token 调出来的，换平台需从头调参且无先验。v0.4 核心卖点「无状态会话 → 成本恒定可控」的护城河归零。
-- **保留 transport 解耦的价值**：为「换协议端」服务（SnowLuma→NapCat 等OneBot 实现互换，适配器可覆盖 90%），不承诺跨平台。
+- **保留 transport 解耦的价值**：为「换协议端」服务（不同 OneBot 实现之间的差异需逐项核对），不承诺跨平台。
 - 详见 `docs/gap-closure-design.md`「换平台的真实成本」一节（含逐行证据与成本拆解）。
 
 ## 2026-10-05 宿主权限与面板使用链路收口
@@ -104,26 +105,8 @@
 - 写测试时踩的两个坑（已修）：① mock `Math.random` 要返回 0.2 这种[0,1) 值而非 20（代码内部会
   ×100）；② 断言源码顺序时要先剥掉注释行，否则注释里出现的函数名会干扰 `indexOf`。
 
-## 2026-10-06 表情库归属改造 + 插件增删 + 热更新（三件）
-- **★ 前次自我纠正**：02:40 我说「OneBot 没有写表情包的接口」是**错的**——只查了官方文档，
-  漏了 `using/doc/extend_development/snowluma-capabilities.md`「扩展」节。SnowLuma（go-cqhttp 系）
-  有完整三个：`add_custom_face(file) → {emoji_id}` / `modify_custom_face(emoji_id, desc)` /
-  `delete_custom_face(emoji_id)`，读接口 `fetch_custom_face(count)`。**教训：协议端能力先查项目内
-  权威文档，再查公网。**
-- **① 表情库归属改造**（表情本体与备注都放QQ 侧，本地退化为索引）
-  - `src/transports/onebot/provider.js`：`actions` 新增 4 个方法，解析 `emoji_id` 并兼容
-    go-cqhttp 的 `qianqian_emoji` 字段名。
-  - `src/kernel/kernel.js`：注册单提供者 capability `qq.emoji-favorites`（内核只包一层 actions，
-    换协议端只需新 provider 实现同名 actions）。`createStickerManager` 注入 capability。
-  - `src/kernel/stickers.js`：新增 `collectIntoQQ()` / `renameInQQ()` / `removeFromQQ()` /
-    `listFromQQ()`。**严格顺序**：写 QQ 拿 emoji_id → 写备注 → 落本地索引；任一步失败**不落本地索引**
-    （避免"本地有、QQ 侧没有"的幽灵条目）。失败分类：`QQ_EMOJI_LIMIT`（上限约 1000）/
-    `QQ_EMOJI_NO_ID`（拿不到 id 不确认成功）/ `QQ_EMOJI_ADD_FAILED`。
-  - `bundled/sticker-tools/index.js`：**删除 sticker_note**（多余——备注随收藏一次写进 QQ 侧，
-    QQ 客户端里就能看到）。`collect_sticker` 改走 QQ 库，内核失败即工具失败（`code: res.code` 透传）。
-    工具数 29 → 28，sticker 类 5 → 4。
-  - `test/25-bundled-tools-test.mjs` 同步（28→27、sticker 4→3、新增「sticker_note 已删除」断言）。
-- **② 技能/插件页签增删**
+## 2026-10-06 插件增删与热更新
+- **技能/插件页签增删**
   - 删除 `POST /api/skills/:id/delete`：**三重闸**——拒删 bundled（随程序分发，升级会打回）、
     拒删 active（运行中插件直接删目录会留幽灵定时器）、realpath 复核目标必须在用户域目录内
     （防路径穿越）。同时清配置里的孤儿设置。
@@ -131,7 +114,7 @@
     （R52 受限解压 + 声明/本地头一致性 + CRC 校验，已导出），不自造解压逻辑；skillId 格式校验；
     解压失败**清干净半成品目录**；目标已存在返回 409。
   - 前端：技能页加「安装插件」按钮 +每行「删除」（danger 样式，仅用户域插件显示）。
-- **③ 热更新** `POST /api/skills/:id/hot-reload`
+- **热更新** `POST /api/skills/:id/hot-reload`
   - **核心难点**：ESM 子模块缓存——入口能靠 `?v=fingerprint` 破缓存，但插件内部
     `import './helper.js'` 不带 query 会复用旧实例。loader 原本直接抛错要求重启。
   - 方案：`loadDir(rootKind, dir, { hot })`。**保守默认不变**（依赖图变了仍要求重启，避免半新半旧）；
@@ -139,33 +122,30 @@
   - 安全：指纹变化 = 换了代码 → `permissions.unbindPlugin()` **作废旧授权**，响应带
     `needsReauthorize`，前端弹确认并引导重新授权。
   - 前端：仅 active 插件显示「热更新」按钮。
-- **测试**：新增 `test/57-sticker-qq-library-test.mjs`（A协议端动作 / B 能力+严格顺序 / C 失败不落索引
-  的4 种场景 / D sticker_note 移除干净 / E 三端点闸门 / F 白名单+按钮），挂入 `run-m2.mjs`。
-  `test/25` 同步更新。
 - **回归（全部实跑，全绿）**：run-m1 **13/13**、run-m2 **8/8**、run-m3 **27/27**、run-m4 **10/10**、
   headless 冒烟 **12/12**。
 
 ## 2026-10-06 Preview 完整交付启动
 - 用户要求：开始按规格书完整实现所有功能，产出功能完整可用的 0.5 Preview；本轮先建立完整审计与缺口矩阵，暂不把既有 complete 标记当验收事实。
 - 已创建 planning-with-files 的阶段任务：规格逐条审计、核心功能补齐、控制台/插件完善、交付门验证。
-- 并行审计首批回传：UI P0 是 sessions 空 body 首次加载；运行时 P0 是 memory.consolidate 无 production provider、打包产物不含 SnowLuma/便携 QQ 资源；这些先列为功能完整交付的 P0 缺口，不以 mock 绿灯掩盖。
+- 并行审计首批回传：UI P0 是 sessions 空 body 首次加载；运行时 P0 是 memory.consolidate 无 production provider；这些先列为功能完整交付的 P0 缺口，不以 mock 绿灯掩盖。
 - SPEC 能力审计补充：owner-check、media.download、reply.grounded-select/local-policy、reply.inline-calls 仅声明未生产消费；media.transcribe/chat.ban-state 已接线。已先补 owner-check 生产消费、memory.consolidate production provider、send_to/工具 DTO/list_stickers/check_holiday/loader fs.watch；media/reply 能力与外部后台循环仍待补。
 - 规格审计新增后台循环缺口：blocklist 5min、price feed 24h/失败3h、telemetry 90s/6h、vision scan 2s flush、plugin fs.watch 500ms、UI 15s polling 尚未形成完整生产循环；已写入 findings.md，后续按核心循环优先补。
 - 新审计缺口：T-28 check_holiday DTO 不符合 SPEC；F-104 搜索 provider 统一请求不符合各家方言，已列为 P0 工具契约修复。
 - P0/P1 功能补齐阶段进展：
-  - 已关闭：owner-check 生产消费、memory.consolidate production provider、send_to 默认拒绝+同会话闸、send/memory/query/image DTO 对齐、list_stickers query、check_holiday today/upcoming DTO、loader fs.watch 500ms、sessions GET 空 body、Shell refreshMs 状态轮询、stale lock 自动回收、SnowLuma WebUI HTTP 识别+launcher 子进程停止、media.download 核心 claim+SendQueue 消费点、price feed 启动/24h/失败3h循环。
+  - 已关闭：owner-check 生产消费、memory.consolidate production provider、send_to 默认拒绝+同会话闸、send/memory/query/image DTO 对齐、list_stickers query、check_holiday today/upcoming DTO、loader fs.watch 500ms、sessions GET 空 body、Shell refreshMs 状态轮询、stale lock 自动回收、media.download 核心 claim+SendQueue 消费点、price feed 启动/24h/失败3h循环。
   - 已同步 SPEC：sticker_note 删除与 QQ 侧收藏/备注失败语义。
   - 回归：M1 13/13、M2 8/8、M3 27/27、M4 10/10、smoke 12/12。
-  - 仍未闭合：真实 B站/抖音 media-download provider、reply rescue 三能力、blocklist 5min、telemetry 90s/6h、vision scan 2s flush、社区/反馈/金句/验证码默认 UI、SnowLuma/便携 QQ 资源进入安装包与真实 Windows runtime。
+  - 仍未闭合：真实 B站/抖音 media-download provider、reply rescue 三能力、blocklist 5min、telemetry 90s/6h、vision scan 2s flush、社区/反馈/金句/验证码默认 UI、真实 Windows runtime。
 - 第二轮 P0/P1 收口：
   - media-tools：备注真正随图片消息发送；返回结构化 sent/failed/note；浏览锁 host 改为 URL hostname 精确匹配。
   - query-tools：get_recent_messages/get_active_members 返回结构化 DTO；list_stickers query/items；memory 三工具结构化 DTO；check_holiday today/upcoming/greeting/type 对齐 SPEC。
-  - loader：fs.watch 500ms 默认监听；Shell refreshMs 真实轮询 `/api/status`+`/api/config`；SnowLuma HTTP WebUI 特征探测与 launcher 孤儿回收；stale lock 回收；price feed 24h/失败3h循环；media.download 核心 claim 消费点。
+  - loader：fs.watch 500ms 默认监听；Shell refreshMs 真实轮询 `/api/status`+`/api/config`；stale lock 回收；price feed 24h/失败3h循环；media.download 核心 claim 消费点。
   - 新增 58 号运行时契约测试并纳入 M3；M3 28/28，M1 13/13，M2 8/8，M4 10/10，smoke 12/12。
-- 第三轮运行时/交付收口：kernel.start 失败现在释放 lock；kernel.stop 依次收束 SnowLuma stop/shutdown 与 QQ Portable stop；OneBot WS close(1008 invalid access token) 接入候选 token 轮换+5s 限频；SnowLuma launcher/端口假阳性修复已保留；新增 `scripts/verify-preview-build.mjs` + `npm run verify:preview`，现有 dist 实测源码资源齐全但外部 SnowLuma/QQ 缺失，脚本明确警告。
+- 第三轮运行时/交付收口：kernel.start 失败现在释放 lock；新增 `scripts/verify-preview-build.mjs` + `npm run verify:preview`。
 - 运行时契约测试 58 已纳入 M3；全量回归继续全绿。
 - 第四轮契约收口完成：system-tools T-25/T-26/T-27 对齐（日期严格校验/结构化提醒 DTO/格式化 list）；SPEC T-06/T-08/T-09 同步 QQ 表情库新语义；M3 28/28、M1 13/13、M2 8/8、M4 10/10、smoke 12/12 全绿。
-- 当前仍不能交付“所有功能完整可用 Preview”：外置 SnowLuma/便携 QQ 资源与真实 Windows GUI/NSIS 升级门未关闭；真实 media-download/reply-safety/telemetry/blocklist/vision flush/社区 UI 等仍是后续缺口。
+- 当前仍不能交付“所有功能完整可用 Preview”：真实 Windows GUI/NSIS 升级门未关闭；真实 media-download/reply-safety/telemetry/blocklist/vision flush/社区 UI 等仍是后续缺口。
 - 第五轮：新增匿名遥测核心模块 `src/kernel/telemetry.js`（复用/生成 telemetry.json installId，聚合 telemetry-totals，90s 首报/6h 周期，失败静默，工具名≤50），kernel 启停接线；`report_feedback` 改 `{reported:true}`。
 - 第五轮回归：M1 13/13、M2 8/8、M3 28/28、M4 10/10 全绿；smoke 12/12。
 - 目前 Preview 交付仍未宣称完成：settings 全量 UI、社区/金句/意见入口、搜索供应商逐家方言、vision flush、reply rescue、真实 media-download provider、Windows 外部资源/runtime 与真实 GUI/NSIS 升级仍待后续阶段。
@@ -404,7 +384,7 @@ M1 14/14、M2 8/8、**M3 43/43**、M4 10/10、smoke 12/12、`git diff --check` �
 - 14 个 UI 文件与快照不同：共享 common.css、9 个面板私有 style.css、主窗口 style.css/index.html、设置 index.html/说明文案。JS 只更改一条外观说明，业务/RPC/SDK/后台代码未在此轮变更。CSS 从 115611 字节降至 10558 字节，约移除 90.9%。
 - 使用白底黑字、浏览器原生控件和普通文档流；去掉主题背景、阴影、装饰标题/编号/状态灯、特殊字体和动效。外观配置继续保存，配色、背景、圆角、密度暂不参与渲染；设置页已明确提示。
 - 保留 closed dialog/[hidden]/hidden/is-hidden、iframe 尺寸、消息独立滚动、长日志/表格滚动、裁剪舞台/选框/把手/旋钮的定位。裁剪局部恢复 border-box，避免坐标比例因边框偏移。
-- 在新独立合成副本 `.qa-local/minimal-ui-preview-20261013-raw` 用正常权限实际打开 Electron：会话、聊天、记忆、用量、技能、插件、SnowLuma、设置、社区 9 页均已观察；实操聊天外层与消息容器滚动、设置筛选和切换记忆分区、社区页签显示/隐藏、记忆新增弹窗打开/取消。未提交数据删除、重置、真实消息、权限、安装或公开动作。
+- 在新独立合成副本 `.qa-local/minimal-ui-preview-20261013-raw` 用正常权限实际打开 Electron：会话、聊天、记忆、用量、技能、插件、设置、社区 9 页均已观察；实操聊天外层与消息容器滚动、设置筛选和切换记忆分区、社区页签显示/隐藏、记忆新增弹窗打开/取消。未提交数据删除、重置、真实消息、权限、安装或公开动作。
 - 本轮针对性检查 `node test/61-ui-module-integrity-test.mjs` 通过。完整自动回归和 186 项有头验收未续跑；不能把重置前 M3 104/104 标为新 UI 已全绿。
 - 旧外观断言被此次用户要求替代，仍需后续拆分/适配：62/63/72/109、68 的 CSS 字符串、70 首屏三列与固定字号/LED、71/111/115 宿主背景绘制、108 强制两行动作布局。保留分区/字段、配置迁移/落盘、裁剪 ROI/交互、控件不裁切、导航恢复/键盘等功能断言，不通过改回旧皮肤取悦测试。本轮未删除或修改这些测试。
 - 预览首次受限启动报 Chromium IPC 拒绝访问/0x80000003，已核实并结束本轮失败进程 67340，关闭遗留错误提示，以正常权限启动 87820 成功。fixture PID58348，端口17667/17668；仅是记录时身份，之后仍需重新核实。
@@ -420,7 +400,7 @@ M1 14/14、M2 8/8、**M3 43/43**、M4 10/10、smoke 12/12、`git diff --check` �
 - 用内置 image_gen 生成两款原创透明图标并进行质量迭代；原生成文件保留，选用结果在 `ui/panels/assets/endfield`，提示词及选择记录在同目录 `generation-prompts.json`。实际浏览器比较 180px 与 32px 蒙版；PNG alpha 蒙版及 SVG currentColor 均实操验证随暗色、浅色、蓝紫方案换色，无 emoji 导航。
 - 用户面板在 ready 后只收到经过白名单过滤的视觉 DTO；背景路径/私有方案名/宿主配置/密钥不出宿主。用户 RPC 仍为 ctx.call/getConfig/notify，保留 opaque iframe、source/origin/nonce/面板 ID/代际检查。未知插件自愿接入共享样式与动效，没有全局注入。
 - 动效覆盖入口、悬停/按压、追加、详情、页签、details 与原生弹窗。无常驻 rAF、定时循环或永久 will-change；轮询替换不让整张列表反复入场，减少动效偏好/后台/移除/卸载会取消。137 新增六组真实模块/桥边界回归。
-- 独立合成副本 `.qa-local/endfield-headed-20261013` 实际打开 Electron；会话、聊天、记忆、用量、技能五页及详情已实操。随后 Windows 工具激活失败（failed to activate captured window），重新识别/一次恢复仍失败，停止原生输入；改用可见浏览器操作同一副本，完成插件/SnowLuma/设置/社区、组件示例、弹窗取消、页签、浅色保存、自定义方案另存与换色、恢复暗色并重载。全部九页均有实际有头观察；未操作真实 QQ、外部发布、扩展安装/授权、业务删除或重置。
+- 独立合成副本 `.qa-local/endfield-headed-20261013` 实际打开 Electron；会话、聊天、记忆、用量、技能五页及详情已实操。随后 Windows 工具激活失败（failed to activate captured window），重新识别/一次恢复仍失败，停止原生输入；改用可见浏览器操作同一副本，完成插件/设置/社区、组件示例、弹窗取消、页签、浅色保存、自定义方案另存与换色、恢复暗色并重载。全部九页均有实际有头观察；未操作真实 QQ、外部发布、扩展安装/授权、业务删除或重置。
 - 帧探针仅放在 QA 副本，生产源没有探针。该阶段换色优化前的局部详情/记忆弹窗样本 active P95/max 约6.2ms、约164–165fps、0个 >33.34ms 间隔；首次外壳 active max 30.2ms，早期设置样本包含97ms间隔。这是历史记录，不是后来优化后的帧率证据；后续混样及测量限制在下文更正。原始 `frame-samples.jsonl` 与 `browser-frame-samples.json` 全部保留，不能据局部样本保证满帧。
 - 61/137、52/67/89/129、62/68，以及63/69/70/71/72/108/109/110/111/115针对性检查已通过，其中包含浏览器的检查实际执行；137是实际模块在Node DOM/RPC夹具下验证，并非Chromium。63/72保留形状/换色断言，修正减少动效极短过渡中的测量方式；71/111/115仍检查真实像素、裁切ROI、旋转、拖动与保存。测试适配没有改回旧视觉语言或删掉功能断言。
 - 首次全量 `npm test`：M3 103/105、M4 10/10，失败为55缺少技能冲突提示样式、120金句流程末尾文档横向溢出1px。55补黄色语义冲突提示与长工具ID换行后250/250通过；120当时进入独立本地诊断，后续修复与全量结果见下节，不降低0溢出断言。首次日志保留 `full-regression.log`。未打包安装包。
@@ -441,7 +421,7 @@ M1 14/14、M2 8/8、**M3 43/43**、M4 10/10、smoke 12/12、`git diff --check` �
 
 用户继续要求性能优化，以及图标在焦点时按含义运动、失去交互后静止。本轮未恢复原186项逐功能验收：仍为4完整通过、90部分通过、1失败C10、89条件不足、1待测E17、1延期，94项有至少部分实测（约50.5%）。C09/C10、真实QQ/模型/市场及公开动作等缺口仍保留；界面回归通过不表示规格或所有功能完成，未统一打包安装程序。
 
-- 动态图标：新增 `icon-motion.js/icon-motion.css`，`createIcon` 在当前文档懒安装一次委托，复用原创SVG/currentColor和两款原PNG alpha蒙版。会话流水、聊天文字、记忆扫描、用量柱图、技能组装、插件接通、设置齿轮、社区轨道、SnowLuma信号及徽记能量为短时一次动作；hover或键盘可见焦点触发，aria-current选中不循环。每控件最多4图标、每图标最多3效果，420–560ms有限错开；无悬停/可见焦点、后台、窗口失焦、减少动效、隐藏/禁用、移除/卸载会取消。每文档1图标observer，无每图标observer或常驻rAF。
+- 动态图标：新增 `icon-motion.js/icon-motion.css`，`createIcon` 在当前文档懒安装一次委托，复用原创SVG/currentColor和两款原PNG alpha蒙版。会话流水、聊天文字、记忆扫描、用量柱图、技能组装、插件接通、设置齿轮、社区轨道及徽记能量为短时一次动作；hover或键盘可见焦点触发，aria-current选中不循环。每控件最多4图标、每图标最多3效果，420–560ms有限错开；无悬停/可见焦点、后台、窗口失焦、减少动效、隐藏/禁用、移除/卸载会取消。每文档1图标observer，无每图标observer或常驻rAF。
 - 138真实Chromium验证12种语义/回退场景、鼠标与键盘触发/退出、选中不循环、回收、换色和opaque隔离；132个glyph共用1个observer、disconnect1次、图标模块rAF0。SVG与蒙版同为rgb(68,153,255)，pageerror0。visibility后台策略通过浏览器受控标志验证，窗口失焦/pagehide通过事件策略验证，不冒称已测OS调度或全流程帧率。61与137八组同时通过。原始结果 `icon-focus-2026-10-12T23-09-39-308Z-0261879f.json`、`verification-20261012T231253750.json`。
 - 设置122确定性修复：6个高级DETAILS采用稳定组键，必须重建时保留打开/关闭状态及当前分区。真实改动权威配置并确认节点替换，打开与关闭状态均保留、新配置可见；禁用状态恢复的基线确定性失败。122永久加入此检查且原映射替换/保存/坏形状/旧回执断言保留，69/73/117通过。旧104/105失败和原单次重跑日志均不覆盖。
 - 设置后台复用：仅权威数据相同、FormState版本不变且无invalid输入时复用现有DOM；所有GET仍执行，显式reload及变化数据仍重建，手动render会作废复用快照。6次相同后台事件的render6→0、重建元素8676→0、同步render总约70.1ms→0；每次仍8次读取，变化配置重建1次且新值可见，未发配置POST。未修改保存queue/API/RPC合同。`settings-validation-result.json` 与 `settings-reuse-before/after.log` 保留证据。
@@ -502,7 +482,7 @@ M1 14/14、M2 8/8、**M3 43/43**、M4 10/10、smoke 12/12、`git diff --check` �
 ## 2026-10-13 可收纳侧栏、复杂持续图标与插件增长设计
 
 - 左侧导航新增展开/收起按钮，收起为62px仅图标栏；本地记忆选择，首次<=640px自动紧凑且可手动展开，title/aria-label保留名称。独立于left/right/hidden主题与插件定义，不调用mount、重挂iframe或写全局配置；隐藏主题临时导航仍完整且支持Esc/focus恢复，减少动效时关闭布局过渡。
-- 用户明确追加“图标更复杂，聚焦期间持续而非只播放一次”，现共享图标改分层语义细节与浏览器原生循环：会话扫描、聊天信号、记忆数据、柱图、模块、接通、齿轮、社区节点、SnowLuma波形、徽记/存档。原PNG保持不变，仅小SVG细节运动并跟随currentColor；owner4/glyph3/doc8效果24上限、单委托observer、图标rAF0。离开与失焦、后台/hidden/DETAILS/reduced/禁用/移除/pagehide取消；窗口恢复有效可见键盘焦点时续播，CSS隐藏子glyph/wrapper/detail按事件回收。
+- 用户明确追加“图标更复杂，聚焦期间持续而非只播放一次”，现共享图标改分层语义细节与浏览器原生循环：会话扫描、聊天信号、记忆数据、柱图、模块、接通、齿轮、社区节点、徽记/存档。原PNG保持不变，仅小SVG细节运动并跟随currentColor；owner4/glyph3/doc8效果24上限、单委托observer、图标rAF0。离开与失焦、后台/hidden/DETAILS/reduced/禁用/移除/pagehide取消；窗口恢复有效可见键盘焦点时续播，CSS隐藏子glyph/wrapper/detail按事件回收。
 - 61前端模块、70五尺寸、72实际换色、110隐藏恢复、139刷新合并均通过；136实际独立UI/kernel与137八组Node DOM/RPC夹具、138真实Chromium也通过。138严格检查长hover/keyboard跨周期持续、12语义、8/24上限、去重、主题与CSS隐藏、生命周期、currentColor/opaque、observer1/disconnect1/rAF0/errors[]。证据`icon-continuous-focus-result.json`与`icon-focus-2026-10-13T08-03-21-300Z-0f323f27.json`在原performance-icons目录；本轮未重跑完整108文件，旧full仅为此前冻结源码记录。
 - 同一原生合成副本的IAB实际验证收纳/键盘、搜索保留、刷新记忆、360/520窄窗、right预览与hidden完整peek/ESC，再恢复left未保存；窄视口已reset。新最终图标栏62px、用量选中、outer overflow0，图标demo长focus不同transform且失焦none/.72；errors均[]，两个预览保留。实际源UI66+main1共67份hash一致；本轮测试中旧native实例已关闭并在同一合成副本恢复，未使用真实业务数据。新截图/观察在`.qa-local/collapsible-navigation-20261013`。
 - 插件增长设计已记录在`docs/theme-color-design.md`：固定常用+有限最近+全部目录的分类/搜索，新页面默认不自动固定；按插件集中设置、高级字段折叠；启用/设置常驻，热更/权限/卸载进更多；后续兼容增可选分类/关键词。纯工具插件目前不长导航。这些是建议，尚未实现，不改变原授权/RPC/opaque iframe和旧插件可用性。
@@ -524,7 +504,7 @@ M1 14/14、M2 8/8、**M3 43/43**、M4 10/10、smoke 12/12、`git diff --check` �
 
 ## 2026-10-13 全套图标用途与暖黑黄绿视觉重设计
 
-- 重画31款共享图标（九入口、操作、品牌、存档和扩展回退），统一24画布/1.65描边/切角/断轨/实心锚点；当前全SVG currentColor，旧PNG无生产消费但保留历史资产。会话执行路线、记忆人物印象、技能精密工具、插件插接模块、SnowLuma启动桥接、设置滑轨、社区扩展发布接收，各轮廓按实际职责区分。16px插件两半静态间隔扩大1单位，导航仍28px。
+- 重画31款共享图标（九入口、操作、品牌、存档和扩展回退），统一24画布/1.65描边/切角/断轨/实心锚点；当前全SVG currentColor，旧PNG无生产消费但保留历史资产。会话执行路线、记忆人物印象、技能精密工具、插件插接模块、设置滑轨、社区扩展发布接收，各轮廓按实际职责区分。16px插件两半静态间隔扩大1单位，导航仍28px。
 - 动效改按data-icon-role定位，持续选择规则、数量预算、后台/减少动效/隐藏/卸载清理不改；品牌仅15°小幅转动，无描边越界，没有新增逐帧JS或重滤镜。SDK/createIcon/名称别名/未知回退和插件opaque/RPC/授权边界兼容。原最简备份不改，本轮前图形4文件备份在 `.qa-local/endfield-icon-reset-20261013/before`。
 - 61/62/72/137/138五项定向检查exit0；137八组Node夹具，72真实浏览器换色，138完整31+恶意fallback共32场景、169glyph，严格跨周期/隐藏/停止/重装/预算与主题检查保留。补回已删除插件glyph后完整31的stroke/solid fill均blue；24effects/8glyph、observerpeak1/final0、rAF0/errors[]，heldIteration1/currentTime约3140.856ms。72/138前后7源hash不变；result/logs/native68源校验均归本轮QA目录。不复用旧全量通过为本轮全量。
 - 同独立实际Electron内核的有头IAB重载，九SVG28、记忆选中、展开最终184/outeroverflow0；图库31项含48/28/16样本，实操焦点移到配色仍selected、blue描边/填充/品牌同步、未选Memorynone、浅/深配色与方向键单选。`.qa-local/endfield-icon-reset-20261013/all-icons-final.png` 为全套最终图。收纳两次几何值捕获在过渡中，记录为瞬时值；一个错误#rail测量选择器和九项批次timeout是QA驱动诊断，不算产品bug/九项选择验收。图库透明顶层画布只在QA生成器修正，旧图保留。
@@ -641,15 +621,12 @@ M1 14/14、M2 8/8、**M3 43/43**、M4 10/10、smoke 12/12、`git diff --check` �
 
 - 用户明确允许参考旧develop必要源码，覆盖此前禁读旧源约束；价格/安装/迁移/金句源只读，没有读取develop/data、community.key、debug.log、真实登录配置/账号/令牌，未执行旧安装器。上一冻结点186=9通过/92部分/0失败/84条件/0待测/1延期、101覆盖54.3%，M3 113/113+M4 10/10及首批111/113+10/10 exit1保留。新四文件定向绿不能提前写成新117+10全量或186整体验收。
 - 价格[146验证](.qa-local/develop-gap-closure-20261014/price/validation.json)初红14/25、外源缓存红43/1→最终46/0 exit0；[140条快照](.qa-local/develop-gap-closure-20261014/price/builtin-source.json)版本develop-v0.4-20261014-f605221cca8b，明确历史，不冒充当前报价。custom/cache-remote/builtin/manual优先级与统一匹配、非法和外源缓存、明确零价及全局cache未设置零修复；合成历史成本29不重算，新调用281/HTTP总310。33/39/36/106及83最终均绿，83初全局零语义失败/原断言保留，不记真实账单或供应商验收。
-- 安装原红known52230仍ready=true、Node exit1（外层读日志exit0单独记录）；[第一版147局部绿](.qa-local/develop-gap-closure-20261014/setup/147-after-before-strict-version.log)/[旧manifest](.qa-local/develop-gap-closure-20261014/setup/verification-before-strict-version.json)保留。unknown版本问题[新增红](.qa-local/develop-gap-closure-20261014/setup/147-unknown-before.log)exit1后[最终147](.qa-local/develop-gap-closure-20261014/setup/147-after.log)exit0，[最终验证](.qa-local/develop-gap-closure-20261014/setup/verification.json)收m4-process/46/40的18/18/61全绿。合法SHA+固定build+纯Node安全ZIP/流式上限、独立stage/backup回滚、现有QQ data/Snow config保留、status缓存/fresh launch/no config readiness reads及初装defaults证明；继承旧源pin不是新下载二进制核验，未真实安装/QQ运行/登录/打包。
-- 迁移[148验证](.qa-local/develop-gap-closure-20261014/migration/verification.json)保留56/35原红、142/5默认模板红，最终155/0 exit0，23的57/0和132的5场景exit0。旧源只读、新data空/detect、双侧实际版本/路径后独立copy，已有/secondary profile不覆盖；实际installer合成ZIP生成defaults证明、完整文件/目录/SHA一致才备份替换，失败还原/规划后变化取消。dry-run未复制；实际完成loginCopied=true但loginVerified=false，真实旧账号免扫码仍未测。148定向执行早于installer最终路径/资源上限收尾，最后共同依赖由root新完整run再验，hash更新不等于重跑。
 - 图片本地写参考由已授权develop/ui/app/10-feedback.js:778–840的media[].dataUrl补齐，保留此前官方GET仅能见url的历史不足。[149原红](.qa-local/develop-gap-closure-20261014/quote-before.log)拒图片→[149最终绿](.qa-local/develop-gap-closure-20261014/quote-final-limits-after.log)，[120正常权限headless绿](.qa-local/develop-gap-closure-20261014/quote-browser-normal-permissions.log)精确像素/坏图显式移除/proof与媒体边界/取消清理；初120浏览器spawn EPERM单留不计产品bug。原ID/URL/file隔离，50消息/9图/累计1MiB/body2MiB；官网投稿、真实阿里和远端保存未验。
 - 宿主preflight[原探针](.qa-local/develop-gap-closure-20261014/quote-preflight-readonly-probe.json)确证取消未传GET signal、controllerheld/retry409；[新helper最终探针](.qa-local/develop-gap-closure-20261014/quote-preflight-final-readonly-probe.json)旧GET未回即允许retry并真实新链路GET/POST、starts1。[只读review](.qa-local/develop-gap-closure-20261014/quote-readonly-review.json)无所审阻断，120早于最后helper提取，由149/探针补该层，不冒充最新全浏览器绿/新slow-media有头case。root新完整117+10及可见独立副本尚待实际结果；本代理此阶段只三文档/只读核证，不改checklist/源码/test、不操作GUI/API/服务，无公开发布/验证码作答/安装包。
-- 安装追加[QQ原virtualFs probe](.qa-local/develop-gap-closure-20261014/setup-unknown-version-readonly-probe.json)versionnull/版本未验仍readytrue、launchoktrue/virtualspawn1；[Snow原probe](.qa-local/develop-gap-closure-20261014/setup-snow-launch-readonly-probe.json)unknown/launcher-only仍launch、WebUI经cmd，无真实fs/进程/shell解释。这是源码门槛/命令边界缺陷、非外部条件不足；06:03:48Z最终147已补QQ known+matches、Snow握手known+matches含batch fallback、unknown全zero-spawn、known exact local-copy正向，WebUI单Explorer参数及batch元字符拒绝。m4/46/61仅补合法假fs握手声明、原动作/断言保留全绿。setup现重冻D406…lock/1A904…installer，完整117+10及可见结果仍待root实际执行。
 
 ## 2026-10-14 新完整117+10与独立可见图片/价格补验完成
 
-- 前节“待完整/可见”现为历史。[执行记录](.qa-local/develop-gap-closure-20261014/full-regression-result.json)06:06:09.9283745Z→06:14:56.7891271Z、exit0；[完整日志](.qa-local/develop-gap-closure-20261014/full-regression.log#L3662)实际3662行M3 117/117、3700行M4 10/10，14646/0、148155/0、147严格版/149最后helper均通过。实际重验最后installer/runtime-lock与迁移共同依赖，冻后生产未改；旧113+10、首111/113+10/10 exit1及新批各原红/EPERM保留，不把自动文件数算186功能全部通过。
+- 前节“待完整/可见”现为历史。[执行记录](.qa-local/develop-gap-closure-20261014/full-regression-result.json)06:06:09.9283745Z→06:14:56.7891271Z、exit0；[完整日志](.qa-local/develop-gap-closure-20261014/full-regression.log#L3662)实际3662行M3 117/117、3700行M4 10/10，14646/0、148155/0、147严格版/149最后helper均通过。旧113+10、首111/113+10/10 exit1及新批各原红/EPERM保留，不把自动文件数算186功能全部通过。
 - root[新独立副本](.qa-local/develop-gap-closure-20261014/headed-evidence/live.json)PROFILE99/headed/app/data、helper48600/console15867，production kernel+可见IAB；HTML显式离线SDK/固定投稿合成accept、无Electron wrapper。实际选图片15预览288×144checker，[截图](.qa-local/develop-gap-closure-20261014/headed-evidence/quote-image-preview.jpg)→离线模拟通过→[已提交](.qa-local/develop-gap-closure-20261014/headed-evidence/quote-image-accepted.jpg)。[形状/hash核对](.qa-local/develop-gap-closure-20261014/headed-evidence/quote-image-accepted-shape-and-hash.json)仅1请求、753bytes/SHA ed482f…72a6ef与预览一致、url/file空、noSourceCoordinatestrue；[合成记录](.qa-local/develop-gap-closure-20261014/headed-evidence/synthetic-publications.json)只1条，没有真实外网POST/官网存储接受或真实阿里。
 - 坏图16实际decode失败，[blocked截图](.qa-local/develop-gap-closure-20261014/headed-evidence/quote-corrupt-blocked.jpg)提交disabled；实际显式[移除后正文](.qa-local/develop-gap-closure-20261014/headed-evidence/quote-corrupt-explicitly-removed.txt)文字保持/素材已移除/0图/提交可用，然后取消，无新增POST；不把未发布的第二正文记成功。价格[可见投影](.qa-local/develop-gap-closure-20261014/headed-evidence/price-visible-projection.json)/[截图](.qa-local/develop-gap-closure-20261014/headed-evidence/price-visible.jpg)current qa-chat custom1/2/.1、142=140builtin+2custom，历史来源/版本/未核当前提示；remote sourcebuiltin/fetchedAt0，非当前官网价或实际账单。
 - 上一清单冻结186=9/92/0/84/0/1、101覆盖54.3%继续保留历史；root将提交最后源/快照audit、清单说明及批次设计记录，待落盘再链。真实QQ安装/免扫码、真实验证码/商业模型/社区服务器存储尚未测，无新Electron/IPC/安装包/公开发布/FPS结论；本代理只三文档/只读证据，未改生产或操作GUI/API/现场。
@@ -666,9 +643,9 @@ M1 14/14、M2 8/8、**M3 43/43**、M4 10/10、smoke 12/12、`git diff --check` �
 
 ## 2026-10-15 全功能续批当前进度
 
-186行逐行重数：**10通过、96部分通过、2失败、77条件不足、0待测、1延期**。通过或部分通过106行（57.0%）；连同两失败行，已实际尝试108行（58.1%）。10行只表示各自明示范围全部完成，不代表106或108行全通过。P01/P06对应同一个真实QQ隔离缺口的两条规格，不误映到P02 SnowLuma。
+186行逐行重数：**10通过、96部分通过、2失败、77条件不足、0待测、1延期**。通过或部分通过106行（57.0%）；连同两失败行，已实际尝试108行（58.1%）。10行只表示各自明示范围全部完成，不代表106或108行全通过。P01/P06对应同一个真实QQ隔离缺口的两条规格。
 
-E06按已认可的本地合成类别升级通过，11包实际安装/拒绝证据已齐；范围限合法flat/wrapped与已列七类异常，不代表任意插件、权限、口令市场安全通过。H07/G16/G24/P08/E07补部分，P01/P06因同一真实QQ子进程隔离缺口记两失败行；已安装QQ文件/版本/签名不等于可安全独立登录，guard只阻止再启动，P02 Snow autoLaunch不误映。
+E06按已认可的本地合成类别升级通过，11包实际安装/拒绝证据已齐；范围限合法flat/wrapped与已列七类异常，不代表任意插件、权限、口令市场安全通过。H07/G16/G24/P08/E07补部分，P01/P06因同一真实QQ子进程隔离缺口记两失败行；已安装QQ文件/版本/签名不等于可安全独立登录，guard只阻止再启动，
 
 修后可见IAB已实测A16 cancel/Escape返回TEXTAREA焦点且保草稿未import、工具false→true保存同页reason更新，以及S04双工具和OLD→FRESH同ID标题与实际batch一致。新S04 2HTTP200、echo/error/finish及usage458/Oct15 ledger/telemetry匹配；只有OLDwaiting和终态实拍，不冒充单独running截图。原BODY focus红、旧S04整体false、重复错误前缀与所有observer修正保留。当前72188以原PROFILE99/合成data正常restart-only、stale锁仅备份由kernel回收；正常第二实例73664拒绝后消失并恢复现有可见桌面窗口，未手删锁/改OS安全/sandbox。
 
@@ -727,21 +704,21 @@ ZIP重复前缀修后[实际native traversal17checks](.qa-local/all-acceptance-2
 
 当前第9轮[独立run-plan](.qa-local/all-acceptance-20261014/evidence/full-regression-round9-2026-10-14T18-09-18-420Z-de28b27b/run-plan.json)18:09:18.508Z实际启动，完整366/tree eaccc49d697ea7ad2ed7c1e02d6ea2b45dcc2e823ca72ae9b656dd8b37401e97；相对R8生产0变更、95同，唯一test80加等待旧clear按钮detached，所有原strict断言保持。当前final pending，不能将启动/before冻结写成完整green。R8唯一80等待竞态是观察器修正版本，原121/122/overallfalse继续原样。
 
-当前186条：**11通过、96部分通过、2失败、76条件不足、0待测、1延期**。K03仅本行有限本地合成条件通过，K04部分，Z05旧189copy真实6h部分；107通过或部分，109含失败尝试，仅是范围明确的覆盖/尝试数量，不是全项目完成率。P01/P06仍同一真实QQ隔离缺口的两失败行、P02仍Snow前提不足。安装包继续延期，无打包。
+当前186条：**11通过、96部分通过、2失败、76条件不足、0待测、1延期**。K03仅本行有限本地合成条件通过，K04部分，Z05旧189copy真实6h部分；107通过或部分，109含失败尝试，仅是范围明确的覆盖/尝试数量，不是全项目完成率。P01/P06仍同一真实QQ隔离缺口的两失败行。安装包继续延期，无打包。
 
 [本次四文档完整备份](.qa-local/all-acceptance-20261014/evidence/formal-doc-integration/2026-10-14T18-15-32-485Z-b86a04e7/backup-manifest.json)保存增量前全字节；本次仅文档和外侧证据，没有源码/测试/配置/GUI/网络修改。
 
 
 ## 2026-10-15 最终完成态补充
 
-此前“R9运行中”“正常重启待测”均为历史时点，以下为最新结论。[R9完整回归](.qa-local/all-acceptance-20261014/evidence/full-regression-round9-2026-10-14T18-09-18-420Z-de28b27b/final-verification.json)已于18:18:46.942Z完成：M3 **122/122 exit0**、M4 **10/10 exit0**，[独立14checks](.qa-local/all-acceptance-20261014/evidence/test80-dom-settlement-repair-round9-2026-10-14T17-55-46-111Z-6f24f8a8/full-round9-independent-verification.json)全部通过；366文件before/after/live冻结tree eaccc49d697ea7ad2ed7c1e02d6ea2b45dcc2e823ca72ae9b656dd8b37401e97不变，本次文档写入前后也未变化。相对R8仅test80增加等待旧清除按钮detached，原strict断言和生产源码保持；R8真实121/122失败及R6失败、R7通过等原始历史仍保留。当前清单逐行重数仍为 **186＝11通过／96部分通过／2失败／76条件不足／0待测／1延期**；P01/P06是同一QQ隔离缺口对应的两行失败，P02 Snow前提不足。132个自动回归文件通过不代表186项全部完成；旧189源副本的真实六小时证据仍只用于Z05部分覆盖，不冒充最新源码、真实QQ/商业模型/社区、热更新或满帧率验收。
+此前“R9运行中”“正常重启待测”均为历史时点，以下为最新结论。[R9完整回归](.qa-local/all-acceptance-20261014/evidence/full-regression-round9-2026-10-14T18-09-18-420Z-de28b27b/final-verification.json)已于18:18:46.942Z完成：M3 **122/122 exit0**、M4 **10/10 exit0**，[独立14checks](.qa-local/all-acceptance-20261014/evidence/test80-dom-settlement-repair-round9-2026-10-14T17-55-46-111Z-6f24f8a8/full-round9-independent-verification.json)全部通过；366文件before/after/live冻结tree eaccc49d697ea7ad2ed7c1e02d6ea2b45dcc2e823ca72ae9b656dd8b37401e97不变，本次文档写入前后也未变化。相对R8仅test80增加等待旧清除按钮detached，原strict断言和生产源码保持；R8真实121/122失败及R6失败、R7通过等原始历史仍保留。当前清单逐行重数仍为 **186＝11通过／96部分通过／2失败／76条件不足／0待测／1延期**；P01/P06是同一QQ隔离缺口对应的两行失败。132个自动回归文件通过不代表186项全部完成；旧189源副本的真实六小时证据仍只用于Z05部分覆盖，不冒充最新源码、真实QQ/商业模型/社区、热更新或满帧率验收。
 
 正常原生关窗18:02:17.931Z后，[关闭独立9checks](.qa-local/all-acceptance-20261014/evidence/final-native-restart-readonly/closed-20261014T180527Z.json)确认72188消失、15967真实refused、锁自然释放；18:15:18.877Z以相同data/profile99正常启动82300，[重启独立9checks](.qa-local/all-acceptance-20261014/evidence/final-native-restart-readonly/restarted-20261014T181737Z.json)和[七次健康采样](.qa-local/all-acceptance-20261014/evidence/final-native-restart-readonly/existing-82300-health-20261014T181720697Z.json)通过（核验过程22.173秒）。raw config SHA598bd48d31dda427694c80830861eee0b85671bd635bd54ca8cff5b5d0ba1ee8在关窗前、关闭后、重启后完全一致：空背景引用、当前裁切/显示参数、四图文件、11会话、KV5及6成员8印象保持；旧native exit code未知仍null，不宣称exit0。[新native会话AX](.qa-local/all-acceptance-20261014/evidence/K04-native-after-normal-restart-sessions-ax.txt)确认11会话/SSE连接；[新native UIKit AX](.qa-local/all-acceptance-20261014/evidence/K04-native-after-normal-restart-uikit-ax.txt)和[同服务器可见IAB DOM](.qa-local/all-acceptance-20261014/evidence/gates-headed-20261014/K04-after-normal-restart-browser-ui.txt)确认“尚未选择背景图”及45°／45%／X7／Y6／24%／6px／平铺。[干净IAB截图](.qa-local/all-acceptance-20261014/evidence/gates-headed-20261014/K04-after-normal-restart-browser.jpg)仅证明画面中的参数，空背景标题在其viewport上方，不以截图声称该标题可见。K04清引用→保存→刷新→正常关闭/重启子链已齐，整行仍部分；K03仅有限本地合成条件通过，GIF只认采样循环而不扩称FPS。15966 peer和三个闲置proxy按root决定保留，本次未停止它们；安装包继续延期。首次浏览器自动审批超时的原记录和唯一成功重试均保留，无绕过。此增量只修改四份文档，[完整写前备份](.qa-local/all-acceptance-20261014/evidence/formal-doc-integration/2026-10-14T18-35-24-206Z-4393b439/backup-manifest.json)已保存。
 
 
 ## 2026-10-15 第11轮完成与本地修复增补
 
-此前“R10/R11待完成”是历史时点。[R10](.qa-local/all-acceptance-20261014/evidence/full-regression-round10-2026-10-14T19-50-27-246Z-dd3da4b2/final-verification.json)与最新[R11完整回归](.qa-local/all-acceptance-20261014/evidence/full-regression-round11-2026-10-14T20-22-08-951Z-2531dd10/final-verification.json)均实际 **M3 125/125 exit0、M4 10/10 exit0**。R11于20:33:51.957Z结束，369文件（含171测试文件）before/after tree **2fa7cf892f5c8ae130a42352b8d4f761f63a0d1f3c7d5b6a712ab47aee67557d**一致，0 changed/added/removed，原94及R6–R10全目录历史保持。R10的b4955d旧树仍是其时点的完整绿；其后仅Snow processes与157的canonical事件修复，已由R11覆盖。R6/R8真实失败、R7/R9/R10通过及各观察器更正保留，不用后来的绿覆盖原红。完整自动回归的135个通过文件不等于186项规格全部验收；本次逐行重数仍 **186＝11通过／96部分通过／2失败／76条件不足／0待测／1延期**。P01/P06是同一真实QQ隔离缺口对应的两失败行，P02仍缺真实Snow运行时前提。旧189源码副本的真实六小时仍只覆盖其有限本地mock范围，不证明当前新增源码、真实QQ/商业模型/社区、全部热更或FPS。
+此前“R10/R11待完成”是历史时点。[R10](.qa-local/all-acceptance-20261014/evidence/full-regression-round10-2026-10-14T19-50-27-246Z-dd3da4b2/final-verification.json)与最新[R11完整回归](.qa-local/all-acceptance-20261014/evidence/full-regression-round11-2026-10-14T20-22-08-951Z-2531dd10/final-verification.json)均实际 **M3 125/125 exit0、M4 10/10 exit0**。R11于20:33:51.957Z结束，369文件（含171测试文件）before/after tree **2fa7cf892f5c8ae130a42352b8d4f761f63a0d1f3c7d5b6a712ab47aee67557d**一致，0 changed/added/removed，原94及R6–R10全目录历史保持。R10的b4955d旧树仍是其时点的完整绿；R6/R8真实失败、R7/R9/R10通过及各观察器更正保留，不用后来的绿覆盖原红。完整自动回归的135个通过文件不等于186项规格全部验收；本次逐行重数仍 **186＝11通过／96部分通过／2失败／76条件不足／0待测／1延期**。P01/P06是同一真实QQ隔离缺口对应的两失败行。旧189源码副本的真实六小时仍只覆盖其有限本地mock范围，不证明当前新增源码、真实QQ/商业模型/社区、全部热更或FPS。
 
 主题上传已按逻辑方案、模式和请求版本归属，普通同槽重命名、配色、另一窗口普通设置保存引发重建可继续合法请求；换槽/基准自定义/ABA、清图、整方案恢复、离页/销毁和新选择使旧请求失效，成功刷新当前预览，旧catch/finally不误处理新选择。[同一最终155驱动](.qa-local/all-acceptance-20261014/evidence/theme-upload-lifecycle-repair-20261015/round2/final-verification.json)对原始3e81客户端不可变字节红13/18、修后18/18，另实际当前预览src/解码的同槽4组全绿，73/115/117/122均exit0；[第二作者13项](.qa-local/fix-all-20261015/theme-upload-second-author-review-2026-10-14T19-36-32-348Z-a822e920/independent-theme-upload-review.json)通过。旧源对照仅替换客户端模块，其他依赖为当前版，不能称旧全树回归。较新的真正有头同槽案例：native A上传20:38:17.086Z产生HTTP200，另一可见IAB客户端20:38:27[保存普通customRules](.qa-local/fix-all-20261015/headed-probe/evidence/valid-origin-2026-10-14T19-46-33-435Z-c24a49f0/theme-actual-rebuild-settings-save-dom.txt)，20:38:31.234Z释放回包，等待14.148秒低于15秒预算；root核实磁盘A由bg-399c19e8e7e2变为bg-30be2f477be4.png，B引用空、mode保持A。[native结果](.qa-local/fix-all-20261015/headed-probe/evidence/valid-origin-2026-10-14T19-46-33-435Z-c24a49f0/theme-actual-rebuild-native-result.json)确认同槽且不再空图；[同服务器IAB预览结果](.qa-local/fix-all-20261015/headed-probe/evidence/valid-origin-2026-10-14T19-46-33-435Z-c24a49f0/theme-actual-rebuild-preview-result.json)实际src为bg-30be2f477be4.png、complete=true、960×540，[可见预览](.qa-local/fix-all-20261015/headed-probe/evidence/valid-origin-2026-10-14T19-46-33-435Z-c24a49f0/theme-actual-rebuild-preview.png)另存干净截图。较后保存覆盖上传反馈，结果中feedback为空，不据此虚报捕获了成功toast；也未保存含无关覆盖层的原生截图。
 
@@ -749,9 +726,8 @@ ZIP重复前缀修后[实际native traversal17checks](.qa-local/all-acceptance-2
 
 插件监听修复扩展根替换后的自动重绑、owned watcher error/close处理、500ms debounce及有界退避、hotReload即时开关与补停用期间修改、manual stop撤订阅且不复活。[156最终4/4](.qa-local/fix-all-20261015/watch-root-recovery/green-result.json)和[独立窄审/10项原生canary](.qa-local/fix-all-20261015/watch-root-recovery/independent-readonly-review.json)通过，旧最终1通过/3失败保留。挂起setup期间Off→On、旧ctx幽灵注册被拒、恰一工具/四watchers与最终资源归零为有限合成证据；stable parent本身被毁及全部有头热更组合不由此推定。R11包含这些修复，但E04整行仍部分。
 
-Snow停止/内核收尾按实际退出和owned process处理，未确认退出保留unknown/error；[普通TCP与generic HTML假阳性原证](.qa-local/all-acceptance-20261014/fixtures/snow-default-probe-canary-20261015-uyF3Yc/independent-false-positive-result.json)保留。[身份探测14项最终红绿](.qa-local/all-acceptance-20261014/evidence/snow-probe-identity-repair-20261015/final-verification.json)原始模块0/14→修后14/14，仅使用已核对公开客户端静态指纹识别受控HTTP服务；指纹不是发布者认证或停止进程身份。141的[Snow/OneBot未知状态消费者](.qa-local/fix-all-20261015/snow-readiness/green-final-onebot-result.json)已绿。R10后实证自然退出事件缺少完整DTO使真实合成Chromium界面在下一15秒poll前停留unknown，仅修processes与157；[同一17项最终驱动](.qa-local/all-acceptance-20261014/evidence/snow-canonical-status-repair-20261015/final-verification-corrected95.json)对R10模块红14/17、当前17/17，原14项字节/断言与QQ区块保持，61/40/141、正确95及M4均exit0。首次误用不存在95文件名的MODULE_NOT_FOUND原记录保留为观察器错误。[独立实际HTTP/SSE/Chromium验证](.qa-local/fix-all-20261015/snow-canonical-fixed-canary-9lLeLn/independent-live-shell-reproduction.json)以无害owned Node自然退出触发完整生产者事件，界面350ms内变为未运行，/status读取1→1；没有注入恢复事件，不称真实Snow、Windows迟延终止、QQ登录或原生全部GUI验收。
 
-Stage2此前V1的low-label-build87/exit20、七项native exact false和最小LABEL-only首program API成功但exactfalse/控制flags改变的记录保留；原V1完整native before未保存，不能重建或声称原metadata/future inheritance已精确恢复。V2修正ML字符串、owned Job kill-on-close与失败有界drain、token失败先于任何IO、属性列表清理、后代potential dirty及full raw Control严格比较，[r2独立代码审查](.qa-local/all-acceptance-20261014/fixtures/appcontainer-stage2-20261015-aa26d70c/evidence/revised-v2-prepared/independent-r2-code-review-20261014T200511087Z-3fbdae66/independent-stage2-v2-r2-source-review.json)14项及20+7pins通过。随后在用户批准的原固定七对象/同moniker/SID/0caps/自身Echo/no vendor/no network范围[实际V2执行](.qa-local/all-acceptance-20261014/fixtures/appcontainer-stage2-20261015-aa26d70c/evidence/root-v2-run-20261014T200650774Z-7df1ed76/root-verified-result.json)exit0、9项通过：三个实际token均AppContainer/预期SID/Low4096/caps0，allowed读写成功、blocked拒绝error5，owned Job实际0、自己创建profile删除且不存在。七项native DACL/label/control对**实际V2执行前基线**精确恢复；[独立后验11项](.qa-local/all-acceptance-20261014/fixtures/appcontainer-stage2-20261015-aa26d70c/evidence/independent-post-v2-20261014T201355300Z-34601ed9/independent-post-v2-verification.json)再核before/rollback/current一致、ML0、profile目录/映射/native absence、selfprocess0及V1软件/失败记录保持。合成write-probe/inherited-output按授权发生写入，恢复声明只限权限基线，不称所有合成文件字节还原。**V2成功不抹V1失败，不重建丢失before，更不证明真实QQ/Snow GUI、登录、网络、IPC或user-data-dir隔离；P01/P06评级保持。** 本次只追加四份文档，原历史原样；安装包继续延期。
+Stage2此前V1的low-label-build87/exit20、七项native exact false和最小LABEL-only首program API成功但exactfalse/控制flags改变的记录保留；原V1完整native before未保存，不能重建或声称原metadata/future inheritance已精确恢复。V2修正ML字符串、owned Job kill-on-close与失败有界drain、token失败先于任何IO、属性列表清理、后代potential dirty及full raw Control严格比较，[r2独立代码审查](.qa-local/all-acceptance-20261014/fixtures/appcontainer-stage2-20261015-aa26d70c/evidence/revised-v2-prepared/independent-r2-code-review-20261014T200511087Z-3fbdae66/independent-stage2-v2-r2-source-review.json)14项及20+7pins通过。随后在用户批准的原固定七对象/同moniker/SID/0caps/自身Echo/no vendor/no network范围[实际V2执行](.qa-local/all-acceptance-20261014/fixtures/appcontainer-stage2-20261015-aa26d70c/evidence/root-v2-run-20261014T200650774Z-7df1ed76/root-verified-result.json)exit0、9项通过：三个实际token均AppContainer/预期SID/Low4096/caps0，allowed读写成功、blocked拒绝error5，owned Job实际0、自己创建profile删除且不存在。七项native DACL/label/control对**实际V2执行前基线**精确恢复；[独立后验11项](.qa-local/all-acceptance-20261014/fixtures/appcontainer-stage2-20261015-aa26d70c/evidence/independent-post-v2-20261014T201355300Z-34601ed9/independent-post-v2-verification.json)再核before/rollback/current一致、ML0、profile目录/映射/native absence、selfprocess0及V1软件/失败记录保持。合成write-probe/inherited-output按授权发生写入，恢复声明只限权限基线，不称所有合成文件字节还原。**V2成功不抹V1失败，不重建丢失before，更不证明真实QQ GUI、登录、网络、IPC或user-data-dir隔离；P01/P06评级保持。** 本次只追加四份文档，原历史原样；安装包继续延期。
 
 
 
@@ -759,7 +735,7 @@ Stage2此前V1的low-label-build87/exit20、七项native exact false和最小LAB
 
 上段“五文件同步尚待”是历史时点，现已完成。[独立实际同步13项](.qa-local/all-acceptance-20261014/evidence/independent-actual-five-sync-round11-2026-10-14T20-47-39-642Z-cdc323aa/independent-actual-five-source-sync-verification.json)确认只更新五个目标、五个原文件备份精确、187个已复制core源码匹配当前生产及R11、其余182个未变，完整138文件静止数据before/snapshot/after逐路径逐字节一致；开发用途的11个未复制文件仍明确省略，不称完整369文件都部署到QA。首次sandbox启动47676发生FATAL且已退出，原失败日志保留；以原启动器和相同data/profile99重试85660正常启动，再由既有single-instance refocus恢复native1443924。[最终独立24项](.qa-local/all-acceptance-20261014/evidence/independent-restart-round11-20261014T205112478Z/independent-final-restart-verification-corrected-observer.json)核实旧82300/失败47676均消失、实际85660拥有15967、profile99/固定QA路径/原launcher8c17及五源码指纹保持；[native必要AX结果](.qa-local/all-acceptance-20261014/evidence/final-five-source-sync-round11-2026-10-14T20-44-25-801Z-420b62fa/restarted-native-summary.json)由root实际观察导航/SSE内容，无sandbox降级、ACL更改或kill，也未保存含无关private overlay的全桌面截图。重启后32个非日账业务文件字节保持；六份日账仅正常会话重放产生savedAt变化，records/usage/价格/aggregate深等，不能称全部live缓存/锁/日志/派生索引或原始日账字节都不变。实际保留11会话（0running/0waiting）、6成员8印象、3聊天55消息、1渠道、KV5、6日账、当日1run/458tokens、4背景资产；tools.overrides是primitive true，原首次观察器schema/日账误判的false报告已保留并另纠正，没有为过测改产品或数据。
 
-IAB打开更新后的Snow面板仍显示QQ启动暂停、Snow未配置/握手未知；QQ guard保持，真实QQ/Snow/登录/网络/IPC未提升为通过，现有peer与proxy也未声明全部停止。Stage3此时仅为独立QA候选准备，未执行vendor/Profile/ACL新流程；该准备不代表已有新scope批准或已Run。最新完整回归仍为R11的125+10全绿/369冻结树2fa7cf，186条评级仍 **11通过／96部分通过／2失败／76条件不足／0待测／1延期**，P01/P06同一QQ缺口两失败行保持；旧V1metadata失败和旧189源码六小时范围继续保留。此收尾只增补四份正式文档及外侧证据，历史prefix完整，未改源码/测试/配置/数据或操作UI，安装包继续延期。
+真实QQ/登录/网络/IPC未提升为通过，现有peer与proxy也未声明全部停止。Stage3此时仅为独立QA候选准备，未执行vendor/Profile/ACL新流程；该准备不代表已有新scope批准或已Run。最新完整回归仍为R11的125+10全绿/369冻结树2fa7cf，186条评级仍 **11通过／96部分通过／2失败／76条件不足／0待测／1延期**，P01/P06同一QQ缺口两失败行保持；旧V1metadata失败和旧189源码六小时范围继续保留。此收尾只增补四份正式文档及外侧证据，历史prefix完整，未改源码/测试/配置/数据或操作UI，安装包继续延期。
 
 
 
@@ -767,12 +743,12 @@ IAB打开更新后的Snow面板仍显示QQ启动暂停、Snow未配置/握手未
 
 [R15完整真实回归](.qa-local/all-acceptance-20261014/evidence/full-regression-round15-2026-10-15T00-14-11-600Z-f5793ba0/final-verification.json)实际M3 128/128exit0、M4 10/10exit0，00:14:11–00:23:55 UTC；374文件前后树`8cca7f576cedff95f08a91b3572f855b47f619f7cbee9adf97b4ec40a1ae03f7`不变，含`.gitignore`。相对R14仅108测试同步变更，生产字节未改；[108真实延迟POST红绿](.qa-local/fix-all-20261015/test108-save-synchronization-2026-10-15T00-03-44-808Z-755e781d/final-test108-synchronization-verification.json)以同一真实1200ms POST延迟复现旧测试提前GET失败，修后等待200/请求finished/界面已保存再保留原13条assert与新增磁盘断言，三个尺寸、普通108及73都通过。[R14实际127/128失败](.qa-local/all-acceptance-20261014/evidence/full-regression-round14-2026-10-14T23-49-33-475Z-846d4f1d/final-verification.json)、[R13中断无最终汇总](.qa-local/fix-all-20261015/round14-lock-http-repair/r13-interrupted-primary.json)、[R12实际125/126失败](.qa-local/all-acceptance-20261014/evidence/full-regression-round12-2026-10-14T22-56-34-560Z-6de970ee/final-verification.json)及更早完整批次原证继续保留。
 
-本批已修QQ发现失败误报已停/停止未确认即成功、诊断信息覆盖、恢复锁竞争、背景8MB规格与HTTP2MB限制不一致、备份目录遗漏ignore。[QQ生命周期修复冻结及实际自测](.qa-local/fix-all-20261015/qq-portable-lifecycle-repair-20261015/final-frozen-producer-20261014T2252Z/final-producer-verification.json)保留最终32项同驱动旧红→绿与两次实际三自制Echo各11项通过，原启动409隔离门/Snow区段不变；[80/141诊断组合定向终态](.qa-local/fix-all-20261015/qq-diagnostic-composition-round13/targeted-actual-verification.json)、[启动恢复锁主证](.qa-local/fix-all-20261015/round14-lock-http-repair/lock-repair-targeted-primary-corrected-observer.json)与[背景HTTP与备份忽略12项证明](.qa-local/fix-all-20261015/background-upload-limit-repair-2026-10-14T23-37-35-028Z-ec62bfba/final-upload-limit-and-backup-ignore-verification.json)给出实际定向范围。Stage4/5真实vendor仍未通过；[Stage5合并只读清理证据](.qa-local/q5-08702061/evidence/independent-post-stage5-20261014T233513563Z-b93fb585/independent-stage5-post-merged-truth.json)只证明本次2752原生权限恢复/2528公共文件保持/profile删除/own进程0，原native20与QQ约4235ms退出`0x80000003`且无可见窗口保持失败，精确原因unknown，也不倒推Stage4原因。
+本批已修恢复锁竞争、背景8MB规格与HTTP2MB限制不一致、备份目录遗漏ignore。[启动恢复锁主证](.qa-local/fix-all-20261015/round14-lock-http-repair/lock-repair-targeted-primary-corrected-observer.json)与[背景HTTP与备份忽略12项证明](.qa-local/fix-all-20261015/background-upload-limit-repair-2026-10-14T23-37-35-028Z-ec62bfba/final-upload-limit-and-backup-ignore-verification.json)给出实际定向范围。
 
-Root正常关闭旧主R11 PID85660，同一held句柄exit0、进程gone/锁释放/claims0/10秒预算实际ConnectionRefused，首2秒timeoutfalse保留。[R15实际八源复制](.qa-local/all-acceptance-20261014/evidence/final-eight-source-sync-round15-2026-10-15T00-37-39-858Z-56ae1dee/sync-result.json)已完成7修改+1新增，188core与固定8目标一致，139份关闭状态数据before/snapshot/copy-after字节完全相同；随后正常启动PID84308/profile99/15967，原启动器8c17未改，[重启独立19项语义补证](.qa-local/all-acceptance-20261014/evidence/main-restart-r15-20261015T003804651Z-5f282fa8/independent-main-r15-semantic-supplement-1792025205520.json)全部通过，精确创建身份/端口owner/锁/claims0/boot-ready已核。业务11会话、7份记忆文件、3份消息文件、KV calls5、4背景和配置保持；六份日账仅savedAt因正常重放更新，其余记录/价格/聚合/JSON逐键一致，不能说重启后全部raw bytes相同。原17/19false及Root两次CIM/日期parse false、childCIM不可用报告原样留，用新补证追加更正。当前没有main页面/DOM/AX/HTTP读取，15967保存的browser拒绝仍待实际解除及用户回复，不以源码部署替代页面交互。OneBot15966当前未连接/30秒WS重连，独立本地替身只准备未启动，不写恢复成功。[F011新实际31项限定补证](.qa-local/fix-all-20261015/f011-r15-native-presence-author-audit-2026-10-15T00-43-35-068Z-43c445d9/independent-f011-native-presence-limited-verification.json)支持真实native popup出现和预期held exit1，但正文AX未成功读取/谁关闭unknown，Root未click/key，不作人工确认或A10整行通过；[F012新原生限定15项补证](.qa-local/native-renderer-fixed-r14-9226b1a5/f012/evidence/independent-f012-fixed-actual-1792024520807.json)实证held PID89204 exit0/31952ms、真实renderer crash日志与30秒观察，旧exit1/EBADF QA记录器失败保留，未改生产处理逻辑。 当前186行仍为通过11、部分通过96、失败2、条件不足76、待执行0、延期1；P01/P06是同一未完成QQ隔离缺口的两失败行，P02仍为SnowLuma前提，局部单测、token、清理或自制进程不能替代真实完整验收。不打包。 自动回归通过是已完成阶段，全部剩余有头/外部条件与自我修复目标继续进行；本段在Root授权后追加到正式四文件，主页面交互/真实外部条件继续待验。
+Root正常关闭旧主R11 PID85660，同一held句柄exit0、进程gone/锁释放/claims0/10秒预算实际ConnectionRefused，首2秒timeoutfalse保留。[R15实际八源复制](.qa-local/all-acceptance-20261014/evidence/final-eight-source-sync-round15-2026-10-15T00-37-39-858Z-56ae1dee/sync-result.json)已完成7修改+1新增，188core与固定8目标一致，139份关闭状态数据before/snapshot/copy-after字节完全相同；随后正常启动PID84308/profile99/15967，原启动器8c17未改，[重启独立19项语义补证](.qa-local/all-acceptance-20261014/evidence/main-restart-r15-20261015T003804651Z-5f282fa8/independent-main-r15-semantic-supplement-1792025205520.json)全部通过，精确创建身份/端口owner/锁/claims0/boot-ready已核。业务11会话、7份记忆文件、3份消息文件、KV calls5、4背景和配置保持；六份日账仅savedAt因正常重放更新，其余记录/价格/聚合/JSON逐键一致，不能说重启后全部raw bytes相同。原17/19false及Root两次CIM/日期parse false、childCIM不可用报告原样留，用新补证追加更正。当前没有main页面/DOM/AX/HTTP读取，15967保存的browser拒绝仍待实际解除及用户回复，不以源码部署替代页面交互。OneBot15966当前未连接/30秒WS重连，独立本地替身只准备未启动，不写恢复成功。[F011新实际31项限定补证](.qa-local/fix-all-20261015/f011-r15-native-presence-author-audit-2026-10-15T00-43-35-068Z-43c445d9/independent-f011-native-presence-limited-verification.json)支持真实native popup出现和预期held exit1，但正文AX未成功读取/谁关闭unknown，Root未click/key，不作人工确认或A10整行通过；[F012新原生限定15项补证](.qa-local/native-renderer-fixed-r14-9226b1a5/f012/evidence/independent-f012-fixed-actual-1792024520807.json)实证held PID89204 exit0/31952ms、真实renderer crash日志与30秒观察，旧exit1/EBADF QA记录器失败保留，未改生产处理逻辑。 当前186行仍为通过11、部分通过96、失败2、条件不足76、待执行0、延期1；P01/P06是同一未完成QQ隔离缺口的两失败行，局部单测、token、清理或自制进程不能替代真实完整验收。不打包。 自动回归通过是已完成阶段，全部剩余有头/外部条件与自我修复目标继续进行；本段在Root授权后追加到正式四文件，主页面交互/真实外部条件继续待验。
 
 
-本轮当前状态（2026-10-15T00:53:35.660Z）以上述R15终态与实际部署/重启为准，覆盖此前历史段落中的“R12/R13/R14尚运行”“主QA仍加载R11/同步待办”等旧时点表述，原历史前缀及所有red/false/incomplete证据不删不改。[Root原始时间字符串的精确身份补证](.qa-local/all-acceptance-20261014/evidence/main-restart-r15-20261015T003804651Z-5f282fa8/root-exact-start-time-original-json-string-supplement.json)保存tickdelta0/CIM六位精度匹配，未把损失精度的旧false抹掉；[F011精确owned进程消失与锁释放补证](.qa-local/fix-all-20261015/f011-r15-native-presence-author-audit-2026-10-15T00-43-35-068Z-43c445d9/additional-root-owned-process-absence-verification.json)只认本测试PID，无全部helper退出声明。F012只观察自有Sky窗口元数据，无DOM/AX/page/截图；F011只观察native presence/委托marker/预期exit1，正文与关闭者仍未知。A10仍部分通过，P01/P06仍失败、实际SnowLuma/市场/商业模型前提未齐，186等级11/96/2/76/0/1不变，安装包延期。
+本轮当前状态（2026-10-15T00:53:35.660Z）以上述R15终态与实际部署/重启为准，覆盖此前历史段落中的“R12/R13/R14尚运行”“主QA仍加载R11/同步待办”等旧时点表述，原历史前缀及所有red/false/incomplete证据不删不改。[Root原始时间字符串的精确身份补证](.qa-local/all-acceptance-20261014/evidence/main-restart-r15-20261015T003804651Z-5f282fa8/root-exact-start-time-original-json-string-supplement.json)保存tickdelta0/CIM六位精度匹配，未把损失精度的旧false抹掉；[F011精确owned进程消失与锁释放补证](.qa-local/fix-all-20261015/f011-r15-native-presence-author-audit-2026-10-15T00-43-35-068Z-43c445d9/additional-root-owned-process-absence-verification.json)只认本测试PID，无全部helper退出声明。F012只观察自有Sky窗口元数据，无DOM/AX/page/截图；F011只观察native presence/委托marker/预期exit1，正文与关闭者仍未知。A10仍部分通过，P01/P06仍失败、实际市场/商业模型前提未齐，186等级11/96/2/76/0/1不变，安装包延期。
 
 [更新后正常第二实例的实际主证](.qa-local/all-acceptance-20261014/evidence/single-instance-r15-20261015T005102309Z-da573a66/root-actual-single-instance.json)进一步确认同profile99/原wrapper的duplicate29144由原held句柄exit0、production日志single-instance-denied，primary84308同原StartTime保持alive；未读取页面、未观察refocus，不推广全部单实例组合或运行中数据全raw bytes不变。
 
@@ -789,13 +765,13 @@ Root正常关闭旧主R11 PID85660，同一held句柄exit0、进程gone/锁释�
 权限诊断续记（2026-10-15 16:57，北京时间）：用户已重建精确站点记录、改为询问并完整退出重开 Codex；同一浏览器访问同一地址仍在页面访问前被授权层拒绝，具体拒绝来源未明。见[重启后诊断记录](.qa-local/browser-permission-repair-20261015T083308251Z-edc94190/after-full-restart-denial-20261015.json)和[待用户提交的诊断说明](.qa-local/browser-permission-repair-20261015T083308251Z-edc94190/browser-permission-feedback-20261015.txt)。本轮曾实际启动独立主测试程序81216并确认拥有15967监听；Codex重启后16:55核对原进程及监听均不存在，未取得原句柄退出记录，退出原因未知，当前未再次启动。本轮无新增有头通过，既有R15自动回归128＋10及186项评级11/96/2/76/0/1保持，未打包、未向外部提交诊断。
 
 
-有头测试恢复补记（2026-10-15T09:47:24.705Z，UTC）：此前权限拒绝及服务停机记录保留为历史时点。独立主测试版已恢复，用户手动重新打开后，浏览器工具现已实际成功访问15967；按程序现有合成 token 登录后 URL 清除 token，刷新仍可认证且 SSE 已连接。本轮实际加载全部九个页签，确认单个沙箱 iframe；侧栏收放前后九行均46px且纵坐标一致，品牌图标中心不变，“工作面板09”已移除。MCP 空配置设置打开后取消，并实际热更新三次，三条后台激活日志与界面12插件/7加载/0错误相符；未启动 MCP 子进程或授予权限。社区选中图标在焦点离开导航后4.38秒内持续变化，会话未选中图标保持静止；只证明这对图标，不代表全部图标或满帧率验收。QQ“隔离未验证”诊断可开关，启动保护保持，未启动真实QQ。见[本轮实际证据](.qa-local/all-acceptance-20261014/evidence/main-recovery-stale-r15-20261015T090954978Z-317a79e1/headed-resume-smoke.json)，原生测试版局部截图亦保存在同目录。本轮未发现需修改源码的新缺陷；R15自动回归128＋10结论保持，186条评级11/96/2/76/0/1不变，真实QQ/SnowLuma/市场/商业模型及剩余完整生命周期用例仍待验，未打包。
+有头测试恢复补记（2026-10-15T09:47:24.705Z，UTC）：此前权限拒绝及服务停机记录保留为历史时点。独立主测试版已恢复，用户手动重新打开后，浏览器工具现已实际成功访问15967；按程序现有合成 token 登录后 URL 清除 token，刷新仍可认证且 SSE 已连接。本轮实际加载全部九个页签，确认单个沙箱 iframe；侧栏收放前后九行均46px且纵坐标一致，品牌图标中心不变，“工作面板09”已移除。MCP 空配置设置打开后取消，并实际热更新三次，三条后台激活日志与界面12插件/7加载/0错误相符；未启动 MCP 子进程或授予权限。社区选中图标在焦点离开导航后4.38秒内持续变化，会话未选中图标保持静止；只证明这对图标，不代表全部图标或满帧率验收。QQ“隔离未验证”诊断可开关，启动保护保持，未启动真实QQ。见[本轮实际证据](.qa-local/all-acceptance-20261014/evidence/main-recovery-stale-r15-20261015T090954978Z-317a79e1/headed-resume-smoke.json)，原生测试版局部截图亦保存在同目录。本轮未发现需修改源码的新缺陷；R15自动回归128＋10结论保持，186条评级11/96/2/76/0/1不变，真实QQ/市场/商业模型及剩余完整生命周期用例仍待验，未打包。
 
 
-状态入口与页内市场更新（2026-10-15T10:19:25.769Z，UTC）：按用户四条页面批注，QQ内核/SnowLuma/OneBot状态按钮改为直达SnowLuma，模型状态直达设置“模型与渠道”；真实IAB四次点击均到正确目标且不再弹状态对话框，95/141覆盖键盘及同一设置iframe草稿保持。技能/插件页新增“已安装／在线市场”切换，目录通过可替换market.client.listCatalog能力和窄API提供；搜索/分类在本地进行，状态SSE不触发反复联网。实际只读有头预览显示200技能/277插件，语音搜索10项、媒体分类57项（仅为取证时数量）；没有真实扩展下载、安装、账号或公开发布。161有头合成回归覆盖两类市场的加载/空态/失败重试/确认取消/安装失败与惰性请求，焦点回到原安装按钮；151的真实RPC虚拟时间检查覆盖市场专用180秒预算而普通请求额度不变。附带修复HTTP退出等待空闲TCP连接：1秒完成已有响应后关闭残留连接，162旧红新绿且Node24/Electron Node20均通过。16份集成测试全绿，新161/162已纳入M3；本轮没有重跑完整M3/M4，不能把历史R15128+10当作这次新源码的全量结果。独立主QA已备份139份静止数据、同步190份core源码并正常重启，原离线wrapper未改；另开空数据只读15987预览供查看真实目录，禁止安装/账号/发布。见[本次证据](.qa-local/market-panel-20261015/final-verification.json)与[真实目录截图](.qa-local/market-panel-20261015/public-plugin-market.png)。186项评级11/96/2/76/0/1保持，真实QQ隔离、SnowLuma和剩余完整生命周期验收继续待办，未打包、未改远程服务器。
+状态入口与页内市场更新（2026-10-15T10:19:25.769Z，UTC）：按用户四条页面批注，模型状态直达设置“模型与渠道”；真实IAB四次点击均到正确目标且不再弹状态对话框，95/141覆盖键盘及同一设置iframe草稿保持。技能/插件页新增“已安装／在线市场”切换，目录通过可替换market.client.listCatalog能力和窄API提供；搜索/分类在本地进行，状态SSE不触发反复联网。实际只读有头预览显示200技能/277插件，语音搜索10项、媒体分类57项（仅为取证时数量）；没有真实扩展下载、安装、账号或公开发布。161有头合成回归覆盖两类市场的加载/空态/失败重试/确认取消/安装失败与惰性请求，焦点回到原安装按钮；151的真实RPC虚拟时间检查覆盖市场专用180秒预算而普通请求额度不变。附带修复HTTP退出等待空闲TCP连接：1秒完成已有响应后关闭残留连接，162旧红新绿且Node24/Electron Node20均通过。16份集成测试全绿，新161/162已纳入M3；本轮没有重跑完整M3/M4，不能把历史R15128+10当作这次新源码的全量结果。独立主QA已备份139份静止数据、同步190份core源码并正常重启，原离线wrapper未改；另开空数据只读15987预览供查看真实目录，禁止安装/账号/发布。见[本次证据](.qa-local/market-panel-20261015/final-verification.json)与[真实目录截图](.qa-local/market-panel-20261015/public-plugin-market.png)。186项评级11/96/2/76/0/1保持，剩余完整生命周期验收继续待办，未打包、未改远程服务器。
 
 
-用量页 0.4 交互迁移（2026-10-15T10:51:55.471Z，UTC）：已读取 develop 中的旧版实现，将五指标卡、可悬停/键盘查看的柱图、时间范围切换、按天/会话/模型的整宽表格、模型展开和工具/分组明细弹窗迁入 0.5 沙箱面板。保留主题继承与声明 API；运行次数和实际模型调用分别统计，同模型按渠道拆分，历史未记渠道的总量明确未分渠道，不能据此钻取其它渠道。增量刷新保持行节点、焦点和滚动，旧异步响应与新明细失败不显示前一范围数值。163、106、80及5份相关测试通过，164最终有头回归 exit0；新163/164纳入M3，本轮未重跑完整M3/M4。主合成QA备份142份静止数据后同步191份core源码并以原离线wrapper启动100528/15967；原空数据只读15987预览也已更新并实际点击复验，未种入模拟用量。主旧进程退出已观察，退出码和最终关闭者未知；预览被exec中断exit1，旧锁由生产内核正常识别恢复，未手工删锁。配置字节保持，静止复制时数据字节一致不代表运行后所有缓存/日账原字节均不变。详见[本轮证据](.qa-local/usage-v04-20261015/final-verification.json)。不提升真实QQ/SnowLuma、账号或外部模型验收结论，186项11/96/2/76/0/1保持；没有打包或远程部署。
+用量页 0.4 交互迁移（2026-10-15T10:51:55.471Z，UTC）：已读取 develop 中的旧版实现，将五指标卡、可悬停/键盘查看的柱图、时间范围切换、按天/会话/模型的整宽表格、模型展开和工具/分组明细弹窗迁入 0.5 沙箱面板。保留主题继承与声明 API；运行次数和实际模型调用分别统计，同模型按渠道拆分，历史未记渠道的总量明确未分渠道，不能据此钻取其它渠道。增量刷新保持行节点、焦点和滚动，旧异步响应与新明细失败不显示前一范围数值。163、106、80及5份相关测试通过，164最终有头回归 exit0；新163/164纳入M3，本轮未重跑完整M3/M4。主合成QA备份142份静止数据后同步191份core源码并以原离线wrapper启动100528/15967；原空数据只读15987预览也已更新并实际点击复验，未种入模拟用量。主旧进程退出已观察，退出码和最终关闭者未知；预览被exec中断exit1，旧锁由生产内核正常识别恢复，未手工删锁。配置字节保持，静止复制时数据字节一致不代表运行后所有缓存/日账原字节均不变。详见[本轮证据](.qa-local/usage-v04-20261015/final-verification.json)。不提升真实QQ、账号或外部模型验收结论，186项11/96/2/76/0/1保持；没有打包或远程部署。
 
 
 用量弹窗遮罩关闭修复（2026-10-15T11:00:04.184Z，UTC）：用量明细及工具调用弹窗已启用点击遮罩关闭；内容/内边距点击和内容拖至遮罩不误关，仍保留清理、焦点回返、Escape及晚响应防护。共享生命周期选项默认关闭，仅这两个只读弹窗启用。164有头、140、61、67通过；已同步主合成QA及15987空预览的两份静态JS，未重启或改配置/数据。IAB实际点击2026-10-11明细外部后open dialogs为0，独立有头取证见[本轮结果](.qa-local/usage-backdrop-20261015/final-verification.json)。未打包，整体186项评级保持。
@@ -804,7 +780,6 @@ Root正常关闭旧主R11 PID85660，同一held句柄exit0、进程gone/锁释�
 市场旧清单安装兼容修复（2026-10-15T11:21:33.549Z，UTC）：公开只读核对的8个已审核包均缺kind，包含当前生图搜索下的image-generate与ai-image；按唯一根skill.json/plugin.json仅补缺失kind并在暂存清单持久化，保留原嵌套字段，继续拒绝显式非法值、类型冲突与APIversion2。ZIP解包仅剥离所有文件共有的连续包装目录，兼容waifu_draw双层包装，不从多扩展混包中任意选一个。新增165真实kernel/HTTP/ZIP/loader与受控市场verify/download闭环：7个停用安装、17个拒绝、2次HTTP重扫通过，顶层代码及真实外网请求均0；38/62/86/161全绿，165已加入M3，本轮未重跑完整M3/M4。旧main100528/preview79972与两端口均已观察不在，退出码及原因未知；备份main146文件与preview3文件静止数据后只更新两份后端源码，191core匹配，原wrapper/配置/只读预览限制保持，main89800/15967与preview41708/15987恢复，IAB SSE连接且文生图搜索恢复200目录/3结果。静止复制数据一致不宣称运行后所有缓存字节不变。公共包尚有旧函数式api.config/独立providers导出的静态兼容风险，未导入/执行第三方代码，不将安装兼容等同于生图运行验证。见[修复与验证记录](.qa-local/market-manifest-20261015/final-verification.json)。未打包/远程部署，整体186项评级保持。
 
 
-SnowLuma页实时日志修复（2026-10-15T11:35:12.361Z，UTC）：原面板丢弃SSE日志载荷、200ms后全量重拉并等待QQ进程发现，连续日志还会使旧loadVersion结果失效。现三路日志直接消费既有SSE/RPC载荷、至多一帧一次绘制，各200条，日志/状态/快照不相互阻塞；保留文本渲染、尾随/向上阅读位置、旧快照有序合并、断线hello补齐及卸载清理，未更改宿主权限或插件进程接口。166真实kernel/SSE/shell/iframe/Chromium首次无头最大延迟11ms，最终有头最大10ms、exit0；验证QQ查询阻塞仍实时、日志事件零新增HTTP、快照迟到不抹新事件、不重复、每源200上限、真实SSE断开重连、手动刷新、应用日志级别、切离/返回。29/40/80/95及61/67通过，80只把原空log夹具改成真实载荷形态并保留原断言；166加入M3，本轮未重跑完整M3/M4。只同步两份静态JS到main/preview，192份core匹配，不重启/改配置/数据；IAB15987已刷新并保留SnowLuma页，SSE连接。当前只读预览本身未提供Snow/QQ进程日志能力，没有启动真实vendor，不把合成日志延迟当作真实进程端到端验收；无换行的vendor输出仍由原生产者等待换行/流结束。见[本轮证据](.qa-local/live-logs-20261015/final-verification.json)。未打包或远程部署，186项评级保持。
 
 ### 2026-10-16 本地面板空导航的认证与加载恢复
 
@@ -812,7 +787,7 @@ SnowLuma页实时日志修复（2026-10-15T11:35:12.361Z，UTC）：原面板丢
 
 宿主新增认证恢复与普通加载重试卡；候选令牌只经真实面板GET成功及结构校验后采用，不写服务端配置，不改变30分钟session策略，不传给插件iframe，不写URL/localStorage；密码在恢复/清理/销毁时清空。候选请求受组件生命周期和共享凭据代际约束，旧成功或值ABA不能覆盖新凭据。成功恢复挂载首面板并重接SSE；有效hello/status可重试首次瞬时失败，合法空清单仍按空面板显示。
 
-[独立有头证据](.qa-local/panel-recovery-20261016/headed/result.json)使用随机端口、临时UI副本、空扩展目录和惰性传输，验证缺失/过期/错误凭据、真实九页签/iframe/SSE恢复、503重试、畸形200拒绝、旧凭据代际隔离及520px布局，未启动QQ/SnowLuma或访问15967。167以及116/125/95/139/61/67共7个不同测试通过；本轮不是完整M3/M4或186项验收。UI三文件已有备份并静态同步到主QA与预览副本，主QA193项核心文件与源一致，配置散列保持，服务未重启、未打包。用户当前页仍待其刷新，未声称已读取或复验该窗口；[最终验证记录](.qa-local/panel-recovery-20261016/final-verification.json)。186项评级保持。
+[独立有头证据](.qa-local/panel-recovery-20261016/headed/result.json)使用随机端口、临时UI副本、空扩展目录和惰性传输，验证缺失/过期/错误凭据、真实九页签/iframe/SSE恢复、503重试、畸形200拒绝、旧凭据代际隔离及520px布局，未启动QQ或访问15967。167以及116/125/95/139/61/67共7个不同测试通过；本轮不是完整M3/M4或186项验收。UI三文件已有备份并静态同步到主QA与预览副本，主QA193项核心文件与源一致，配置散列保持，服务未重启、未打包。用户当前页仍待其刷新，未声称已读取或复验该窗口；[最终验证记录](.qa-local/panel-recovery-20261016/final-verification.json)。186项评级保持。
 
 ### 2026-10-16 删除/清空/重置的渐进点击交互
 
@@ -822,7 +797,7 @@ SnowLuma页实时日志修复（2026-10-15T11:35:12.361Z，UTC）：原面板丢
 
 [最终验证](.qa-local/destructive-ui-20261016/final-verification.json)：30个不同相关测试文件通过，包括168的13组精确时间/生命周期/无障碍/主题/窄屏有头检查、169真实壳层opaque iframe有头测试。169的9项破坏请求为mock且真实reset调用0；136另只在临时合成数据中实际验证六击重置、备份与重启。73/83/155的持久化和全部18上传生命周期断言、53/80/90/120/124等业务/隐私检查保留。旧确认/单击预期失败及根的测试适配观察器错误记录保留，141只修正autosave与真实HTTP/虚拟时钟同步门，原发现/失败/恢复断言不变。这不是完整M3/M4或186项验收，既有评级保持。
 
-20个UI文件已备份并静态同步到主QA与预览副本，主QA196项核心文件与源一致，配置散列保持；未重启服务、未打包、未启动QQ/SnowLuma或删除真实数据。因此前浏览器访问限制仍未对15967使用浏览器/HTTP替代读取，当前用户页待手动刷新；全部本轮GUI证据来自独立合成实例。
+20个UI文件已备份并静态同步到主QA与预览副本，主QA196项核心文件与源一致，配置散列保持；未重启服务、未打包、未启动QQ或删除真实数据。因此前浏览器访问限制仍未对15967使用浏览器/HTTP替代读取，当前用户页待手动刷新；全部本轮GUI证据来自独立合成实例。
 
 ### 2026-10-16 误重置后的重启与示例数据重建
 
@@ -830,7 +805,7 @@ SnowLuma页实时日志修复（2026-10-15T11:35:12.361Z，UTC）：原面板丢
 
 本轮重建10聊天（6群+4私聊）、280中文消息、44终态会话（24done/8noreply/8error/4aborted），6份记忆含27成员93印象，5天用量/4模型/2渠道，3自定义示例人设与8已完成提醒；未读/活动会话/待触发提醒均0。staging连续重建与原生仓库校验通过，Windows短暂EPERM仅在种子脚本对幂等原生写入重试，未改产品。4个既有默认启用测试扩展显式停用，未重新授予宿主权限。
 
-本地被动合成peer在127.0.0.1:15966/PID120748，提供示例联系人目录与固定模型响应，无出站连接或主动消息。现有离线QA adapter未修改，独立console 15967/PID128240/profile99已启动、锁归属正确、OneBot连接合成账号9900。两渠道原生适配器测试及固定pong模型请求均通过；未对受限15967页面使用浏览器或HTTP读取，也未声称当前IAB已刷新。196项核心文件与上一UI版本一致，QQ/SnowLuma未启动、未打包。新种子/操作记录与最终验证见`.qa-local/reseed-demo-20261016/final-verification.json`；主数据目录固定为`.qa-local/all-acceptance-20261014/desktop/data`。
+本地被动合成peer在127.0.0.1:15966/PID120748，提供示例联系人目录与固定模型响应，无出站连接或主动消息。现有离线QA adapter未修改，独立console 15967/PID128240/profile99已启动、锁归属正确、OneBot连接合成账号9900。两渠道原生适配器测试及固定pong模型请求均通过；未对受限15967页面使用浏览器或HTTP读取，也未声称当前IAB已刷新。196项核心文件与上一UI版本一致，QQ未启动、未打包。新种子/操作记录与最终验证见`.qa-local/reseed-demo-20261016/final-verification.json`；主数据目录固定为`.qa-local/all-acceptance-20261014/desktop/data`。
 
 ## 2026-10-16 追加式组合 v2 完成
 
@@ -846,11 +821,11 @@ SnowLuma页实时日志修复（2026-10-15T11:35:12.361Z，UTC）：原面板丢
 
 最终node test/run-all.mjs退出0：M3 147/147文件、M4 10/10文件；最终冒烟12/12，最终源码177有头九代通过。前两次完整运行各146/147，分别暴露136无界同步等待/实时时钟六击和90后台刷新后的旧DOM句柄竞态；仅修订测试同步与定位，HTTP、备份、数据保留和删除次数断言均保留，两项已在最终完整回归通过。相邻规格书v2.1和源码摘要已核对，git diff --check通过。
 
-详见[规则及验收](docs/composition-overlap-evidence.md)和[最终记录](.qa-local/overlap-20261016/final-verification.json)。本轮使用独立合成实例与被动传输，没有读取受限15967控制台、启动真实QQ/SnowLuma、调用商业模型、打包或部署。既有image-generate旧API兼容错误单列，不能由本轮结果推断其已修复；既有186项真实运行验收评级保持。
+详见[规则及验收](docs/composition-overlap-evidence.md)和[最终记录](.qa-local/overlap-20261016/final-verification.json)。本轮使用独立合成实例与被动传输，没有读取受限15967控制台、启动真实QQ、调用商业模型、打包或部署。既有image-generate旧API兼容错误单列，不能由本轮结果推断其已修复；既有186项真实运行验收评级保持。
 
 ### 2026-10-16 控制台重启供后续微调
 
-用户要求重启现有15967控制台。已核对旧控制台128240及合成peer120748均退出、两端口释放；备份175份静止数据及待替换源码后，同步29份变更/新增文件，216份源码与主项目一致。原离线wrapper与profile99保持，恢复合成peer140360/15966及Electron控制台138608/15967；两端口实际监听归属、窗口创建、新代boot记录及合成OneBot连接均已确认。84份配置/聊天/会话/记忆/提醒等文件字节一致，五份日用量数值保持，只有原生启动刷新savedAt；未将运行缓存和日志声称为字节不变。未访问受限15967页面、启动真实QQ/SnowLuma、调用外部模型或打包。备份和核对记录见[本轮结果](.qa-local/restart-console-20261016/2026-10-16T02-45-14-291Z/final-verification.json)，当前浏览器页待用户刷新。
+用户要求重启现有15967控制台。已核对旧控制台128240及合成peer120748均退出、两端口释放；备份175份静止数据及待替换源码后，同步29份变更/新增文件，216份源码与主项目一致。原离线wrapper与profile99保持，恢复合成peer140360/15966及Electron控制台138608/15967；两端口实际监听归属、窗口创建、新代boot记录及合成OneBot连接均已确认。84份配置/聊天/会话/记忆/提醒等文件字节一致，五份日用量数值保持，只有原生启动刷新savedAt；未将运行缓存和日志声称为字节不变。未访问受限15967页面、启动真实QQ、调用外部模型或打包。备份和核对记录见[本轮结果](.qa-local/restart-console-20261016/2026-10-16T02-45-14-291Z/final-verification.json)，当前浏览器页待用户刷新。
 
 ### 2026-10-16 侧栏与渐进删除的视觉微调
 
@@ -860,7 +835,7 @@ SnowLuma页实时日志修复（2026-10-15T11:35:12.361Z，UTC）：原面板丢
 
 最终定向批次22/22文件通过，79份UI运行前后源码散列相同；新增180有头/无头各14/14，合计23个不同测试文件，含168原13组行为与精确回退、169九项mock破坏请求、136临时合成数据真实备份/重置、172/177实际Chromium追加UI/沙箱验证。夹具仅补新模块或等待新的150ms色彩绘制，旧业务断言保留。既有第三方image-generate旧API错误单列，本轮不是新完整M3/M4或186项真实功能验收，不作满帧承诺。
 
-备份后仅将9个UI文件同步到当前独立控制台138608/15967，217份运行源码逐散列一致，配置/离线wrapper保持；无数据目录写入、服务重启、真实QQ/SnowLuma启动、打包或部署。未绕过当前15967浏览器权限限制读取页面，用户刷新即可加载新文件。[最终记录](.qa-local/visual-interactions180/final-verification.json)，视觉与SDK细节见[设计记录](docs/theme-color-design.md)及[插件SDK](docs/plugin-sdk.md)。
+备份后仅将9个UI文件同步到当前独立控制台138608/15967，217份运行源码逐散列一致，配置/离线wrapper保持；无数据目录写入、服务重启、真实QQ启动、打包或部署。未绕过当前15967浏览器权限限制读取页面，用户刷新即可加载新文件。[最终记录](.qa-local/visual-interactions180/final-verification.json)，视觉与SDK细节见[设计记录](docs/theme-color-design.md)及[插件SDK](docs/plugin-sdk.md)。
 
 ### 2026-10-16 本机自动认证与连接恢复
 
@@ -868,7 +843,7 @@ SnowLuma页实时日志修复（2026-10-15T11:35:12.361Z，UTC）：原面板丢
 
 最终冻结全量退出0：M3 151/151、M4 10/10，416份源码和测试散列未变；冒烟12/12。182三次独立有头与一次无头均10/10，181守卫6组、183取消/代际19组通过。前两次完整150/151的141旧布局和90动作间隔/保存重载竞态只修测试同步，原断言及产品阈值保持；90两次实际运行和受控延迟实测4可信点击/1DELETE。原始失败与182一次被掩盖的未知触发原因均保留，不从复跑推断旧失败具体原因。详见[认证合同与证据说明](docs/local-console-auth.md)、[最终记录](.qa-local/local-auto-auth-20261016/final-verification.json)。
 
-完成后核对旧控制台身份，普通退出失败后仅强制结束该QA进程树；备份146份静止数据、替换6个生产文件，217份运行源码逐散列一致。新控制台151380/15967/profile99和原合成peer140360/15966监听正常，实例锁/窗口/连接已确认；含配置在内的31份业务文件字节一致，5份用量值一致。用户刷新当前页一次加载新版；没有通过浏览器或HTTP读取受限15967页面，没有操作真实QQ/SnowLuma、外部模型、打包或部署。数据备份在`.qa-local/restart-console-20261016/2026-10-16T05-15-41-822Z/data-before`。既有第三方image-generate旧API兼容问题及186项验收评级未因本轮改变。
+完成后核对旧控制台身份，普通退出失败后仅强制结束该QA进程树；备份146份静止数据、替换6个生产文件，217份运行源码逐散列一致。新控制台151380/15967/profile99和原合成peer140360/15966监听正常，实例锁/窗口/连接已确认；含配置在内的31份业务文件字节一致，5份用量值一致。用户刷新当前页一次加载新版；没有通过浏览器或HTTP读取受限15967页面，没有操作真实QQ、外部模型、打包或部署。数据备份在`.qa-local/restart-console-20261016/2026-10-16T05-15-41-822Z/data-before`。既有第三方image-generate旧API兼容问题及186项验收评级未因本轮改变。
 
 ### 2026-10-16 0.4择优迁移启动：模型目录与可逆折叠
 
@@ -1109,7 +1084,7 @@ root共享集成顺序8/8 exit0：30/两31/78/59/89/226/227，覆盖实际路由
 
 完整后续目标仍active：reply五原子、默认搜索五渠道及精确自定义endpoint/结果总上限、群成员屏蔽便利/窄事务、社区有效豁免/兜底、暂停恢复跳过积压、会话/存档跨页选择、OneBot身份/群名片/原因链/重连候选及其它未裁决领域。独立QA原始失败全部保留，无真实15967/账号/QQ/外网/打包部署。
 
-第十五批目前状态与写权详见task_plan最后一节：70唯一带事件原样诊断真实exit0但原关闭原因未知；91修旧期望并增强protocol/receipt/archive实际exit0；root232新独立默认parser真实19/19，232/230/78三文件3/3，M3仅补232（当前预计200）。新234、235、236、237仍实施/验证中，有头窗口motion独占，暂不再full。root已接blocklistMembers窄controller/API/manifest、sessions/chats导航RAM声明、SnowLuma精确status及可选selfNickname、market factory传signal；这些共享接线未被旧69360终态覆盖。root233默认搜索和inline来源/local-policy剩余原子尚待，不得提前宣称完整迁移或新全量绿。
+第十五批目前状态与写权详见task_plan最后一节：70唯一带事件原样诊断真实exit0但原关闭原因未知；91修旧期望并增强protocol/receipt/archive实际exit0；root232新独立默认parser真实19/19，232/230/78三文件3/3，M3仅补232（当前预计200）。新234、235、236、237仍实施/验证中，有头窗口motion独占，暂不再full。root已接blocklistMembers窄controller/API/manifest、sessions/chats导航RAM声明、market factory传signal；这些共享接线未被旧69360终态覆盖。root233默认搜索和inline来源/local-policy剩余原子尚待，不得提前宣称完整迁移或新全量绿。
 
 最新覆盖：三代理234–237已全部正式停源交付，报告及边界见task_plan最新节；root当前仍无新full冻结。最新本机自动认证复核7专项文件全部actual exit0，含182有头11项；真实退出/新PID新令牌恢复5项也actual exit0，外网和页面错误均0。旧重启QA因未配置模型而进入设置、搜索框超时的首轮失败保留，仅补惰性合成seed，不放宽产品或断言。详见docs/local-console-auth.md最后节及`auth-recheck-20261017/README.md`。现有15967未访问、同步或重启；总迁移目标仍active，不用专项通过代称新全量通过。
 
@@ -1160,7 +1135,7 @@ full-2026-10-17T08-29-00-723Z 于 2026-10-17T08:44:43.548Z 实际exit1：M3 **20
 
 **唯一完整进程后台PID167484**，full-2026-10-17T09-28-21-970Z，startedAt=2026-10-17T09:28:22.038Z，**556**份源码/测试已冻结，预期**216 M3+10 M4**。full-launch-batch17-20261017T092821857Z/launch.json、source-before和run-all.log为证；目前未终态，不能称全绿。禁止新full/browser/验证或修改src/ui/bundled/electron/scripts/test/assets/package；仅只读后续模块inventory与独占QA/docs。最终只认本目录result、实际退出及source-after，不因观察超时重启。
 
-新默认键runtime.log.policy/console.sessionNames、独立scroll-policy/chat-title叶子及诊断合同见architecture-composition§17和v04-parity-plan第十七批。15967未访问、同步或重启，不打包部署、不操作真实QQ/模型/外网。完整每原子目标仍active，不把此批六项当全域穷尽；后续三代理只读做logger/profile/SnowLuma全模块矩阵（不是只找缺陷）。
+新默认键runtime.log.policy/console.sessionNames、独立scroll-policy/chat-title叶子及诊断合同见architecture-composition§17和v04-parity-plan第十七批。15967未访问、同步或重启，不打包部署、不操作真实QQ/模型/外网。完整每原子目标仍active，不把此批六项当全域穷尽；后续三代理只读做logger/profile 全模块矩阵（不是只找缺陷）。
 
 
 ## 第十七批完整终态：全部通过
@@ -1249,7 +1224,7 @@ PID117684于2026-10-17T13:12:34.426Z真实exit0：M3 **217/217**、M4 **10/10**�
 
 新255覆盖全部分档边界、零/异常输入、实际本地成功/失败/抛错/插件否决计时、无模型载荷泄漏、默认页状态顺序、无群号、主题换色、历史未知耗时、缓存SSE变化、展开/节点保持、窄屏及真实追加metrics模块双视图消费。最终有头通过，证据 `.qa-local/session-metrics-20261018/final-verified/result.json` 与截图。首次最终窄屏即时测量碰到宿主重排未完成，保留失败；测试现等待实际布局满足同一溢出断言，无放宽尺寸。6、61、78、169、198、232、247、248、251、253、255相关文件通过，未重跑完整M3/M4。248/251展示断言随用户新要求调整，但群名安全、稳定键在筛选/详情的存在、追加标题真实消费和删除/折叠检查继续保留。
 
-仅备份同步当前独立副本五份代码：sessions/panel.js、trace-view.js、style.css、新metrics.js及src/kernel/agent-runner.js。同步前50份相关数据哈希一致。为载入真实计时，核实旧PID47432、15967端口/锁/可执行文件/固定离线wrapper、没有运行中会话及SnowLuma目录后，仅重启此合成控制台；模拟服务PID43892保持。新PID55156、15967和实例锁身份已核对，latest.json已更新。未移除锁或修改配置，未启动真实QQ/SnowLuma，未读取受限网页。
+仅备份同步当前独立副本五份代码：sessions/panel.js、trace-view.js、style.css、新metrics.js及src/kernel/agent-runner.js。同步前50份相关数据哈希一致。为载入真实计时，核实旧PID47432、15967端口/锁/可执行文件/固定离线wrapper、没有运行中会话后，仅重启此合成控制台；模拟服务PID43892保持。新PID55156、15967和实例锁身份已核对，latest.json已更新。未移除锁或修改配置，未启动真实QQ，未读取受限网页。
 
 重启脚本的“全部数据字节不变”末尾断言因正常启动重记终态会话而失败，原证据保留，未重复重启。只读审计确认49份配置/会话/聊天等文件不变，唯一变化为usage-days/2026-10-18.json；Sessions.reconcileInBackground经UsageDayStore.record正常重写该统计快照，已逐项验证16个终态会话的calls及输入/输出/缓存/总tokens与原会话文件一致。不把统计快照重写伪报成所有字节不变。最终核对 `.qa-local/session-metrics-20261018/final-verification.json`、restart-data-delta.json、sync-verification.json及重启日志，五份部署代码与当前源码哈希一致，未打包。
 
@@ -1261,7 +1236,7 @@ PID117684于2026-10-17T13:12:34.426Z真实exit0：M3 **217/217**、M4 **10/10**�
 
 8条新合成会话命中率72%、78%、82%、86%、89%、90%、95%、98%，均带两轮思考/工具调用及完整用时、发送展示与结束原因；正文与systemPrompt明确说明命中率/耗时为示例，没有实际模型请求或QQ发送。相同examples.json先在独立合成应用有头验证各比例及思考用时，截图/结果在preview/。未修改原16条会话。
 
-核对原PID55156的离线wrapper、实例锁和15967端口、无活动会话、无SnowLuma目录后，备份相关数据，仅停止该测试控制台；复制两份代码，使用原会话/日账仓追加8条并合并索引，再重启为PID40416，模拟服务PID43892保留。42份原会话/聊天/配置等文件哈希不变，受授权影响的今日/日档/遥测汇总增加示例计数；逐字段验证8条仅记账一次，正常启动未重复增加。总会话24条，原数据和备份保留，未移除锁、改设置、访问受限15967网页、启动QQ/SnowLuma或请求真实模型。最终证据final-verification.json、seed-result.json、restart/result.json及data-before/；源码与独立副本两份部署文件哈希一致，刷新载入新UI。
+核对原PID55156的离线wrapper、实例锁和15967端口、无活动会话后，备份相关数据，仅停止该测试控制台；复制两份代码，使用原会话/日账仓追加8条并合并索引，再重启为PID40416，模拟服务PID43892保留。42份原会话/聊天/配置等文件哈希不变，受授权影响的今日/日档/遥测汇总增加示例计数；逐字段验证8条仅记账一次，正常启动未重复增加。总会话24条，原数据和备份保留，未移除锁、改设置、访问受限15967网页、启动QQ或请求真实模型。最终证据final-verification.json、seed-result.json、restart/result.json及data-before/；源码与独立副本两份部署文件哈希一致，刷新载入新UI。
 
 ## 2026-10-18 进行中的思考与工具用时原位增长
 
@@ -1269,7 +1244,7 @@ PID117684于2026-10-17T13:12:34.426Z真实exit0：M3 **217/217**、M4 **10/10**�
 
 新增256使用真实runner→orchestrator→SessionRegistry→鉴权SSE/读取→不透明面板，覆盖原位增长和固定、历史索引、节点与展开状态、后台/换页恢复、失败、中止、忽略取消的迟到结果、单一定时器和模型载荷清洁。最终有头通过，证据 `.qa-local/live-step-clock-20261018/acceptance-final/result.json` 及思考/工具进行中截图；已人工查看工具截图。18、61、78、82、198、230、247、251、253、255、256相关回归通过，未重跑整套M3/M4。测试夹具仅增加可选components注入，正式测试已加入M3清单。
 
-只备份同步五份生产文件：agent-runner、orchestrator、sessions/trace-view、session-activity、style。确认原PID40416的离线wrapper、15967端口/锁/可执行文件身份、无活动会话和可启动SnowLuma目录后，仅重启该独立控制台为PID56772，模拟服务PID43892保留。57份会话/聊天/配置等数据字节不变；唯一重写日账文件已与备份去除savedAt后逐结构深比较，所有统计值不变。未移除锁、修改设置、访问受限15967页面、启动QQ/SnowLuma或请求真实模型。五份部署文件与源码哈希相同，最终核对 `.qa-local/live-step-clock-20261018/final-verification.json`，备份及重启证据保留；刷新现有页签载入新UI，未打包。
+只备份同步五份生产文件：agent-runner、orchestrator、sessions/trace-view、session-activity、style。确认原PID40416的离线wrapper、15967端口/锁/可执行文件身份、无活动会话后，仅重启该独立控制台为PID56772，模拟服务PID43892保留。57份会话/聊天/配置等数据字节不变；唯一重写日账文件已与备份去除savedAt后逐结构深比较，所有统计值不变。未移除锁、修改设置、访问受限15967页面、启动QQ或请求真实模型。五份部署文件与源码哈希相同，最终核对 `.qa-local/live-step-clock-20261018/final-verification.json`，备份及重启证据保留；刷新现有页签载入新UI，未打包。
 
 ## 2026-10-18 独立窗口反馈的会话状态与发送顺序修复
 
@@ -1281,7 +1256,7 @@ PID117684于2026-10-17T13:12:34.426Z真实exit0：M3 **217/217**、M4 **10/10**�
 
 新257使用真实运行器/编排器/仓库/鉴权API及不透明默认面板，实际点击中止并验证迟到响应、控制自然结束与中止请求竞态、后台创建/落盘/记账、三种discard分支、旧标记过滤、多次发送/部分失败的准确关联、旧存档兼容和节点复用。headless及最终有头均通过，已查看中止和发送顺序截图，证据 `.qa-local/session-outcomes-20261018/acceptance-final`。13、18、56、61、74、78、82、130、198、204、206、230、232、243、247、251、253、255、256、257相关回归通过，未重跑整套M3/M4。204旧断言从持久discarded修正为内存和文件均不存在，保留真实触发/掷骰与追加实现验证。首次257、130浏览器启动被进程沙箱EPERM拦截，正常获批后原断言通过，非业务失败。
 
-已备份并同步六份生产文件：agent-runner、orchestrator、sessions、memory-service/consolidator、sessions/panel与trace-view，部署旧版本先与本轮before副本逐份散列核对。原PID56772已自行退出，首次重启身份闸门停止且未执行Stop-Process；随后只读确认进程、端口和锁均不存在，使用start-idle.ps1在相同路径/散列/离线配置/无活动任务闸门后启动为PID26380。未停止任何其他进程、移除锁或改设置，模拟peer未操作。57份会话/聊天/配置等文件字节一致，唯一日账变化仅savedAt，去除此字段后深比较所有值不变。最终核对final-verification.json与restart/startup-state.json；未访问受限15967页面、启动QQ/SnowLuma、请求真实模型或打包。刷新现有测试页载入修复，外部独立程序需重新启动以消费后端源码。
+已备份并同步六份生产文件：agent-runner、orchestrator、sessions、memory-service/consolidator、sessions/panel与trace-view，部署旧版本先与本轮before副本逐份散列核对。原PID56772已自行退出，首次重启身份闸门停止且未执行Stop-Process；随后只读确认进程、端口和锁均不存在，使用start-idle.ps1在相同路径/散列/离线配置/无活动任务闸门后启动为PID26380。未停止任何其他进程、移除锁或改设置，模拟peer未操作。57份会话/聊天/配置等文件字节一致，唯一日账变化仅savedAt，去除此字段后深比较所有值不变。最终核对final-verification.json与restart/startup-state.json；未访问受限15967页面、启动QQ、请求真实模型或打包。刷新现有测试页载入修复，外部独立程序需重新启动以消费后端源码。
 
 ## 2026-10-18 会话页四处紧凑布局标注
 
@@ -1291,7 +1266,7 @@ PID117684于2026-10-17T13:12:34.426Z真实exit0：M3 **217/217**、M4 **10/10**�
 
 248全21项通过，含好友并发、权限撤销、跨账号迟到结果、独立退避、真实适配器signal及纯号码兜底、安全昵称展示和追加名称叶模块。255最终有头验证状态/百分比相邻、无ID详情、标题栏≤40px、主题阈值、窄屏和原位节点，已查看截图；证据 `.qa-local/session-compact-20261018/acceptance-verified`。61、123、169、198、202、237、247、248、251、253、255、256、257相关文件通过，未重跑完整M3/M4。旧选择测试由可见ID改为内部data-session-id和仍挂载的详情验证，保留原跟随、迟到响应、删除、导航与滚动断言。169一处遗留整块文本ID断言先失败，已同步新显示要求；202初次因旧用时功能增加100ms本地刷新而失败，修改前面板复验也有[100,60000]，baseline-timers.json保留反证，现精确断言这两个定时器，未放宽请求合并/终态清理检查。临时诊断脚本的首次相对导入错误已修正，未触及生产文件。
 
-备份并同步五份生产文件：session-names、transport-onebot/provider、sessions/chat-title、panel、style。按固定离线wrapper/可执行文件散列、路径、PID/端口/锁身份、无活动会话与SnowLuma目录闸门，仅重启本独立控制台26380→57288，peer未操作。同步前58份数据字节一致；启动后57份配置/会话/聊天等仍一致，唯一日账变更仅savedAt，去除此字段后深比较全部值不变，未移除锁或改设置。部署文件与当前源码hash相同，final-verification.json及restart证据保留。未访问受限15967页面、启动QQ/SnowLuma、请求真实模型或打包；刷新现有页签载入改版。
+备份并同步五份生产文件：session-names、transport-onebot/provider、sessions/chat-title、panel、style。按固定离线wrapper/可执行文件散列、路径、PID/端口/锁身份、无活动会话，仅重启本独立控制台26380→57288，peer未操作。同步前58份数据字节一致；启动后57份配置/会话/聊天等仍一致，唯一日账变更仅savedAt，去除此字段后深比较全部值不变，未移除锁或改设置。部署文件与当前源码hash相同，final-verification.json及restart证据保留。未访问受限15967页面、启动QQ、请求真实模型或打包；刷新现有页签载入改版。
 
 ## 2026-10-18 聊天页五处操作与共享标题区精修
 
@@ -1303,7 +1278,7 @@ PID117684于2026-10-17T13:12:34.426Z真实exit0：M3 **217/217**、M4 **10/10**�
 
 254扩充实际开关、隐藏/显示、普通选择预览且不切专属模式、左右几何、无详情入口和九页实际computed style断言；保留620条历史、实时SSE、周期校验内容写入0、各聊天勾选/草稿/滚动、图片和合并转发复用、迟到读取、空态与真实追加消息视图。用户移除原详情后，原展开检查转向仍存在的合并转发，未放宽正文/媒体/滚动约束。最终有头通过，已查看普通和选择两态截图，证据 `.qa-local/chat-controls-20261018/acceptance-final`。120完整本地合成公开载荷、图片/坐标边界、验证码取消/重复、配额与提供者退出通过；仅退出选择后的断言同步为隐藏且禁用。252最终单独有头通过实际移动碎片、底部夹紧、中部批量退场、相邻补位、用户滚轮取消和长存档尾部，证据deletion-final。61、120、121、141、169、237、251、252、254、255相关回归全部通过，未重跑整套M3/M4。
 
-只备份同步common.css、sessions/style和chats的panel/message-view/quote-mode/style六份前端资源，部署旧版先与before逐份核对，源码与部署hash一致。58份配置/会话/聊天/记忆/用量等相关数据同步前后字节完全不变；未重启服务、改设置、访问受限15967网页、启动QQ/SnowLuma、请求真实模型或公开投稿。证据final-verification.json、console-before及两轮有头截图保留，刷新现有控制台即可，未打包。
+只备份同步common.css、sessions/style和chats的panel/message-view/quote-mode/style六份前端资源，部署旧版先与before逐份核对，源码与部署hash一致。58份配置/会话/聊天/记忆/用量等相关数据同步前后字节完全不变；未重启服务、改设置、访问受限15967网页、启动QQ、请求真实模型或公开投稿。证据final-verification.json、console-before及两轮有头截图保留，刷新现有控制台即可，未打包。
 
 ## 2026-10-18 聊天选择高光与操作栏六处精修
 
@@ -1325,7 +1300,7 @@ PID117684于2026-10-17T13:12:34.426Z真实exit0：M3 **217/217**、M4 **10/10**�
 
 258最终有头在随机本地端口、20个全新空扩展上验证真实启停与热更新保留卡片/按钮/顺序/滚动/折叠、默认收纳、普通语言、紧凑标题和读取失败保留；九个内置页签连续鉴权状态事件及正常后台校验期间，根节点/阅读块保留且入场重播均为0，无横向溢出。证据 `.qa-local/panel-stability-20261018/acceptance-final/`；已查看技能、插件及用量截图。61、75、80、105、137、139、143、154、164、169、194、217、223、253、254、258相关回归通过，未重跑全套M3/M4。143的简化DOM模拟改为真实浏览器，保留原loader/HTTP脱敏、诊断与两页统计覆盖，并加强节点身份；154模拟器补齐原位DOM操作、离开回调与80ms合批等待，84项安装反馈通过。223的旧“刷新必摘除选择器”断言改为未变时保留原选择器；已有保存失败、来源改变和追加UI覆盖仍完整验证。258首两轮仅是默认折叠内容可见性和嵌套summary定位问题，已修正后有头通过，初始失败证据保留。
 
-仅备份同步11份前端资源，部署旧版逐份与before核对；58份会话、聊天、记忆、配置和用量等相关数据字节保持不变，未重启服务或改配置。未访问受限15967页面、启动QQ/SnowLuma或请求真实模型/外部服务。代码仍通过现有ui.assets和整页面板追加替换，刷新现有页面即可载入改版。末次来源变化审查补齐bundled回退时摘除旧卸载按钮，恢复用户安装来源时只保留一个控制器；143新增此项真实DOM验证。
+仅备份同步11份前端资源，部署旧版逐份与before核对；58份会话、聊天、记忆、配置和用量等相关数据字节保持不变，未重启服务或改配置。未访问受限15967页面、启动QQ或请求真实模型/外部服务。代码仍通过现有ui.assets和整页面板追加替换，刷新现有页面即可载入改版。末次来源变化审查补齐bundled回退时摘除旧卸载按钮，恢复用户安装来源时只保留一个控制器；143新增此项真实DOM验证。
 
 来源边界补丁首次本地检查发现installed变量重名，未同步该版本；改为installedIds后语法、143真实DOM来源切换及154全部84项重验通过，再以已部署hash为前置条件单独备份同步manager。最终11份部署资源与源码散列一致，58份相关数据从首次到补丁同步均保持字节一致；first-sync-verification、final-verification及console-before-source-check保留完整核对结果，61再次通过。
 
@@ -1337,7 +1312,7 @@ PID117684于2026-10-17T13:12:34.426Z真实exit0：M3 **217/217**、M4 **10/10**�
 
 61、169、184、185、186、187、189、190、215、221、229、244、249、259 共14个相关文件退出0，244完整23组保存生命周期、249实际结构追加/停用和160字段清单通过。259最终有头实际验证四处布局、手动模型添加/两击删除、三击清除密钥及迟到响应、普通/分群/双滑条保存和恢复继承、嵌套弹窗、关闭清明文及560px窄屏，无页面异常或外网请求；已查看最终六类截图。旧回归定位迁到新的公开入口，保留原并发、冲突、失败重试、凭据隔离及实际消费者断言。初次验收遇到卡头变量重名导致模块不加载，语法检查定位后改名，未同步失败版本；后续失败均为旧选择器，迁移后完整通过。证据 `.qa-local/settings-parity-detail-20261018/`，未重跑整套M3/M4。
 
-部署旧版先与本轮before逐份核对，备份五份旧资源并同步六份默认前端文件（含新增activity-view）；58份会话、聊天、记忆、配置及用量相关数据字节不变，部署/源码散列一致，final-verification.json保留核验。未访问受限15967页面、改配置、重启服务、启动QQ/SnowLuma或请求外部服务；未打包，刷新现有页面即可载入。
+部署旧版先与本轮before逐份核对，备份五份旧资源并同步六份默认前端文件（含新增activity-view）；58份会话、聊天、记忆、配置及用量相关数据字节不变，部署/源码散列一致，final-verification.json保留核验。未访问受限15967页面、改配置、重启服务、启动QQ或请求外部服务；未打包，刷新现有页面即可载入。
 
 ## 2026-10-18 渠道管理六处直接编辑标注
 
@@ -1349,7 +1324,7 @@ PID117684于2026-10-17T13:12:34.426Z真实exit0：M3 **217/217**、M4 **10/10**�
 
 33、61、90、117、119、169、184、186、187、189、190、244、249、259、260共15个文件退出0；244完整23组保存生命周期和249的160配置控件清单、实际追加/停用通过。260最终有头覆盖六处几何/隐藏状态、匿名公共目录、自动获取去重/显式导入、逐行两击删除、三击清密钥、实际写盘失败/同字段冲突/后续输入、迟到来源、焦点草稿离页保存、活动端点实际绑定、560px窄屏及新叶子实际替换/停用；页面异常与外部请求0，已查看最终宽窄屏和内联目录截图。旧测试迁到新入口与逐行操作，保留原权限/元数据/磁盘/竞态断言；190独立保留旧公开编辑器兼容API测试，不再声称默认页使用已移除入口。119目录连续删除在减少动态效果下验证，布局动态由原删除验收覆盖。未重跑整套M3/M4。
 
-证据 `.qa-local/provider-manager-inline-20261018/`。部署旧版先与before逐份核对，备份四份旧资源并同步五份默认前端文件（新增provider-manager）；58份配置/会话/聊天/记忆/用量相关数据字节不变，源码与部署散列一致。未访问受限15967页面、改动现有配置、重启服务、启动真实QQ/SnowLuma或请求外部服务；未打包，刷新当前页即可载入。
+证据 `.qa-local/provider-manager-inline-20261018/`。部署旧版先与before逐份核对，备份四份旧资源并同步五份默认前端文件（新增provider-manager）；58份配置/会话/聊天/记忆/用量相关数据字节不变，源码与部署散列一致。未访问受限15967页面、改动现有配置、重启服务、启动真实QQ或请求外部服务；未打包，刷新当前页即可载入。
 
 延后最终复核发现config.json于21:51:34有后续写入；同步前后58份一致是同步瞬间检查点，此后配置已变化，不再声称全程58份一致。任务没有写该配置，未判断这次后续写入的来源，已保留其新内容；另外57份数据与五份部署/源码仍一致。post-sync-verification.json记录新旧散列、时间与保留决定，不输出配置或密钥，也未覆盖或回滚配置。
 
@@ -1361,7 +1336,7 @@ PID117684于2026-10-17T13:12:34.426Z真实exit0：M3 **217/217**、M4 **10/10**�
 
 16个相关回归文件33/61/90/117/119/169/184/186/187/189/190/244/249/259/260/261通过；244完整23组，249保持160字段。261最终有头覆盖实际逐模型请求/渠道密钥/成功失败、迟到隔离、视觉几何、双字段编辑/碰撞/写盘失败/并发元数据/引用更新、两种成功开窗/失败/取消/关闭后晚到、磁盘重读及560px窄屏；无页面异常和外部请求，已查看四类最终截图。261加入M3入口，未重跑整套M3/M4。证据 `.qa-local/model-manager-rows-20261018/`。
 
-旧部署与任务before散列逐份核对并备份后同步7份生产资源。58份数据在同步瞬间字节一致；核实身份/端口/锁/空闲/离线包装器后仅重启本地合成控制台57288→3496，不移除锁文件或重启旁路进程。启动后57份数据字节一致，1份用量日文件只更新savedAt，所有业务值和当前配置保持。初次重启检查因PowerShell默认JSON解析不接受baseUrl/baseURL同时存在而在停止前退出，检查器改为大小写键兼容读取后完成，未修改配置内容。final-verification记录7份源码/部署散列及全部检查，未访问受限页、真实模型、QQ/SnowLuma或外部服务，未打包。
+旧部署与任务before散列逐份核对并备份后同步7份生产资源。58份数据在同步瞬间字节一致；核实身份/端口/锁/空闲/离线包装器后仅重启本地合成控制台57288→3496，不移除锁文件或重启旁路进程。启动后57份数据字节一致，1份用量日文件只更新savedAt，所有业务值和当前配置保持。初次重启检查因PowerShell默认JSON解析不接受baseUrl/baseURL同时存在而在停止前退出，检查器改为大小写键兼容读取后完成，未修改配置内容。final-verification记录7份源码/部署散列及全部检查，未访问受限页、真实模型、QQ或外部服务，未打包。
 
 延后复核发现config.json在2026-10-18T15:54:06.771Z又有写入，已保留当前内容，不回滚、不推断写入来源，也不再把启动检查点配置一致表述为持续不变。另56份数据仍与同步时相同，1份用量日仍仅上述启动时间变化，7份部署/验收源码继续一致。post-sync-verification.json只记散列及时间，不输出配置或凭据。
 
@@ -1373,7 +1348,7 @@ PID117684于2026-10-17T13:12:34.426Z真实exit0：M3 **217/217**、M4 **10/10**�
 
 69旧呈现用例要求白名单至少2组，而此前按用户要求已经提取单项并变为1组；以本任务before的四份旧前端独立复现同一失败，不改界面或该断言，不计入17项通过。证据 `.qa-local/model-config-compact-20261019/` 的当前/基线69日志及test-summary。初次262发现隐藏旧开启标签计数影响断言，改为检查可见标签；随后发现选择失败时按钮文字未回退，已修复真实缺陷后完整有头通过。
 
-四份生产前端的部署旧版与before散列逐份匹配，备份后仅同步structure/panel/model-picker/style。同步瞬间58份当前配置、聊天、会话、记忆、用量等字节一致，未写配置或重启服务。final-verification记录4份资源/数据散列和已知基线失败；刷新当前页即可载入。未访问受限页面、真实模型、QQ/SnowLuma或外部服务，未打包。
+四份生产前端的部署旧版与before散列逐份匹配，备份后仅同步structure/panel/model-picker/style。同步瞬间58份当前配置、聊天、会话、记忆、用量等字节一致，未写配置或重启服务。final-verification记录4份资源/数据散列和已知基线失败；刷新当前页即可载入。未访问受限页面、真实模型、QQ或外部服务，未打包。
 # 2026-10-19 白名单展示与品牌图标折叠三处标注
 
 默认记忆、聊天存档使用scope=allowlist读取列表及详情，独立chat-visibility策略按allow.groups/private明确成员过滤，保留白名单空记忆占位；空名单不展示任何聊天，不借运行时allowAllWhenEmpty展开历史。原管理员未筛选接口与准入策略保持。白名单变化后移除当前详情和选择，中止历史读取、拒绝迟到详情及已保存导航恢复；重新加入可读原档。只过滤展示，不删除或重写存档/记忆/备注。
@@ -1382,7 +1357,7 @@ PID117684于2026-10-17T13:12:34.426Z真实exit0：M3 **217/217**、M4 **10/10**�
 
 35/61/100/102/110/121/141/169/180/207/217/237/251/252/254/263共16个相关文件通过。263最终有头覆盖群/私聊精确过滤、空占位、移出后当前详情/迟到响应/导航恢复、重新加入原档、空名单、原始文件字节一致、图标键盘/点击/刷新偏好/窄屏/隐藏模式；页面异常及外部请求0，已查看最终记忆、存档、展开/折叠截图。263加入M3，未重跑全套M3/M4。旧显示夹具明确加入所用合成聊天；207旧无超时关卡的拦截地址未匹配新参数，精确结束该测试及浏览器子树后补地址/超时，最终全部通过；未结束真实控制台或无关进程。102日期断言改用未在前段被整理更新的白名单私聊，保留日期呈现与管理员联合目录覆盖。
 
-证据 `.qa-local/whitelist-brand-20261019/`。七份旧部署文件先与before核对并备份，再同步八份资源含新策略。58份当前配置/聊天/会话/记忆/用量在同步瞬间字节一致；严格校验身份、端口、锁、空闲、离线包装器后，仅重启合成本地控制台3496→31472，未删锁或动旁路进程。启动后57份字节一致，1份用量日只更新savedAt，业务值与当前配置保留，8份部署/验收源码一致。未访问受限页面、请求真实模型、启动QQ/SnowLuma、打包或部署外部服务；刷新页面载入。
+证据 `.qa-local/whitelist-brand-20261019/`。七份旧部署文件先与before核对并备份，再同步八份资源含新策略。58份当前配置/聊天/会话/记忆/用量在同步瞬间字节一致；严格校验身份、端口、锁、空闲、离线包装器后，仅重启合成本地控制台3496→31472，未删锁或动旁路进程。启动后57份字节一致，1份用量日只更新savedAt，业务值与当前配置保留，8份部署/验收源码一致。未访问受限页面、请求真实模型、启动QQ、打包或部署外部服务；刷新页面载入。
 
 # 2026-10-19 当前价格表改为可搜索表格
 
@@ -1394,13 +1369,13 @@ PID117684于2026-10-17T13:12:34.426Z真实exit0：M3 **217/217**、M4 **10/10**�
 
 默认 cost-view.js 使参考价内容框成为可键盘操作的原生开关，开启成功色/关闭危险色描边与细内发光，隐藏旧复选框和开关字样。开启改为输入/输出/缓存三项报价展示，关闭恢复三个原输入及保留值。只改变呈现，所有原配置控件保持唯一并沿用保存/校验；有效报价直接读所选后端 current，明确显示来源，保留免费 0 和未匹配的手填回退。待保存状态不展示未生效价格，成功保存、模型选择或价格表更新后读取；失败重试、关闭和迟到回复均验证。
 
-265 无头/有头各 3 组通过并查看两种状态和窄屏截图；249、264、244、187 相关回归均 exit0。244 的合成磁盘故障日志为既有故障注入，23 组保持通过。265 加入 M3，未重跑全套 M3/M4。证据 `.qa-local/cost-switch-20261019/`，测试仅用随机端口临时应用、被动 transport 和合成价格源，没有访问受限页面、真实模型/QQ/SnowLuma 或外部服务。
+265 无头/有头各 3 组通过并查看两种状态和窄屏截图；249、264、244、187 相关回归均 exit0。244 的合成磁盘故障日志为既有故障注入，23 组保持通过。265 加入 M3，未重跑全套 M3/M4。证据 `.qa-local/cost-switch-20261019/`，测试仅用随机端口临时应用、被动 transport 和合成价格源，没有访问受限页面、真实模型/QQ 或外部服务。
 
 # 2026-10-19 群聊/私聊独立允许全部
 
 删除旧共用空名单开关的可见呈现，在两个选择弹窗顶部分别加入允许所有群聊/允许所有私聊。策略与名单按弹窗保存一起提交，取消不写；开启后隐藏对应号码框和弹窗逐项列表，名单保留、关闭恢复。新增可选 allow.allGroups/allPrivate，显式标志覆盖本类型旧空名单策略，缺省保持旧配置行为；拒绝名单优先，实际 ingest/测试发送及启动导航均接通。显式允许全部同时纳入本类型已有记忆/存档，关闭恢复过滤；旧共用空名单选项的历史展示兼容范围不变。
 
-17/35/61/218/221/244/249/263/266 九个相关文件通过；266 无头/有头各 4 组，244 完整 23 组，249 仍保留 160 字段。涵盖两类独立保存、取消、列表离线、原名单/记忆/存档保留、拒绝优先、真实消息和合成测试发送、原子写故障及撤销、迟到回执中的新开关、重开和窄屏。已查看最终截图。266 加入 M3，未重跑全套。证据 `.qa-local/allow-all-kinds-20261019/`，验收无外部请求、DNS、真实 QQ/SnowLuma 或模型调用。
+17/35/61/218/221/244/249/263/266 九个相关文件通过；266 无头/有头各 4 组，244 完整 23 组，249 仍保留 160 字段。涵盖两类独立保存、取消、列表离线、原名单/记忆/存档保留、拒绝优先、真实消息和合成测试发送、原子写故障及撤销、迟到回执中的新开关、重开和窄屏。已查看最终截图。266 加入 M3，未重跑全套。证据 `.qa-local/allow-all-kinds-20261019/`，验收无外部请求、DNS、真实 QQ 或模型调用。
 
 核对并备份八份旧部署文件后，只同步十份所需源码（含两份新增纯策略模块）；58份当前业务数据在同步瞬间字节一致。验证离线包装器/进程/端口/锁/空闲和数据后，仅重载本任务合成控制台31472→74068；未删除锁、写配置或操作其他进程。启动核验57份原始文件字节一致，1份用量日仅正常 savedAt 变化，配置和业务值不变；十份部署源码与验收散列一致。final-verification.json 保存结果，未访问受限页面或部署外部服务。
 
@@ -1413,7 +1388,7 @@ PID117684于2026-10-17T13:12:34.426Z真实exit0：M3 **217/217**、M4 **10/10**�
 
 61/221/226/229/244/249/259/267 八个相关文件通过；226 为49项，244 为23组，267 无头/有头各7组并查看最终三个状态和560px窄屏截图。221/259 随删除入口迁移，保留实际保存、离线、迟到群名和群间数据隔离断言。267 已加入 M3；未重跑完整 M3/M4。参考散列、实测几何、测试日志和最终同步结果在 .qa-local/activity-v04-align-20261019/；说明见 docs/activity-settings-v04-presentation.md。
 
-核对并备份四份已部署前端文件后，同步六份前端文件（新增独立活动草稿与专用样式）。58份当前业务文件在同步前后字节一致，未写配置、重启服务或访问受限页面；没有真实 QQ/SnowLuma、模型调用或外部请求。当前预览刷新后生效。
+核对并备份四份已部署前端文件后，同步六份前端文件（新增独立活动草稿与专用样式）。58份当前业务文件在同步前后字节一致，未写配置、重启服务或访问受限页面；没有真实 QQ、模型调用或外部请求。当前预览刷新后生效。
 
 # 2026-10-19 指令禁言整框开关
 
@@ -1429,7 +1404,7 @@ JSON改为分组会话按钮，展示白名单所有群/私聊及允许全部模
 
 12/17/18/61/204/209/226/244/249/268/269共11个相关文件通过；269无头/有头各6组，查看最终截图，涵盖真实保存、同号隔离、过期/永久、入站/编排、失败重试及窄屏。269加入M3，未重跑全套。证据 .qa-local/quiet-chat-buttons-20261019/。
 
-同步8份源码，58份当前业务文件在同步瞬间字节一致。核验合成包装器、空闲状态、身份/端口/锁及数据后重载本任务预览74068→72436，未删除锁或写配置；启动57份字节一致、1份用量日仅savedAt变化，业务值不变。未访问受限现有页面、真实模型、QQ/SnowLuma或外部服务。最终结果见final-verification.json。
+同步8份源码，58份当前业务文件在同步瞬间字节一致。核验合成包装器、空闲状态、身份/端口/锁及数据后重载本任务预览74068→72436，未删除锁或写配置；启动57份字节一致、1份用量日仅savedAt变化，业务值不变。未访问受限现有页面、真实模型、QQ或外部服务。最终结果见final-verification.json。
 
 # 2026-10-19 社区删除口令安装与重复名单
 
@@ -1447,7 +1422,7 @@ JSON改为分组会话按钮，展示白名单所有群/私聊及允许全部模
 
 22份定向文件通过，271新增6组并登记M3，270有头/138动画检查通过，未重跑全套。最终基准：12000条存档取默认500条，首次551.27→24.11ms、重复241.91→0.53ms；160条历史恢复最长阻塞2962.39→31.36ms，恢复写入320→0。总恢复耗时仍为2309.17ms，不能把最长阻塞当完整启动耗时。具体边界、源码散列和本机合成数据证据见docs/archive-performance.md与.qa-local/archive-performance-20261019/。
 
-核验部署基线后同步8份源码，58份业务文件同步前后字节一致。核验离线包装器、空闲状态、进程/端口/锁后重载本任务合成预览57476→73208；启动后的58份业务文件仍字节一致，未写配置或手工删锁。未访问受限现有页面或调用真实模型、QQ/SnowLuma、外部网络。最终证据.qa-local/archive-performance-20261019/final-verification.json。
+核验部署基线后同步8份源码，58份业务文件同步前后字节一致。核验离线包装器、空闲状态、进程/端口/锁后重载本任务合成预览57476→73208；启动后的58份业务文件仍字节一致，未写配置或手工删锁。未访问受限现有页面或调用真实模型、QQ、外部网络。最终证据.qa-local/archive-performance-20261019/final-verification.json。
 
 # 2026-10-19 联网搜索卡片式开关
 

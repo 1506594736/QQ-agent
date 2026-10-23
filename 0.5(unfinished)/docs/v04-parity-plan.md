@@ -20,7 +20,6 @@
 | 通用交互 | ui/app/00-core.js、12-concept2-ui.js、ui/style.css、index.html | 已迁入可逆details折叠；其他菜单/卡片、拖动、提示、主题仍待逐项 |
 | 启动/导航/连接 | 01-boot、11-init、src/server/app、electron/main/preload | 待逐项，与新版自动认证/实例隔离比较 |
 | 会话/SSE/任务 | 02-sse-sessions、src/sessions/orchestrator/reminders | 待逐项，不从旧验收记录推断当前全部等价 |
-| QQ/SnowLuma | 03-snowluma、src/onebot、electron | 待逐项；不迁入未经验证的隔离声明或放宽安全闸 |
 | 聊天/用量 | 04-archive-usage、telemetry/store | 已有迁移历史，但需当前代码重新逐项确认 |
 | 记忆/人设 | 05-memory-settings、memory/personas/profile | 待逐项：选择、覆盖、整理、失败保留、持久化 |
 | 设置/自动保存 | 06-settings-render、07-settings-events、08-modals | 首批正在核对模型目录；其余未完成 |
@@ -169,7 +168,7 @@
 
 上一批最终全量已确认166/166+10/10、453散列一致；当前第八批新全量为`full-2026-10-16T11-21-39-880Z`，458份冻结源码/测试、exec44328，预计M3 169以终态为准。当前仍不能宣布全部目标完成。待本轮真实终态后再处理刷新配置、SSE事件合批、启动引导和所有剩余领域。
 
-进一步源码复读：0.4 startListPoller在建立时取refreshMs固定间隔，status poller则每轮动态读取，并非所有旧消费者都能即时改频率。0.5宿主status已有动态读取；新会话authority/heartbeat固定15秒，记忆任务的1秒展示/2秒补偿属于独立任务策略，SnowLuma已用事件合帧并有界快照，不宜把日志重新降为旧慢轮询。下一批应区分展示时钟与权威读频率，明确ui.refreshMs消费者并验证修改后无需重启、隐藏/恢复和迟到请求；不得把“统一配置”机械解释为每100ms读取后端或让空闲页重新启动定时器。
+进一步源码复读：0.4 startListPoller在建立时取refreshMs固定间隔，status poller则每轮动态读取，并非所有旧消费者都能即时改频率。0.5宿主status已有动态读取；新会话authority/heartbeat固定15秒，记忆任务的1秒展示/2秒补偿属于独立任务策略。下一批应区分展示时钟与权威读频率，明确ui.refreshMs消费者并验证修改后无需重启、隐藏/恢复和迟到请求；不得把“统一配置”机械解释为每100ms读取后端或让空闲页重新启动定时器。
 
 
 ## 第九批刷新实现与第十批原子审计（继续进行）
@@ -280,7 +279,7 @@ root额外两条定向分别15/15与9/9，真实新进程重启认证有头/无�
 | 会话/存档跨页选中项 | 旧全局currentSessionId/currentChatKey保留；新iframe局部selected/current在重挂载清空 | 沿217窄宿主scope存ID并重读交集校验，不存全文/密钥 |
 | 离开窗口最后保存窗口 | 旧keepalive，新异步postMessage+bridge关闭的源码候选 | 必须实际关闭+磁盘确认，尚不称数据丢失已证明 |
 
-QQ/SnowLuma控制/身份/群名片和通用UI的剩余领域由独立只读审计继续拆解，UI群成员屏蔽便利另有设计。完整原目标不缩小，以上列表不是所有剩余项的穷举，也不是完成率。
+QQ 身份/群名片和通用UI的剩余领域由独立只读审计继续拆解，UI群成员屏蔽便利另有设计。完整原目标不缩小，以上列表不是所有剩余项的穷举，也不是完成率。
 
 ## 第十五批落实与仍待核对的边界
 

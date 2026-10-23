@@ -47,7 +47,7 @@ let hold=null,accounts=[],mode='ok';
 const market={syncGlobalBlocklist:async()=>({ok:true,ids:[]}),getBlocklist:()=>({ok:true,ids:[]}),listAccounts:()=>({ok:true,accounts}),login:async body=>{calls.push(structuredClone(body));if(hold)await hold;if(mode==='error')throw Object.assign(new Error('QA142 认证失败 '+body.password),{expose:true,status:401});accounts=[{username:body.loginId,savedAt:Date.now()}];return {ok:true,account:{username:body.loginId,displayName:`QA142 ${body.password} qa142-host-only-proof QA142_ACCOUNT_TOKEN`,token:'QA142_ACCOUNT_TOKEN',nested:{secret:'QA142_SECRET'}},token:'QA142_ACCOUNT_TOKEN'};}};
 const token='qa142-console-token',proof='qa142-host-only-proof';
 const kernel=createKernel({appRoot:isolation.appRoot,env:isolation.env,headless:true,fetchImpl:(...args)=>fetch(...args),transport:{id:'fixture',start(){},stop(){},status:()=>({connected:true}),actions:{}},priceUpdates: { refresh: async () => ({ok:true}), updateCheck: async () => ({ok:true,current:'0.5.0',latest:'0.5.0',hasUpdate:false}) },communityMarket:market});
-kernel.config.update({server:{port:0,token},telemetry:{enabled:false},proactive:{enabled:false},snowluma:{autoLaunch:false}});
+kernel.config.update({server:{port:0,token},telemetry:{enabled:false},proactive:{enabled:false},});
 kernel.loader.startWatchers=()=>{};
 let browser;
 try{

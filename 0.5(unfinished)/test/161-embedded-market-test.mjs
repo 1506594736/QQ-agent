@@ -106,7 +106,7 @@ const kernel = createKernel({ appRoot:isolation.appRoot,env:{...isolation.env,QQ
     },
   },
 });
-const token = 'QA161_LOCAL_CONSOLE'; kernel.config.update({ server: { port: 0, token }, telemetry: { enabled: false },proactive:{enabled:false},snowluma:{autoLaunch:false} });
+const token = 'QA161_LOCAL_CONSOLE'; kernel.config.update({ server: { port: 0, token }, telemetry: { enabled: false },proactive:{enabled:false},});
 kernel.loader.startWatchers=()=>{};
 let browser;
 try {

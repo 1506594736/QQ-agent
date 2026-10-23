@@ -46,7 +46,7 @@ function renderSettingsSidebar() {
     ['allow', '聊天白名单'],
     ['chat', '聊天设置'],
     ['desktop', '桌面端'],
-    ['onebot', 'OneBot（SnowLuma）'],
+    ['onebot', 'OneBot'],
     ['tools', '工具与技能']
   ];
   sidebar.innerHTML = `
@@ -942,10 +942,10 @@ return `
       id: 'card-sticker',
       icon: '😄',
       title: '表情包',
-      sub: '收藏表情同步 / 发送积极度 / 提示词列举数',
+      sub: '本地表情库 / 发送积极度 / 提示词列举数',
       body: `
       <div class="checkbox-row"><input type="checkbox" id="cfg-sticker" ${c.sticker.enabled ? 'checked' : ''} />
-        <label for="cfg-sticker">启用表情包（收藏表情同步 + 发送工具）</label></div>
+        <label for="cfg-sticker">启用表情包（本地表情库 + 发送工具）</label></div>
       <div class="field">
         <label>发表情包的积极程度</label>
         <select id="cfg-sticker-encourage">
@@ -1015,27 +1015,19 @@ function renderDesktopSection(c) {
 
 function renderOnebotSection(c) {
   return `
-    <h3 id="settings-onebot">OneBot（SnowLuma）</h3>
-    <div class="hint" style="margin-bottom:10px">SnowLuma 的启动、关闭与日志已移动到顶部「SnowLuma」页签。此处只保留连接配置。</div>
-    <div class="field"><label>SnowLuma 程序目录（留空 = 自动使用项目内 snowluma/ 文件夹）</label>
-      <div style="display:flex;gap:8px">
-        <input type="text" id="cfg-snowlumadir" value="${esc(c.snowluma.dir || '')}" style="flex:1" />
-        <button class="btn btn-small" id="open-snowluma-btn">打开文件夹</button>
-      </div>
-      <div class="hint" id="snowluma-hint"></div></div>
-    <div class="checkbox-row"><input type="checkbox" id="cfg-snowlumalaunch" ${c.snowluma.autoLaunch ? 'checked' : ''} />
-      <label for="cfg-snowlumalaunch">QQ Agent 启动时自动拉起 SnowLuma（未运行时）</label></div>
+    <h3 id="settings-onebot">OneBot</h3>
+    <div class="hint" style="margin-bottom:10px">请自行安装并运行协议端，在此填写 OneBot v11 的正向 WebSocket 与 HTTP API 地址。</div>
     <div class="field-row">
-      <div class="field"><label>WebSocket 地址（收消息）</label><input type="text" id="cfg-wsurl" value="${esc(c.snowluma.wsUrl)}" /></div>
-      <div class="field"><label>HTTP 地址（发消息）</label><input type="text" id="cfg-httpurl" value="${esc(c.snowluma.httpUrl)}" /></div>
+      <div class="field"><label>WebSocket 地址（收消息）</label><input type="text" id="cfg-wsurl" value="${esc(c.onebot.wsUrl)}" /></div>
+      <div class="field"><label>HTTP 地址（发消息）</label><input type="text" id="cfg-httpurl" value="${esc(c.onebot.httpUrl)}" /></div>
       <div class="field"><label>WebSocket 令牌</label>
         <div style="display:flex;gap:8px">
-          <input type="password" id="cfg-obtoken" value="${esc(c.snowluma?.hasAccessToken ? '******' : '')}" placeholder="输入新令牌可替换；留空保持不变" autocomplete="new-password" style="flex:1" />
+          <input type="password" id="cfg-obtoken" value="${esc(c.onebot?.hasAccessToken ? '******' : '')}" placeholder="输入新令牌可替换；留空保持不变" autocomplete="new-password" style="flex:1" />
           <button class="btn btn-small" id="cfg-obtoken-toggle" type="button">显示</button>
         </div></div>
-      <div class="field"><label>HTTP 令牌（与 WS 不同时填；SnowLuma 默认分开）</label>
+      <div class="field"><label>HTTP 令牌（与 WS 不同时填）</label>
         <div style="display:flex;gap:8px">
-          <input type="password" id="cfg-obhttptoken" value="${esc(c.snowluma?.hasHttpAccessToken ? '******' : '')}" placeholder="输入新令牌可替换；留空保持不变" autocomplete="new-password" style="flex:1" />
+          <input type="password" id="cfg-obhttptoken" value="${esc(c.onebot?.hasHttpAccessToken ? '******' : '')}" placeholder="输入新令牌可替换；留空保持不变" autocomplete="new-password" style="flex:1" />
           <button class="btn btn-small" id="cfg-obhttptoken-toggle" type="button">显示</button>
         </div></div>
     </div>

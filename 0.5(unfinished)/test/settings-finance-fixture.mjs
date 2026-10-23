@@ -31,7 +31,7 @@ export async function financeFixture(number){
         fetchImpl:offlineFetch,
         communityMarket:{syncGlobalBlocklist:async()=>({ok:true,ids:[]})}});
       kernel.loader.startWatchers=()=>{};kernel.bus.on('status',value=>events.push(structuredClone(value)),{internal:true});
-      if(initialize)kernel.config.update({server:{port:0,token},telemetry:{enabled:false},api:{baseUrl:'http://127.0.0.1:9/v1',model:'deepseek-chat',maxRounds:1,priceInputPerM:6,priceOutputPerM:7,priceCachedPerM:0},allow:{groups:['123'],private:[]},allowAllWhenEmpty:false,snowluma:{autoLaunch:false},proactive:{enabled:false},chatActive:{enabled:false},memory:{consolidateEnabled:false},sessionRetryAttempts:0,wakeDelayMs:200,store:{historyCount:0,promptAnchor:{enabled:false},keywords:[],contextSliderPos:0}});
+      if(initialize)kernel.config.update({server:{port:0,token},telemetry:{enabled:false},api:{baseUrl:'http://127.0.0.1:9/v1',model:'deepseek-chat',maxRounds:1,priceInputPerM:6,priceOutputPerM:7,priceCachedPerM:0},allow:{groups:['123'],private:[]},allowAllWhenEmpty:false,proactive:{enabled:false},chatActive:{enabled:false},memory:{consolidateEnabled:false},sessionRetryAttempts:0,wakeDelayMs:200,store:{historyCount:0,promptAnchor:{enabled:false},keywords:[],contextSliderPos:0}});
       base=`http://127.0.0.1:${await kernel.start()}`;assert.notEqual(Number(new URL(base).port),15967);ownedOrigins.add(new URL(base).origin);assert.deepEqual(kernel.loader.listEntries(),[]);assert.equal(fs.existsSync(path.join(temporary,'absent')),false);
     },
     async stop(){if(page)await page.goto('about:blank');await kernel?.stop();kernel=null;},

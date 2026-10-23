@@ -438,8 +438,7 @@ function updateSecretStates() {
     const path = el.dataset.secretPath; const parts = path.split('.'); const key = parts.pop();
     const node = parts.length ? getPath(form.base, parts.join('.')) : form.base;
     const set = Boolean(node?.[`has${key[0].toUpperCase()}${key.slice(1)}`] || key === 'apiKey' && node?.hasKey);
-    const automatic = path.startsWith('snowluma.') && form.value('snowluma.connectionMode') !== 'manual';
-    text(el, automatic ? '自动跟随账号配置；已保存的手动令牌不在此模式使用' : set ? '已配置；不会自动读取明文' : '尚未配置');
+    text(el, set ? '已配置；不会自动读取明文' : '尚未配置');
   }
 }
 function tierFor(position) {
@@ -799,13 +798,11 @@ function render() {
     blocklistRaw.mount(deny);
     deny.append(button('按群选择屏蔽成员',()=>blocklistMembers.open()));
     const link = group(access.fields, '协议端连接');
-    field(link, 'snowluma.dir', 'SnowLuma 目录'); field(link, 'snowluma.autoLaunch', '启动 Agent 时自动拉起 SnowLuma', 'checkbox');
-    field(link, 'snowluma.connectionMode', '连接方式', 'select', { default: 'auto', options: [['auto', '自动跟随本机 SnowLuma'], ['manual', '手动填写 OneBot 连接']], hint: '自动模式跟随所选账号的实际端口与令牌；远程服务请使用手动连接。', onChange: () => updateSecretStates() });
-    field(link, 'snowluma.accountId', '连接的 QQ 号', 'text', { hint: '自动模式只有一个账号时可留空，验证成功后会保存账号绑定；多个账号时填写当前实例使用的 QQ 号。' });
-    field(link, 'snowluma.wsUrl', 'OneBot WebSocket 地址', 'text', { hint: '手动模式使用此地址；自动模式可用它在多个账号或端点中定位目标。' }); field(link, 'snowluma.httpUrl', 'OneBot HTTP 地址');
-    secretField(link, 'snowluma.accessToken', 'WebSocket 令牌', '/api/onebot-token', { which: 'ws' });
-    secretField(link, 'snowluma.httpAccessToken', 'HTTP 令牌', '/api/onebot-token', { which: 'http' });
-    const tokenHint = document.createElement('p'); tokenHint.className = 'field-hint'; tokenHint.textContent = '自动模式直接使用所选账号的令牌，手动令牌仅在手动模式生效；切换模式会保留已保存的值。手动输入后请点击“写入”保存。WebUI 登录密码与 OneBot 令牌不同。'; link.append(tokenHint);
+    field(link, 'onebot.wsUrl', 'OneBot WebSocket 地址', 'text', { hint: '填写已由你安装并启动的协议端所提供的正向 WebSocket 事件地址。' });
+    field(link, 'onebot.httpUrl', 'OneBot HTTP 地址', 'text', { hint: '填写同一账号的 HTTP API 地址，用于发送消息和查询。' });
+    secretField(link, 'onebot.accessToken', 'WebSocket 令牌', '/api/onebot-token', { which: 'ws' });
+    secretField(link, 'onebot.httpAccessToken', 'HTTP 令牌', '/api/onebot-token', { which: 'http' });
+    const tokenHint = document.createElement('p'); tokenHint.className = 'field-hint'; tokenHint.textContent = '协议端由你独立安装、启动和管理。本应用不会下载、启动或读取协议端的本地账号配置。输入令牌后点击“写入”保存；HTTP 和 WebSocket 令牌请分别核对。'; link.append(tokenHint);
   }
 
   const send = section('send', '发送与消息存档', '同会话串行、成功后去重记账。限频用于防刷屏，不应设得过大。');
@@ -1423,10 +1420,10 @@ const resetAction = bindDestructiveAction($('#reset'), {
 });
 onBeforeLeave(async () => { if(resetAccepted)return;try{await blocklistRaw.flushGuard();await saveAll();await blocklistRaw.flushGuard();}catch(error){report(error.message,true);throw error;} });
 onShellEvent((name, payload) => {
-  if (name === 'settings-section' && ['models','access'].includes(payload?.section)) {
+  if (name === 'settings-section' && ['models','access','onebot'].includes(payload?.section)) {
     activeSection = payload.section;sectionFilter = '';
     $('#settings-filter').value = '';
-    if (sections.has(activeSection)) { buildSectionNav();selectSection(activeSection); }
+    if (navigationSections().has(activeSection)) { buildSectionNav();selectSection(activeSection); }
   }
   if (name === 'status' && payload?.reset) { knownResetStatus = payload.reset; ++resetStatusVersion; applyResetStatus(payload.reset); }
   if(name==='status'&&payload?.personaTemplatesUpdated){void personaTemplates.refresh();void settingsStructure?.refreshPersonas();void syncPersonaByChat();}

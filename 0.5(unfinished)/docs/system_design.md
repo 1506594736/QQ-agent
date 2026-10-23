@@ -1,5 +1,7 @@
 # QQ Agent 0.5 · M3 控制台增量架构审计与设计
 
+> 范围更新（2026-10-23）：专属协议端与便携客户端的安装、启动和登录态迁移已从项目范围移除。本文保留其余历史记录；旧编号、测试数量与结果只对应当时范围，不代表当前版本已经完成验收。当前外部协议端由用户自行管理。
+
 > 审计范围：`v0.5` 当前实现（仅 `src/`、`ui/shell/`）以及只读规格 `dsh-spec/SPEC.md` §9/§10、`notes/09b-route-contracts.md`、`notes/10-ui.md`。严禁读取 `develop/` 源码。本文件只做设计，不代表代码已实现。
 
 ## 1. Implementation Approach
@@ -30,11 +32,10 @@ M3 的关键难点：
 
 | R | 路由/功能 | 状态 | 审计结论 |
 |---|---|---|---|
-| R-01 | GET /api/status | 部分 | 有基础 status；缺 SnowLuma/portable/cost/cacheHitRate 等规格字段。 |
+| R-01 | GET /api/status | 部分 | 有基础 status；缺 cost/cacheHitRate 等规格字段。 |
 | R-02~R-03 | open-data-dir/reset-data | 缺 | 无数据目录打开、备份重置。 |
 | R-04~R-05 | usage stats/breakdown | 缺 | 仅有额外 `/api/usage/today`。 |
 | R-06~R-07 | model-prices/refresh | 缺 | 无价格源与缓存接口。 |
-| R-08~R-16 | SnowLuma、QQ portable 全组 | 缺 | 无 launch/stop/log/status/open 路由及进程管理。 |
 | R-17~R-18 | OneBot groups/friends | 缺 | provider 存在但无控制台列表路由。 |
 | R-19~R-21 | persona templates CRUD | 缺 | 无模板接口。 |
 | R-22~R-26 | providers/key/api-key/search-key/token | 缺 | 未提供目录或明文密钥受控端点。 |
@@ -85,7 +86,7 @@ M3 的关键难点：
 ### 1.4 M3 缺口优先级
 
 - **P0**：SSE 鉴权/来源校验；bus→SSE 事件桥；完整 shell/8 页签框架；status/config/version/skills/sessions/chats/logs 的契约对齐；sessions 和 chats 基础 CRUD；skills/plugin 启停与 reload；iframe/RPC 安全。
-- **P1**：memory CRUD/consolidate、usage stats/breakdown、provider/model/settings、SnowLuma/portable、OneBot groups/friends、prompt-preview、tools availability、pause 完整语义、media-data。
+- **P1**：memory CRUD/consolidate、usage stats/breakdown、provider/model/settings、OneBot groups/friends、prompt-preview、tools availability、pause 完整语义、media-data。
 - **P2**：community/market、captcha-forward、vision scan、price feed、update-check、搜索源高级管理、open-data-dir/reset-data。
 
 ## 2. File List
@@ -128,7 +129,6 @@ M3 的关键难点：
 - `ui/panels/usage/index.html`、`panel.js`、`style.css`
 - `ui/panels/skills/index.html`、`panel.js`、`style.css`
 - `ui/panels/plugins/index.html`、`panel.js`、`style.css`
-- `ui/panels/snowluma/index.html`、`panel.js`、`style.css`
 - `ui/panels/settings/index.html`、`panel.js`、`style.css`
 
 ### 测试与文档
@@ -147,8 +147,8 @@ M3 的关键难点：
 ```text
 ApiResponse<T> = { ok?: boolean, data?: T, error?: string, message?: string }
 Status = { version, dataDir, uptimeMs, paused, pauseReason,
-  onebot:{connected,selfId,diagnosis}, snowluma:{running,webuiUrl},
-  qqPortable:{ready,running,pid}, orchestrator:{running,consolidating},
+  onebot:{connected,selfId,diagnosis},
+  orchestrator:{running,consolidating},
   usage, cost, cacheHitRate }
 SessionSummary = { id, chatKey, startedAt, endedAt, status, waitUntil,
   activity, webSearchCount, outcome, usage, model, trigger, promptChars, rounds }
@@ -256,7 +256,6 @@ sequenceDiagram
 
 1. `notes/10-ui.md` 的事实根目录是 develop，和 v0.5 shell 不是同一实现；本设计只借用规格中的 8 页签与交互契约，不复制旧源码。
 2. 规格的历史 REST 响应不是完全统一的 `{code,data,message}`；M3 保留 REST 兼容字段，在 RPC 层统一 JSON-RPC 错误，不做一次性破坏性改名。
-3. SnowLuma 与 portable QQ 的进程句柄在 v0.5 尚无服务对象，需在 P1 明确 Windows-only spawn/kill 的错误和权限策略。
 4. `SessionRegistry` 当前对外无 `delete`、`clearFinished`；实现前需确认是否新增服务方法，不能在路由里直接操作私有文件。
 5. `MemoryStore` 的“整理”在 orchestrator 注释中明确属于 M4 插件；M3 只能提供 202/事件协议和可插拔 provider，除非产品明确提前纳入。
 6. 是否采用 `sandbox="allow-scripts"` 的同源 iframe 仍需安全评审；如果要读取同源 parent，必须维持 postMessage 安全校验，不能依赖同源天然信任。
@@ -300,12 +299,12 @@ sequenceDiagram
 - **Priority**：P0/P1
 - **验收**：脱敏 config/draft 保存、provider/persona/tools 设置骨架；skills/plugins 完整状态、启停、settings、reload、cleanup；不泄漏任何密钥。
 
-### T05 · 用量、SnowLuma 与 M3 验收
+### T05 · 用量与 M3 验收
 
-- **Source Files**：`ui/panels/usage/index.html`、`ui/panels/usage/panel.js`、`ui/panels/usage/style.css`、`ui/panels/snowluma/index.html`、`ui/panels/snowluma/panel.js`、`ui/panels/snowluma/style.css`、`test/m3-console-routes-test.mjs`、`test/m3-sse-test.mjs`、`test/m3-panels-test.mjs`
+- **Source Files**：`ui/panels/usage/index.html`、`ui/panels/usage/panel.js`、`ui/panels/usage/style.css`、`test/m3-console-routes-test.mjs`、`test/m3-sse-test.mjs`、`test/m3-panels-test.mjs`
 - **Dependencies**：T02、T03、T04
 - **Priority**：P1/P2
-- **验收**：usage/SnowLuma/portable 优先功能；补充 R-02…R-42、R-62…R-63、R-90 中已排入版本的项；运行全量测试、headless smoke、SSE 安全回归。
+- **验收**：usage 优先功能；补充 R-02…R-42、R-62…R-63、R-90 中已排入版本的项；运行全量测试、headless smoke、SSE 安全回归。
 
 ## 8. Shared Knowledge
 
@@ -328,7 +327,7 @@ graph TD
   T02[T02 服务端路由/DTO/SSE桥]
   T03[T03 会话/存档/记忆面板]
   T04[T04 设置/技能/插件面板]
-  T05[T05 用量/SnowLuma/验收]
+  T05[T05 用量/验收]
   T01 --> T02
   T01 --> T03
   T02 --> T03

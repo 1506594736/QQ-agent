@@ -35,12 +35,10 @@ function assertOffline() {
 
 const refreshMs=Number(process.env.QA_SHELL95_REFRESH_MS || 1000);
 assert.ok(Number.isFinite(refreshMs)&&refreshMs>=1000&&refreshMs<=15000);
-const qq={ready:false,running:false},snow={configured:false,running:false};
 let bindings;
 const kernel=createKernel({appRoot,env:{QQ_AGENT_DATA_DIR:dataDir,QQ_AGENT_PORT:'0',QQ_AGENT_MIGRATE_FROM:path.join(dataDir,'absent')},
   fetchImpl: async()=>{isolatedOutbound++;throw new Error('QA95 external traffic disabled');},headless:true,
-  transport:{id:'fixture',selfId:'99',bind(hooks){bindings=hooks;},start(){bindings.onStatus({connected:true,selfId:'99'});},stop(){},status:()=>({connected:true,selfId:'99'}),actions:{},
-    processes:{qqPortable:{statusSync:()=>({...qq})},snowluma:{statusSync:()=>({...snow})}}},
+  transport:{id:'fixture',selfId:'99',bind(hooks){bindings=hooks;},start(){bindings.onStatus({connected:true,selfId:'99'});},stop(){},status:()=>({connected:true,selfId:'99'}),actions:{}},
   priceUpdates: { refresh: async () => ({ok:true}), updateCheck: async () => ({ok:true,current:'0.5.0',latest:'0.5.0',hasUpdate:false}) },communityMarket:{syncGlobalBlocklist:async()=>({ok:true,ids:[]})}});
 kernel.loader.startWatchers = () => {};
 kernel.config.update({server:{port:0,token},telemetry:{enabled:false},allowAllWhenEmpty:true,ui:{refreshMs},api:{baseUrl:'http://127.0.0.1:1/v1',model:'local-fixture'}});
@@ -81,8 +79,6 @@ try{
   const pause=page.locator('#pause-btn');
   await page.waitForFunction(()=>document.querySelector('#pause-btn')?.disabled===false);
   assert.equal(await pause.textContent(),'全局暂停');
-  assert.equal(await page.locator('#ready-qq small').textContent(),'缺少内核');
-  assert.equal(await page.locator('#ready-snow small').textContent(),'未配置');
   assert.equal(await page.locator('#ready-onebot small').textContent(),'已连接');
   assert.equal(await page.locator('#ready-model small').textContent(),'已配置');
   await page.locator('#ready-model').click();
@@ -103,13 +99,11 @@ try{
   await page.waitForFunction(()=>document.querySelector('#pause-btn')?.textContent==='全局暂停');
   assert.equal(kernel.orchestrator.status().paused,false);
 
-  console.log('· External pause and partial process SSE snapshots stay synchronized');
+  console.log('· External pause and partial application SSE snapshots stay synchronized');
   kernel.orchestrator.pause();kernel.bus.emit('status',{paused:true});
   await page.waitForFunction(()=>document.querySelector('#pause-btn')?.textContent==='恢复运行');
   assert.equal(await page.locator('#ready-model small').textContent(),'已配置');
-  qq.ready=true;qq.running=true;snow.configured=true;snow.running=true;
-  kernel.bus.emit('qq-portable.status',{running:true});kernel.bus.emit('snowluma.status',{running:true});
-  await page.waitForFunction(()=>document.querySelector('#ready-qq small')?.textContent==='运行中'&&document.querySelector('#ready-snow small')?.textContent==='运行中');
+  assert.equal(await page.locator('#ready-onebot small').textContent(),'已连接');
   kernel.orchestrator.resume();kernel.bus.emit('status',{paused:false});
   await page.waitForFunction(()=>document.querySelector('#pause-btn')?.textContent==='全局暂停');
 
@@ -235,7 +229,7 @@ try{
   await page.clock.runFor(refreshMs);
   await page.waitForFunction(()=>document.querySelector('#ready-model small')?.textContent==='未完成');
   await page.setViewportSize({width:520,height:900});
-  assert.equal(await page.locator('.readiness-icon svg').count(),4);
+  assert.equal(await page.locator('.readiness-icon svg').count(),2);
   const overflow=await page.evaluate(()=>document.documentElement.scrollWidth>innerWidth||[...document.querySelectorAll('.runtime-controls,.readiness-item,.readiness-details')].some(el=>{const b=el.getBoundingClientRect();return b.left<0||b.right>innerWidth+1;}));
   assert.equal(overflow,false);
   assert.deepEqual(errors,[]);

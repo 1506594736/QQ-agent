@@ -17,13 +17,13 @@
 | 需要实现什么 | 必须附加 | 里面有什么 |
 |---|---|---|
 | **任何功能**（建议总是附加） | [skill-reference.md](./skill-reference.md) | 共同机制完整参考：api 对象全表、ctx 全量字段、能力/钩子的完整语义、硬约束清单（§14）、完整示例（§16）。**§4 的能力契约表在本文是权威版，但其余细节以它为准** |
-| 调用 QQ 接口（查群成员、禁言、踢人、撤回、发说说、群文件、群相册……） | [snowluma-capabilities.md](./snowluma-capabilities.md) | 协议端全部 **73 个 OneBot 接口的逐条参数表与返回示例**。本文 §8.2 只讲了调用姿势，**不含参数表** |
+| 调用 QQ 接口 | 所选协议端的官方接口文档 | 核对 action、参数、返回值与权限；不要假定不同实现支持相同扩展接口。 |
 | 插件要消费/包装视频理解 | [video-modes.md](./video-modes.md) | 视频理解两条路（原生直读 / ffmpeg 抽帧）的分工、配置项与边界 —— 提供 `video.frames` 类能力前先读 |
 | 想让 AI 理解整个系统的设计（可选） | [skill-system.md](./skill-system.md) | 架构总览：状态模型、能力系统、判定链 |
 
 **给小白的操作指引**：你只需要对 AI 说"按 plugin-development.md 的规范生成一个 XXX 插件"，
 并**把上表中你用得到的文档内容一起粘贴/上传给 AI**（至少附加 skill-reference.md；
-插件涉及操作 QQ 就再加 snowluma-capabilities.md）。AI 输出的会是
+插件涉及操作 QQ 就再附上所选协议端的相关接口说明）。AI 输出的会是
 `plugins/<id>/plugin.json` + `plugins/<id>/index.js` 两个文件的完整内容，
 你把它们保存到项目 `plugins/<id>/` 目录下即自动生效（热重载默认开启）。
 
@@ -398,12 +398,11 @@ try {
 } catch (e) { log(`禁言失败：${e.message}`); }
 ```
 
-- `call()` 是**纯透传**（`POST {httpUrl}/{action}`），**没有 action 白名单** → 协议端 73 个接口全部可达
+- `call()` 是**纯透传**（`POST {httpUrl}/{action}`），**没有 action 白名单** → 可调用所连接协议端支持的 action
 - 失败**会抛错**（HTTP 非 2xx 或 `retcode !== 0`）→ 必须 `try/catch`
 - **没有白名单 = 没有护栏**：禁言/踢人/撤回/发说说一旦调用就真的生效。
   确定性型插件是"条件满足必跑"，所以更要自己加权限判断和自保逻辑
-- 接口清单与**每个接口的参数表**见 [snowluma-capabilities.md](./snowluma-capabilities.md)
-  —— 本文不重复参数表；交给 AI 生成涉及 QQ 操作的插件时，**必须把那份文档一并附加**
+- action 的参数、返回值与权限要求请查阅所选协议端的官方文档；调用前核对其实际支持情况。
 
 ---
 
@@ -594,6 +593,5 @@ export const hooks = {
 
 - [skill-development.md](./skill-development.md) —— LLM 型技能开发（注册工具）
 - [skill-reference.md](./skill-reference.md) —— 共同机制完整参考（清单、生命周期、能力系统、ctx 全量字段、硬约束清单、上架）
-- [snowluma-capabilities.md](./snowluma-capabilities.md) —— 协议端 73 个接口的逐条参数表
 - [skill-system.md](./skill-system.md) —— 架构总览
 - [video-modes.md](./video-modes.md) —— 视频理解两条路的分工与配置（提供 video.frames 类能力前先读）

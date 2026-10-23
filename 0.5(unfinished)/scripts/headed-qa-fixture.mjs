@@ -38,7 +38,7 @@ function syntheticWav() {
 function copyApplication(appRoot) {
   fs.mkdirSync(appRoot, { recursive: true });
   for (const name of ['src', 'bundled', 'ui', 'electron', 'assets']) fs.cpSync(path.join(workspace, name), path.join(appRoot, name), { recursive: true });
-  for (const name of ['scripts/setup.mjs', 'scripts/lib']) {
+  for (const name of ['scripts/lib']) {
     const source = path.join(workspace, name);
     if (!fs.existsSync(source)) continue;
     const target = path.join(appRoot, name);
@@ -137,7 +137,6 @@ export async function startHeadedQaFixture({ baseDir = path.join(workspace, '.qa
   let baseUrl, wss;
   const image = fs.readFileSync(path.join(workspace, 'assets', 'icon.png'));
   const audio = syntheticWav(), video = fs.readFileSync(path.join(workspace, 'scripts', 'qa-fixtures', 'runtime', 'qa.mp4'));
-  let emojiFaces = [{ emoji_id: 'qa-face-1', emojiId: 'qa-face-1', id: 'qa-face-1', file: 'qa-image', desc: 'QA 本地测试表情', md5: crypto.createHash('md5').update(image).digest('hex').toUpperCase() }];
   const save = () => writeJson(path.join(baseDir, 'state.json'), state);
   const emit = (input = {}) => {
     const privateChat = input.kind === 'private' || input.private === true, groupId = Number(input.groupId || 10001), userId = Number(input.userId || 20001);
@@ -160,10 +159,6 @@ export async function startHeadedQaFixture({ baseDir = path.join(workspace, '.qa
     else if (action === 'get_group_member_info') data = { user_id: Number(params.user_id), nickname: 'QA 成员', card: '', role: 'member', shut_up_timestamp: 0 };
     else if (action === 'get_group_member_list') data = [...friends.map((friend) => ({ ...friend, card: '', role: 'member', group_id: Number(params.group_id) })), { user_id: selfId, nickname: 'QA 小鲸鱼', card: '', role: 'member', group_id: Number(params.group_id) }];
     else if (/^send_(group|private)_msg$/.test(action)) data = { message_id: ++state.nextMid };
-    else if (action === 'fetch_custom_face') data = emojiFaces.map(() => `${baseUrl}/media/qa.png`);
-    else if (action === 'add_custom_face') { const face = { emoji_id: `qa-face-${emojiFaces.length + 1}`, id: `qa-face-${emojiFaces.length + 1}`, file: params.file, desc: 'QA 合成收藏' }; emojiFaces.push(face); data = face; }
-    else if (action === 'modify_custom_face') { const face = emojiFaces.find((item) => item.emoji_id === params.emoji_id); if (face) face.desc = params.desc; }
-    else if (action === 'delete_custom_face') emojiFaces = emojiFaces.filter((face) => face.emoji_id !== params.emoji_id);
     else if (['get_image', 'get_file', 'get_video', 'get_record'].includes(action)) {
       const suffix = action === 'get_video' || params.file === 'qa-video' ? 'mp4' : action === 'get_record' ? 'wav' : 'png';
       data = { file: `${baseUrl}/media/qa.${suffix}`, url: `${baseUrl}/media/qa.${suffix}`, file_size: ({ mp4: video, wav: audio, png: image })[suffix].length, file_name: `qa.${suffix}`, ...(suffix === 'mp4' ? { duration: 1, width: 160, height: 90, codec: 'h264', format: 'mp4' } : {}) };
@@ -228,14 +223,14 @@ export async function startHeadedQaFixture({ baseDir = path.join(workspace, '.qa
   const existingConfig = fs.existsSync(path.join(dataDir, 'config.json'));
   const config = createConfig({ dataDir, defaults: buildDefaultConfig(), log }); config.load();
   if (!existingConfig) config.update({ api: { baseUrl: `${baseUrl}/v1`, apiKey: 'qa-local-synthetic-key', model: 'qa-chat', provider: 'qa-local', maxRounds: 6, timeoutMs: 60000, useOfficialPrice: false, priceInputPerM: 1, priceOutputPerM: 2, priceCachedPerM: 0.1, modelPrices: { 'qa-chat': { in: 1, out: 2, cached: 0.1 }, 'qa-vision': { in: 2, out: 3, cached: 0.2 } }, vision: true }, providers: [{ id: 'qa-local', name: 'QA 本地合成模型服务', baseURL: `${baseUrl}/v1`, apiKey: 'qa-local-synthetic-key', enabled: true, models: ['qa-chat', 'qa-vision', 'qa-memory', 'qa-fail'] }],
-    snowluma: { autoLaunch: false, dir: '', wsUrl: baseUrl.replace('http:', 'ws:') + '/onebot/ws', httpUrl: baseUrl + '/onebot', accessToken: 'qa-local-onebot-token', httpAccessToken: 'qa-local-onebot-token' },
+    onebot: { dir: '', wsUrl: baseUrl.replace('http:', 'ws:') + '/onebot/ws', httpUrl: baseUrl + '/onebot', accessToken: 'qa-local-onebot-token', httpAccessToken: 'qa-local-onebot-token' },
     allow: { groups: ['10001', '10002'], private: ['20001', '20002'] }, allowAllWhenEmpty: false, wakeDelayMs: 100, drainDelayMs: 300, send: { minGapMs: 20, maxGapMs: 50, byLengthMs: 0, dedupeWindowMs: 100 }, store: { contextSliderPos: 100, historyCount: 80 },
     persona: { botName: 'QA 小鲸鱼', selfNickname: 'QA 本地机器人', customRules: '当前全部会话与服务为本地合成验收环境。' }, memberNotes: { '20001': 'QA 小林', '20002': 'QA 小周' },
     memory: { consolidateEnabled: false, useChatModel: false, provider: 'qa-local', model: 'qa-memory', discoverMaxMembers: 0 }, proactive: { enabled: false }, telemetry: { enabled: false },
     security: { allowPrivateImageHosts: true }, server: { port: consolePort, token: 'qa-local-console-token', autoStart: false, closeToTray: false },
     skills: { community: { enabled: false }, telemetry: { enabled: false }, market: { enabled: false } },
   });
-  else config.update({ api: { ...(config.get().api.provider === 'qa-local' ? { baseUrl: `${baseUrl}/v1` } : {}) }, providers: (config.get().providers ?? []).map((provider) => provider.id === 'qa-local' ? { ...provider, baseURL: `${baseUrl}/v1` } : provider), snowluma: { wsUrl: baseUrl.replace('http:', 'ws:') + '/onebot/ws', httpUrl: baseUrl + '/onebot', autoLaunch: false }, server: { port: consolePort } });
+  else config.update({ api: { ...(config.get().api.provider === 'qa-local' ? { baseUrl: `${baseUrl}/v1` } : {}) }, providers: (config.get().providers ?? []).map((provider) => provider.id === 'qa-local' ? { ...provider, baseURL: `${baseUrl}/v1` } : provider), onebot: { wsUrl: baseUrl.replace('http:', 'ws:') + '/onebot/ws', httpUrl: baseUrl + '/onebot' }, server: { port: consolePort } });
   if (seed) seedData(dataDir, config.get(), baseUrl);
   const wrapper = writeQaElectronWrapper(appRoot, dataDir, consolePort, baseDir);
   const descriptor = { synthetic: true, baseDir, appRoot, dataDir, baseUrl, onebotWs: baseUrl.replace('http:', 'ws:') + '/onebot/ws', onebotHttp: baseUrl + '/onebot', llmUrl: baseUrl + '/v1', imageUrl: baseUrl + '/media/qa.png', videoUrl: baseUrl + '/media/qa.mp4', audioUrl: baseUrl + '/media/qa.wav', asrUrl: baseUrl + '/v1', consolePort, consoleUrl: `http://127.0.0.1:${consolePort}`, token: config.get().server.token, wrapper,

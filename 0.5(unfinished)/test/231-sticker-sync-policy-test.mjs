@@ -91,7 +91,7 @@ export default options => { const base = createStickerManager(options); return {
     fetchImpl: fetchImpl ?? (async () => { throw new Error('231 has no HTTP transport'); }),
   });
   app.config.update({ api: { model: 'offline231', maxRounds: 2 }, telemetry: { enabled: false }, proactive: { enabled: false }, chatActive: { enabled: false },
-    snowluma: { autoLaunch: false, dir: path.join(appRoot, 'absent-runtime'), wsUrl: 'ws://fixture.invalid', httpUrl: 'http://fixture.invalid' },
+    onebot: { wsUrl: 'ws://fixture.invalid', httpUrl: 'http://fixture.invalid' },
     memory: { consolidateEnabled: false }, sticker: { enabled: true, collectEnabled: true, maxCollectPerHour: 10 }, sessionRetryAttempts: 0,
     store: { contextTier: 4, contextSliderPos: 100, historyCount: 20, promptAnchor: { enabled: false } } });
   const save = patch => { app.config.update(patch); const disk = JSON.parse(fs.readFileSync(path.join(dataDir, 'config.json'), 'utf8')); app.config.load(); assert.deepEqual(app.config.get().sticker, disk.sticker); return disk; };
@@ -118,48 +118,6 @@ function favorites(overrides = {}) {
   return { getAccountIdentity: () => 'account231', fetchCustomFaceDetails: async () => ({ entries: [remote()], complete: false }),
     addCustomFace: async () => ({ emojiId: 'ADDED231' }), modifyCustomFace: async () => ({ ok: true }), ...overrides };
 }
-
-test('rich OneBot action is typed, bounded and partial; original URL-array action is unchanged', async () => {
-  const calls = []; let answer = { retcode: 0, status: 'ok', data: [{ emoji_id: 'RICH231', desc: 'rich note', url: 'https://fixture.invalid/image.png', md5: 'ab' }] };
-  class OfflineClient { constructor() { this.selfId = '23199'; } async call(action, params) { calls.push({ action, params }); return action === 'fetch_custom_face' ? { data: ['https://fixture.invalid/old.png', 7] } : answer; } }
-  const provider = createOneBotProvider({ cfg: () => ({}), clientFactory: OfflineClient });
-  const identity = provider.actions.getAccountIdentity();
-  assert.ok(identity); assert.equal(identity.includes('23199'), false);
-  const result = await provider.actions.fetchCustomFaceDetails({ limit: 12 });
-  assert.equal(result.complete, false); assert.deepEqual(result.entries, [{ id: 'RICH231', emojiId: 'RICH231', resId: 'RICH231', qqFile: '', url: 'https://fixture.invalid/image.png', md5: 'AB', desc: 'rich note' }]);
-  assert.deepEqual(await provider.actions.fetchCustomFaces(12), ['https://fixture.invalid/old.png', '7']);
-  assert.deepEqual(calls, [{ action: 'fetch_custom_face_detail', params: { count: 12 } }, { action: 'fetch_custom_face', params: { count: 12 } }]);
-  for (const bad of [{ status: 'failed', retcode: 1, data: [] }, { status: 'ok', data: {} }, { retcode: 0, data: [7] }, { retcode: 0, data: [{}] }, { retcode: 0, data: [{ emoji_id: {} }] }, { retcode: 0, data: [{ emoji_id: 'R', desc: {} }] }]) {
-    answer = bad; await assert.rejects(provider.actions.fetchCustomFaceDetails(), /失败|数组|条目|身份|字段/);
-  }
-  provider.client.selfId = '23198'; assert.notEqual(provider.actions.getAccountIdentity(), identity);
-});
-
-test('actual loaded default OneBot bridge synchronizes list and prompt; stopped held bridge cannot publish', async t => {
-  const originals = { connect: OneBotClient.prototype.connect, close: OneBotClient.prototype.close, call: OneBotClient.prototype.call };
-  const calls = []; let client, held = null;
-  OneBotClient.prototype.connect = async function () { client = this; this.selfId = '23199'; this.connected = true; };
-  OneBotClient.prototype.close = async function () { this.connected = false; };
-  OneBotClient.prototype.call = async function (action, params) {
-    calls.push({ action, params });
-    if (held) return held.promise;
-    if (action === 'fetch_custom_face_detail') return { status: 'ok', retcode: 0, data: [{ emoji_id: 'BRIDGE231', desc: 'bridge synced note', url: 'https://fixture.invalid/bridge.png' }] };
-    if (action === 'get_group_member_info') return { status: 'ok', retcode: 0, data: { user_id: '23199', shut_up_timestamp: 0 } };
-    throw new Error('unexpected OneBot action ' + action);
-  };
-  t.after(() => Object.assign(OneBotClient.prototype, originals));
-  const e = await fixture(t, { onebot: true });
-  const result = await e.list({ query: 'bridge synced' }); assert.equal(result.items[0].id, 'BRIDGE231');
-  assert.equal(JSON.parse(e.disk())[0].emojiId, 'BRIDGE231'); assert.equal(calls.length, 1);
-  const prompt = await e.prompt(); assert.ok(prompt?.includes('BRIDGE231')); assert.ok(prompt.includes('bridge synced note')); assert.doesNotMatch(prompt, /\[object Promise\]/);
-  assert.equal(calls.filter(call => call.action === 'fetch_custom_face_detail').length, 1, 'prompt uses the synchronized TTL cache');
-  const before = e.disk(), bridge = e.app.capability.providers('qq.emoji-favorites')[0].provider;
-  held = deferred(); const pending = e.manager.syncFromQQ({ force: true }); await tick();
-  await e.app.services.get('transport.provider').stop();
-  held.resolve({ status: 'ok', retcode: 0, data: [{ emoji_id: 'LATE231', desc: 'late', url: 'https://fixture.invalid/late.png' }] });
-  const late = await pending; assert.equal(late.fromCache, true); assert.equal(late.degraded, true); assert.equal(e.disk(), before);
-  assert.equal(bridge.getAccountIdentity(), null); assert.equal(client.connected, false);
-});
 
 test('sync coalesces same-generation calls, honors force/TTL/account identity, and preserves partial/empty libraries', async t => {
   const e = await fixture(t); let requests = 0, account = 'A', answer = { entries: [remote()], complete: false }, held;

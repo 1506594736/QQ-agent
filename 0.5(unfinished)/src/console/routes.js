@@ -34,7 +34,6 @@ import { createPriceUpdateAdapters, resolveCustomPrice, builtinModelPrice, manua
 import { createVisionScanAdapter } from './vision-scan-adapter.js';
 import { createSearchProviderAdapter } from './search-provider-adapter.js';
 import { createCommunityMarketAdapters, extractZipSafely, MARKET_MAX_ZIP_BYTES } from './community-market-adapters.js';
-import { createProcessAdapters, requireProcessCapability, logsDto, processError, adapterResultError } from './process-adapters.js';
 import { APP_ROOT } from '../kernel/env.js';
 import { pluginFingerprint, normalizeManifest } from '../kernel/plugin-loader.js';
 import { serviceFacade } from '../kernel/service-host.js';
@@ -395,7 +394,6 @@ export function registerConsoleRoutes(http, deps) {
       : deps.communityClient ?? legacyCommunityMarket ?? selectedService('community.client'),
     publish: (name, payload) => emit(deps, name, payload),
   });
-  const processAdapters = createProcessAdapters(deps);
   const blocklistRaw = (deps.components?.['console.blocklistRaw'] ?? createBlocklistRawController)({
     config, publish: (name, payload) => emit(deps, name, payload),
   });
@@ -550,13 +548,11 @@ export function registerConsoleRoutes(http, deps) {
     // the currently selected model while historical route stats stay disk-based.
     const todayModel = cfg().api?.model ?? '';
     const todayPrice = safe(() => calculateUsageCost(usage, todayModel, Date.now(), cfg(), routeDeps), { cost: 0, source: 'none', breakdown: { fresh: 0, cached: 0, output: 0 }, prices: { in: 0, out: 0, cached: 0 }, matched: null, peak: false, hasPeakTiers: false });
-    const snow = safe(() => deps.statusProviders?.snowluma?.() ?? { running: !!cfg().snowluma?.running, webuiUrl: cfg().snowluma?.webuiUrl ?? null }, { running: false });
-    const portable = safe(() => deps.statusProviders?.qqPortable?.() ?? { ready: false, running: false, pid: null, dir: '', dataDir: '' }, { ready: false, running: false, pid: null, dir: '', dataDir: '' });
     const todayPrompt = Number(usage.promptTokens) || 0; const todayCached = Math.min(todayPrompt, Math.max(0, Number(usage.cachedTokens) || 0));
     const cost = { cost: todayPrice.cost ?? 0, source: todayPrice.source ?? 'none', breakdown: todayPrice.breakdown ?? { fresh: 0, cached: 0, output: 0 }, prices: todayPrice.prices ?? { in: 0, out: 0, cached: 0 }, matched: todayPrice.matched ?? null, peak: Boolean(todayPrice.peak), hasPeakTiers: Boolean(todayPrice.hasPeakTiers) };
     const plugins = (loader?.listEntries?.() ?? []).map(serializeSkill);
     const reset = deps.resetStatus?.() ?? null;
-    return { ok: true, version, dataDir, uptimeMs: Date.now() - startedAt, onebot: ob, snowluma: snow, qqPortable: portable, orchestrator: { paused: !!orch.paused, running: orch.running ?? [], waiting: orch.waiting ?? [], consolidating: orch.consolidating ?? false }, usage: { tokens: usage.totalTokens ?? 0, runs: usage.runs ?? 0, search: usage.webSearchCount ?? 0, ...usage }, cost, cacheHitRate: todayPrompt ? Math.min(1, todayCached / todayPrompt) : 0, plugins, ...(reset ? { reset } : {}) };
+    return { ok: true, version, dataDir, uptimeMs: Date.now() - startedAt, onebot: ob, orchestrator: { paused: !!orch.paused, running: orch.running ?? [], waiting: orch.waiting ?? [], consolidating: orch.consolidating ?? false }, usage: { tokens: usage.totalTokens ?? 0, runs: usage.runs ?? 0, search: usage.webSearchCount ?? 0, ...usage }, cost, cacheHitRate: todayPrompt ? Math.min(1, todayCached / todayPrompt) : 0, plugins, ...(reset ? { reset } : {}) };
   });
   http.route('GET', '/api/usage/stats', ({ query }) => { const range = query.range ?? query.days ?? '7'; const stats = usageRows(sessions, range, dataDir, cfg(), routeDeps); return { ok: true, range: String(range), ...stats }; });
   http.route('GET', '/api/usage/breakdown', ({ query }) => {
@@ -701,8 +697,8 @@ export function registerConsoleRoutes(http, deps) {
   });
   http.route('GET', '/api/onebot-token', ({ req, query }) => {
     requireTrustedKeyRead(req);
-    if (query.which === 'ws') return { token: cfg().snowluma?.accessToken ?? '' };
-    if (query.which === 'http') return { token: cfg().snowluma?.httpAccessToken ?? '' };
+    if (query.which === 'ws') return { token: cfg().onebot?.accessToken ?? '' };
+    if (query.which === 'http') return { token: cfg().onebot?.httpAccessToken ?? '' };
     bad(`未知令牌类型：${query.which}`);
   });
   http.route('POST', '/api/providers/fetch-models', async ({ body, res }) => {
@@ -1338,64 +1334,6 @@ export function registerConsoleRoutes(http, deps) {
   });
   http.route('POST', '/api/reset-data', async ({ res }) => {
     try { return await (deps.resetData ? deps.resetData() : resetDataDir({ dataDir, config, orchestrator, onebot: transport })); } catch (err) { dataDirFailure(res, err); }
-  });
-  // R08-R16: lifecycle and process observations are delegated to injected adapters.
-  // This layer intentionally contains no spawn/kill/process probing implementation.
-  const processContext = () => ({ config: cfg(), dataDir, emit: (name, payload) => emit(deps, name, payload) });
-  const adapterCall = async (kind, method, args = [], feature = kind) => {
-    const adapter = processAdapters[kind];
-    const call = requireProcessCapability(adapter, feature, method);
-    try {
-      const result = await call(...args, processContext());
-      const error = adapterResultError(result);
-      if (error) throw error;
-      return result;
-    } catch (err) {
-      throw processError(err);
-    }
-  };
-  const snowlumaFeature = 'SnowLuma';
-  const qqFeature = '便携 QQ';
-
-  http.route('POST', '/api/snowluma/launch', async ({ body }) => {
-    const result = await adapterCall('snowluma', 'launch', [body ?? {}], snowlumaFeature);
-    return { ...result, ok: true, launched: true, embedded: Boolean(result?.embedded) };
-  });
-  http.route('GET', '/api/snowluma/logs', async () => logsDto(await adapterCall('snowluma', 'logs', [], snowlumaFeature)));
-  http.route('POST', '/api/snowluma/stop', async () => {
-    const result = await adapterCall('snowluma', 'stop', [], snowlumaFeature);
-    const dto = { ok: result?.ok !== false, stopped: Boolean(result?.stopped), embedded: Boolean(result?.embedded), pid: result?.pid ?? null, ...result };
-    emit(deps, 'snowluma.status', { running: false, pid: dto.pid, embedded: dto.embedded });
-    return dto;
-  });
-  http.route('POST', '/api/snowluma/open-folder', async () => {
-    const result = await adapterCall('snowluma', 'openFolder', [], snowlumaFeature);
-    return result && typeof result === 'object' ? result : { ok: true };
-  });
-  http.route('POST', '/api/snowluma/open-webui', async () => {
-    const result = await adapterCall('snowluma', 'openWebui', [], snowlumaFeature);
-    return result && typeof result === 'object' ? result : { ok: true };
-  });
-  http.route('GET', '/api/snowluma/status', async () => {
-    const result = await adapterCall('snowluma', 'status', [], snowlumaFeature);
-    return result && typeof result === 'object' ? result : { running: Boolean(result) };
-  });
-
-  http.route('POST', '/api/qq-portable/launch', async ({ body }) => {
-    const result = await adapterCall('qqPortable', 'launch', [body ?? {}], qqFeature);
-    return { ...result, ok: true, alreadyRunning: Boolean(result?.alreadyRunning), launching: result?.launching !== false && !result?.alreadyRunning };
-  });
-  http.route('POST', '/api/qq-portable/stop', async () => {
-    const result = await adapterCall('qqPortable', 'stop', [], qqFeature);
-    return { ...result, ok: result?.ok !== false, stopped: Boolean(result?.stopped), ...(result?.stopped ? {} : { reason: result?.reason ?? 'not_running' }) };
-  });
-  http.route('GET', '/api/qq-portable/logs', async () => logsDto(await adapterCall('qqPortable', 'logs', [], qqFeature)));
-  http.route('GET', '/api/qq-portable/status', async () => {
-    const result = await adapterCall('qqPortable', 'status', [], qqFeature);
-    const status = result && typeof result === 'object' ? result : {};
-    const dto = { ready: Boolean(status.ready), running: status.processState === 'unknown' && status.running == null ? null : Boolean(status.running), pid: status.pid ?? null, dir: String(status.dir ?? ''), dataDir: String(status.dataDir ?? '') };
-    for (const key of ['installedReady', 'version', 'versionVerified', 'installationVerified', 'installationDiagnosis', 'diagnosis', 'launchAllowed', 'launchIsolation', 'processState', 'processDiagnosis', 'error', 'pids']) if (Object.hasOwn(status, key)) dto[key] = status[key];
-    return dto;
   });
 }
 

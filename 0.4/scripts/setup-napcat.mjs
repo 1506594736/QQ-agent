@@ -15,7 +15,6 @@ import path from 'node:path';
 import { execFileSync } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
 import { createHash } from 'node:crypto';
-// 共用下载器（与 setup.mjs 同一份实现）
 import { download as downloadFile } from './lib/download.mjs';
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
@@ -29,7 +28,6 @@ const NAPCAT_VERSION = process.env.NAPCAT_VERSION || 'v4.18.19';
 const ASSET = 'NapCat.Shell.Windows.Node.zip';
 // 固定 zip 的 SHA256（64 位十六进制）。环境变量 NAPCAT_SHA256 可覆盖（改版本时用）。
 // ⚠️ 曾经默认为空 —— 这个 zip 里的 napcat.mjs 会被就地补丁并**作为被执行的代码**，
-//    下载却无完整性校验（对照 setup.mjs 的 QQ 包是硬编码 SHA 的）。
 //    哈希来源：GitHub API v4.18.19 资产 digest（assets[].digest, sha256: 前缀去掉）。
 //    换 NAPCAT_VERSION 时必须同步更新（GitHub API: /releases/tags/<tag>）。
 const NAPCAT_DEFAULT_SHA256 = 'a08e7bebe49f656807f198bbf3a5d3f2fd6f840499728d665285323db4342d77';
@@ -91,7 +89,6 @@ async function download(url, dest) {
   }
   try {
     // 共用下载器：流式写盘 + 进度条 + 增量哈希 + .part 原子改名。
-    // 与 setup.mjs 是同一份实现，避免两边各自演化出不同行为。
     const r = await downloadFile(url, dest, {
       expectedSha256: NAPCAT_SHA256 || null,
       label: 'NapCat '
@@ -108,7 +105,6 @@ async function download(url, dest) {
 function unzip(zipPath, destDir) {
   fs.mkdirSync(destDir, { recursive: true });
   // timeout：解压挂起（杀软扫描大文件等）曾让脚本永久卡死，无任何兜底
-  // （对照 setup.mjs 的 900s 上限）。execFileSync 超时会杀掉子进程并抛错。
   const OPTS = { stdio: 'inherit', timeout: 900_000 };
   if (process.platform === 'win32') {
     // Windows 自带 tar 支持 zip；PowerShell Expand-Archive 慢且对长路径不稳

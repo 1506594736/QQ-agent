@@ -1371,20 +1371,6 @@
       "downloadUrl": "/api/community/skills/voice-send/download"
     },
     {
-      "id": "daily-greeting",
-      "name": "每日上线问好",
-      "description": "每天第一次连上 SnowLuma 时，自动在群聊和/或私聊发一句问好；内容符合当前角色人设，可以自然带一句昨天聊过的事。",
-      "category": "message",
-      "version": "1.0.0",
-      "author": "社区作者",
-      "authorId": "",
-      "createdAt": "2026-10-19T03:03:13Z",
-      "updatedAt": "2026-10-19T03:03:13Z",
-      "type": "skill",
-      "status": "pending",
-      "categoryName": "消息与身份"
-    },
-    {
       "id": "persona-doctor",
       "name": "人设医生",
       "description": "有限度的人设自我修改：角色卡里划出 <self> 自我成长区，机器人只能改标记内的文字，核心设定碰不到；每次修改自动快照可回滚，每周一次体检防客服腔化/自相矛盾（可自动修复 self 区）。self-reflection 的人设线索经 persona.suggest 能力进入建议队列。",
@@ -1980,23 +1966,6 @@
       "downloads": 3,
       "categoryName": "知识库",
       "downloadUrl": "/api/community/skills/ivl-esports/download"
-    },
-    {
-      "id": "anon-qa",
-      "name": "匿问我答 自动回答",
-      "description": "QQ 资料卡「匿问我答」的未答匿名提问，自动拉取、用你自己的口吻生成回答并提交。走 SnowLuma 协议端的 OIDB 通道（0xec4 取列表 / 0xec7 提交回答），不是官方接口。默认开启只读模式（dryRun=true）：只拉列表 + 打日志、连模型都不调，零 token；确认触发判断准了再关掉 dryRun。带积压闸（只答最近 N 天）、每日/每轮上限、静默时段、失败不重试。",
-      "category": "utility",
-      "version": "1.0.0",
-      "author": "社区作者",
-      "authorId": "",
-      "createdAt": "2026-10-17T16:36:39Z",
-      "updatedAt": "2026-10-17T17:13:27Z",
-      "type": "skill",
-      "status": "approved",
-      "installCode": "EWUGWQ",
-      "downloads": 10,
-      "categoryName": "工具与运行控制",
-      "downloadUrl": "/api/community/skills/anon-qa/download"
     },
     {
       "id": "bili-memes",
@@ -2729,23 +2698,6 @@
       "downloads": 45,
       "categoryName": "消息与身份",
       "downloadUrl": "/api/community/skills/qq-face-tagger/download"
-    },
-    {
-      "id": "pcstatus",
-      "name": "电脑状态",
-      "description": "群里问「电脑卡不卡」「QQ Agent 跑了多久」，就查本机真实数据回一张状态卡片。可查 CPU（含单核最高）、内存、硬盘剩余与总容量、显卡型号与占用、开机时长，以及任意软件的进程数/内存/运行时长——含 QQ Agent 自身（SnowLuma 看不到它）。纯 Node 实现，不用 PowerShell、不打包任何脚本或可执行文件。原理：用 Windows 自带命令行接口读性能计数器（typeperf）与注册表（reg），配合 node:os/fs.statfs；再拼成 HTML，用应用自带的 Electron 离屏窗口渲染成 PNG 发出。不写注册表、不改系统设置、不结束进程，也不上传数据；唯一会联网的情况是设置里把「背景图」填成网址时去下载它（不填就完全不联网）。卡片分系统/硬件/硬盘/显卡/软件几块，深浅色、透明度、圆环或横条、精简或详细、每块开关均可调；画图失败自动退回纯文本并说明原因。边界：GPU 占用是全局引擎最大值（Windows 不提供按卡归属，多卡无法分开显示）；硬件型号只能取到显卡与 CPU 名 ；仅 Windows；CPU 为最近约 1 秒快照。",
-      "category": "utility",
-      "version": "2.0.0",
-      "author": "社区作者",
-      "authorId": "",
-      "createdAt": "2026-10-14T13:27:50Z",
-      "updatedAt": "2026-10-14T22:36:07Z",
-      "type": "skill",
-      "status": "approved",
-      "installCode": "8GE6WB",
-      "downloads": 138,
-      "categoryName": "工具与运行控制",
-      "downloadUrl": "/api/community/skills/pcstatus/download"
     },
     {
       "id": "qq-face",
@@ -3834,23 +3786,6 @@
       "downloads": 69,
       "categoryName": "工具与运行控制",
       "downloadUrl": "/api/community/skills/music-taste/download"
-    },
-    {
-      "id": "qq-self",
-      "name": "小鲸鱼的空间与个人资料",
-      "description": "小鲸鱼可自主发文字/带图动态，查看自己的空间，修改自己的昵称、签名、性别和头像。使用现有 SnowLuma 登录态；不需要 Cookie、浏览器或额外服务。",
-      "category": "media",
-      "version": "1.0.0-local",
-      "author": "社区作者",
-      "authorId": "",
-      "createdAt": "2026-10-09T00:42:21Z",
-      "updatedAt": "2026-10-09T14:58:40Z",
-      "type": "skill",
-      "status": "approved",
-      "installCode": "CTGDLQ",
-      "downloads": 3986,
-      "categoryName": "媒体与多媒体",
-      "downloadUrl": "/api/community/skills/qq-self/download"
     },
     {
       "id": "bilibili-peek",

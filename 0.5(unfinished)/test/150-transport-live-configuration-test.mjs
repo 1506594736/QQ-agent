@@ -40,30 +40,30 @@ async function until(fn, timeout = 1500) {
 }
 const A = await endpoint('A'), B = await endpoint('B'), C = await endpoint('C');
 const root = mktmp('qqa-150-live-config-');
-const connection = (target, accessToken, httpAccessToken = accessToken) => ({ dir: '', autoLaunch: false, wsUrl: target.wsUrl, httpUrl: target.httpUrl, accessToken, httpAccessToken });
+const connection = (target, accessToken, httpAccessToken = accessToken) => ({ wsUrl: target.wsUrl, httpUrl: target.httpUrl, accessToken, httpAccessToken });
 const resources = [];
 try {
   section('Actual HTTP next call consumes a fresh cloned config snapshot');
-  let config = { snowluma: connection(A, 'QA150_OLD') };
+  let config = { onebot: connection(A, 'QA150_OLD') };
   const provider = createOneBotProvider({ cfg: () => structuredClone(config), log: {}, tokenCandidates: () => ['QA150_OLD_DISK', ''] });
   resources.push(() => provider.stop());
   eq((await provider.client.call('initial')).data.endpoint, 'A', 'initial action reaches endpoint A');
   eq(A.requests.at(-1).token, 'QA150_OLD', 'initial HTTP credential follows config');
-  config = { snowluma: connection(B, 'QA150_NEW', 'QA150_NEW_HTTP') };
+  config = { onebot: connection(B, 'QA150_NEW', 'QA150_NEW_HTTP') };
   eq((await provider.client.call('next')).data.endpoint, 'B', 'next action after update reaches endpoint B without restart');
   eq(B.requests.filter(r => r.action === 'next').map(r => r.token), ['QA150_NEW_HTTP'], 'new endpoint only receives the newly configured HTTP token');
   ok(!B.requests.some(r => /OLD/.test(r.token)), 'old in-memory and disk tokens never reach B');
-  config.snowluma.accessToken = ''; config.snowluma.httpAccessToken = '';
+  config.onebot.accessToken = ''; config.onebot.httpAccessToken = '';
   await provider.client.call('cleared');
   eq(B.requests.filter(r => r.action === 'cleared').map(r => r.token), [''], 'explicitly clearing both credentials sends no previous token');
-  config.snowluma.httpUrl = '';
+  config.onebot.httpUrl = '';
   const sentBeforeBlank = A.requests.length + B.requests.length + C.requests.length;
   await rejects(() => provider.client.call('blank'), 'empty HTTP URL rejects locally');
   eq(A.requests.length + B.requests.length + C.requests.length, sentBeforeBlank, 'blank URL never falls back to an old or default endpoint');
-  config = { snowluma: { httpUrl: null, accessToken: null, httpAccessToken: null }, onebot: connection(A, 'QA150_LEGACY') };
+  config = { onebot: { httpUrl: null, accessToken: null, httpAccessToken: null } };
   await rejects(() => provider.client.call('explicit-null'), 'explicit null URL does not resurrect legacy endpoint');
   config = { onebot: connection(C, 'QA150_LEGACY_NEW') };
-  eq((await provider.client.call('legacy')).data.endpoint, 'C', 'legacy namespace is accepted when snowluma keys are absent');
+  eq((await provider.client.call('legacy')).data.endpoint, 'C', 'explicit OneBot configuration supplies its endpoint');
   eq(C.requests.at(-1)?.token, 'QA150_LEGACY_NEW', 'legacy namespace refresh uses current token');
   config.onebot.httpAccessToken = 'QA150_NEW_BAD';
   const rejectedRotationStart = C.requests.length;
@@ -72,10 +72,10 @@ try {
   await provider.stop();
 
   section('Actual plugin subscription: live WS generations, duplicates and stop');
-  config = { snowluma: connection(A, 'QA150_WS_A') };
+  config = { onebot: connection(A, 'QA150_WS_A') };
   const listeners = new Set(), descriptors = [], stops = [];
   const hostConfig = { get: () => structuredClone(config), onChange(fn) { listeners.add(fn); return () => listeners.delete(fn); } };
-  const update = (snowluma) => { config = { snowluma: { ...config.snowluma, ...snowluma } }; for (const listener of [...listeners]) listener(structuredClone(config)); };
+  const update = (onebot) => { config = { onebot: { ...config.onebot, ...onebot } }; for (const listener of [...listeners]) listener(structuredClone(config)); };
   transportPlugin.setup({ log: {}, capability(name) { return name === 'host.config' ? hostConfig : { appRoot: root }; }, registerTransport(item) { descriptors.push(item); }, registerCapability() {}, lifecycle: { onStop(fn) { stops.push(fn); } } });
   const controller = new AbortController(); let current = true;
   const active = descriptors[0].create({ signal: controller.signal, current: () => current });
@@ -93,7 +93,7 @@ try {
   eq((await active.client.call('subscribed')).data.endpoint, 'B', 'subscribed provider HTTP uses updated destination');
   eq(B.requests.at(-1)?.token, 'QA150_HTTP_B', 'subscribed HTTP does not retain prior token');
   const generation = active.client._gen, bCount = B.connections.length;
-  update({ ...config.snowluma }); await sleep(80);
+  update({ ...config.onebot }); await sleep(80);
   eq(active.client._gen, generation, 'identical settings do not replace WS generation');
   eq(B.connections.length, bCount, 'identical settings do not reconnect');
   update({ httpAccessToken: 'QA150_HTTP_ONLY' });
@@ -153,7 +153,7 @@ try {
   await redirectClient.close();
 
   section('Fresh port probe rejects stale successful completion');
-  let probeCfg = { snowluma: connection(A, 'QA150_PROBE_A') };
+  let probeCfg = { onebot: connection(A, 'QA150_PROBE_A') };
   const pending = [], timers = [], originalInterval = globalThis.setInterval, originalClear = globalThis.clearInterval;
   globalThis.setInterval = callback => { const timer = { callback, unref() {} }; timers.push(timer); return timer; };
   globalThis.clearInterval = () => {};
@@ -167,7 +167,7 @@ try {
     const probing = createOneBotProvider({ cfg: () => structuredClone(probeCfg), log: {}, clientFactory: ProbeClient, portProbe: url => new Promise(resolve => pending.push({ url, resolve })), portProbeIntervalMs: 10 });
     await probing.start();
     const first = timers.at(-1).callback();
-    probeCfg = { snowluma: connection(B, 'QA150_PROBE_B') };
+    probeCfg = { onebot: connection(B, 'QA150_PROBE_B') };
     pending[0].resolve(true); await first;
     eq(reconnects, 0, 'port readiness for an obsolete URL cannot trigger reconnection');
     const second = timers.at(-1).callback();

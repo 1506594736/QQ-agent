@@ -254,7 +254,7 @@ test('real appended policy and selected logger reach SDK, JSONL, authenticated l
   cleanups.get(root).push(async () => { currentStream?.abort(); for (const app of apps) await app.stop(); delete globalThis[key]; assert.deepEqual(hashes(), before); });
   async function start() {
     const app = await createApplication(kernelOptions(root)); apps.push(app); app.loader.startWatchers = () => {};
-    app.config.update({ server: { port: 0, token: 'synthetic-log246' }, telemetry: { enabled: false }, proactive: { enabled: false }, memory: { consolidateEnabled: false }, snowluma: { autoLaunch: false } });
+    app.config.update({ server: { port: 0, token: 'synthetic-log246' }, telemetry: { enabled: false }, proactive: { enabled: false }, memory: { consolidateEnabled: false }, });
     const port = await app.start(); assert.notEqual(port, 15967); return { app, base: `http://127.0.0.1:${port}`, headers: { 'x-console-token': 'synthetic-log246' } };
   }
   const selected = await start(); assert.equal(selected.app.composition.owners['runtime.log.policy'], 'qa-log246'); assert.equal(selected.app.composition.owners['runtime.logger'], 'qa-log246');

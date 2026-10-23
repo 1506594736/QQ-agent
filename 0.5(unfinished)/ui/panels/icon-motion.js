@@ -37,17 +37,12 @@ function plans(icon) {
     case 'plugins': return [move(role('module'), { transform: 'translateX(-1.5px)', opacity: .55 })];
     case 'settings': return ['control-a', 'control-b', 'control-c'].map((name, step) => move(role(name, step + 1), { transform: 'translateX(' + [3, -3, 2][step] + 'px)' }, step * 200));
     case 'community': return [move(role('avatar', 0), { transform: 'translateY(-1px)' }, 0, 2600), move(role('identity', 2), { opacity: .35, transform: 'scaleX(.65)' }, 300, 2600)];
-    case 'snowluma': return [move(role('prompt'), { transform: 'translateX(1.5px)', opacity: .45 }), move(role('endpoint', 3), { opacity: .5 }, 300)];
     case 'activity': return [move(role('cursor'), { transform: 'translateX(-2px)', opacity: .55 })];
     // Limit the open frame's turn: its corners/stroke stay inside the viewport.
     case 'emblem': return [move(role('core'), { transform: 'scale(.8)', opacity: .65 }, 0, 2400), move(role('frame', 0), { transform: 'rotate(15deg)' }, 300, 2400)];
     case 'archive': return [move(role('payload'), { transform: 'translateY(2px)', opacity: .55 }, 0, 2400)];
     // Status cycles illustrate the host's declared state; they are not a load
     // progress measurement. The explicit opt-in still uses the same budget.
-    case 'status-qq-ready': return [move(role('kernel'), { transform: 'translateY(1px)', opacity: .7 }, 0, 2600), move(role('ready', 2), { opacity: .7 }, 300, 2600)];
-    case 'status-qq-pending': return [move(role('loader'), { transform: 'translateY(1px)', opacity: .5 }, 0, 2600), move(role('gap', 2), { opacity: .55 }, 300, 2600)];
-    case 'status-snow-ready': return [move(role('process'), { transform: 'translateX(1px)', opacity: .7 }, 0, 2400), move(role('ready', 2), { opacity: .7 }, 300, 2400)];
-    case 'status-snow-pending': return [move(role('process'), { transform: 'translateX(1px)', opacity: .45 }, 0, 2400), move(role('gap', 2), { opacity: .55 }, 300, 2400)];
     case 'status-onebot-ready': return [move(role('bridge'), { opacity: .6 }, 0, 2800), move(role('ready', 2), { opacity: .7 }, 300, 2800)];
     case 'status-onebot-pending': return [move(role('bridge'), { opacity: .55 }, 0, 2800), move(role('gap', 2), { transform: 'translateY(-1px)', opacity: .55 }, 300, 2800)];
     case 'status-model-ready': return [move(role('nodes'), { transform: 'scale(.86)', opacity: .7 }, 0, 3000), move(role('ready', 2), { opacity: .7 }, 300, 3000)];

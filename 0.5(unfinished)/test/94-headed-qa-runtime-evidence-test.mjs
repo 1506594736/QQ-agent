@@ -154,12 +154,13 @@ test('94 independent local headless tool, API, wake, cancellation and provider e
     const bad = await invoke('get_sticker_image', { stickerId: 'missing' }, execCtx, true); assert.equal(bad.ok, false);
     return { imageParts: good.mediaParts.length, unknownRejected: true };
   });
-  await verify(t, 'B07', 'collect_sticker actual local OneBot collection plus description', async () => {
-    const result = await invoke('collect_sticker', { messageId: '80101', note: 'QA94 local collected note' }); collectedId = result.result.id;
-    assert.ok(collectedId); assert.equal(result.result.noted, true);
-    assert.ok(fixture.state.actions.some((action) => action.action === 'add_custom_face'));
-    assert.ok(fixture.state.actions.some((action) => action.action === 'modify_custom_face' && action.params.desc === 'QA94 local collected note'));
-    return { collectedId, describedInProtocol: true, realQQ: false };
+  await verify(t, 'B07', 'account collection is unavailable without an independent capability plugin', async () => {
+    const availability = kernel.registry.availability('collect_sticker');
+    assert.equal(availability.ok, false); assert.equal(availability.code, 'CAPABILITY_MISSING');
+    collectedId = 'qa-local-image';
+    const listed = await invoke('list_stickers', { query: 'QA' });
+    assert.ok(listed.result.items.some(item => item.id === collectedId));
+    return { accountCollectionAvailable: false, localLibraryAvailable: true };
   });
   await verify(t, 'B03', 'send_sticker actual single image segment and usage', async () => {
     assert.ok(collectedId); await invoke('send_sticker', { stickerId: collectedId });
@@ -288,8 +289,8 @@ test('94 independent local headless tool, API, wake, cancellation and provider e
   });
   await verify(t, 'SDK-HELLO', 'hello_say real loader, schema config and namespace counter', async () => {
     const result = await invoke('hello_say', { name: 'QA94' }); assert.equal(result.text, '你好，QA94'); assert.equal(kernel.storage.namespace('hello').get('uses'), 1);
-    assert.deepEqual([...new Set(toolCalls.map((call) => call.id))].sort(), registered);
-    return { totalRegistered: 28, uniqueActualToolsInvoked: 28, helloExplicitlyEnabled: true };
+    assert.deepEqual([...new Set(toolCalls.map((call) => call.id))].sort(), registered.filter(id => id !== 'collect_sticker'));
+    return { totalRegistered: 28, uniqueActualToolsInvoked: 27, unavailableOptionalTools: ['collect_sticker'], helloExplicitlyEnabled: true };
   });
 
   await verify(t, 'SSRF', 'controlled native transport SSRF and cancellation boundary suite', async () => ({ rows: await runSecurityEvidence({ localUrl: webBase }) }));

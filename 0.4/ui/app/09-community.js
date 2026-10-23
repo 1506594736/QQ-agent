@@ -1107,7 +1107,6 @@ ${locateBlock}
 - skill-development.md（技能开发规范）
 - plugin-development.md（插件开发规范）
 - skill-reference.md（API 完整参考，必读）
-- 如果要操作 QQ 本身（查群成员、禁言、发文件等），还要读 snowluma-capabilities.md
 先读完再动手。文档里写全了格式要求、API 用法和常见的坑，不按文档做的产物会静默失效（不报错、就是没反应）。
 
 【第二步：搞清楚我要什么】

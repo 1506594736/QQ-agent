@@ -3,7 +3,7 @@
 // 为什么需要（Electron 的 requestSingleInstanceLock 管不到的场景）：
 //   - Electron 桌面端 + `npm run server` headless 同时启动 → 两份核心
 //   - 双击 .bat 又手动 node src/server.js → 两份核心
-//   两份核心会双份连 SnowLuma、双份处理群消息 → 群里看到重复回复。
+//   两份核心会双份连 OneBot、双份处理群消息 → 群里看到重复回复。
 //
 // 原理：在数据目录放一个 qq-agent.lock 文件，内容 = PID。
 //   启动时若锁文件存在且对应进程仍活着 → 判定已有实例，拒绝启动；

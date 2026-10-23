@@ -10,7 +10,7 @@ const root = path.resolve(import.meta.dirname, '..');
 const evidenceDir = path.join(root, '.qa-local/endfield-readiness-icons-20261013');
 fs.mkdirSync(evidenceDir, { recursive: true });
 const names = [...ICON_NAMES, 'unknown'];
-const statusFamilies = ['qq', 'snow', 'onebot', 'model'];
+const statusFamilies = ['onebot', 'model'];
 for (const family of statusFamilies) for (const state of ['ready', 'pending']) assert.ok(ICON_NAMES.includes('status-' + family + '-' + state));
 const fixture = `<!doctype html><meta charset="utf-8"><link rel="stylesheet" href="/panels/common.css"><style>.gallery{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px}.gallery button{color:var(--accent)}.extras{display:none}body[data-sidebar="hidden"] #css-rail{display:none}body.navigation-peek #css-rail{display:block}</style><main><div class="gallery" role="tablist" aria-label="Icon pages"></div><input id="blur-target" aria-label="Ordinary field"><details id="icon-details" data-icon-active="false" open><summary id="icon-details-summary" data-icon-active="false">Summary </summary><div id="icon-details-content">Content </div></details><button id="budget-a">Ordinary A</button><button id="budget-b">Ordinary B</button><aside id="css-rail"><button id="css-hidden-owner">CSS rail</button></aside><button id="nested-visibility-owner">Visible owner <span id="nested-icon-wrapper"></span></button><a id="selected-link" href="#selection">Page link</a><p id="empty-preview" class="empty">Empty preview</p><div class="extras"></div></main><script type="module">
 import{createIcon}from'/panels/icons.js';import{installIconMotion}from'/panels/icon-motion.js';import{writeTheme,DEFAULT_THEME}from'/panels/theme.js';

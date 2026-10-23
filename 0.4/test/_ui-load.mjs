@@ -22,7 +22,7 @@ const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 
 /** ui/app/ 段文件名（= 加载顺序 = index.html 的 defer 顺序）。 */
 export const APP_PARTS = [
-  '00-core.js', '01-boot.js', '02-sse-sessions.js', '03-snowluma.js',
+  '00-core.js', '01-boot.js', '02-sse-sessions.js',
   '04-archive-usage.js', '05-memory-settings.js', '06-settings-render.js',
   '07-settings-events.js', '08-modals.js', '09-community.js',
   '10-feedback.js', '11-init.js'

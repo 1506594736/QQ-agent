@@ -10,49 +10,49 @@ main > .head { display: flex; flex-wrap: wrap; align-items: center; justify-cont
 
 /* Built-in pages own the only page title. Other plugin documents keep their
    opt-in structure; no title or stylesheet is injected into a user panel. */
-body:is([data-panel="sessions"], [data-panel="chats"], [data-panel="memory"], [data-panel="usage"], [data-panel="skills"], [data-panel="plugins"], [data-panel="snowluma"], [data-panel="settings"], [data-panel="community"], [data-layout="compact"]) > main {
+body:is([data-panel="sessions"], [data-panel="chats"], [data-panel="memory"], [data-panel="usage"], [data-panel="skills"], [data-panel="plugins"], [data-panel="logs"], [data-panel="settings"], [data-panel="community"], [data-layout="compact"]) > main {
   padding: 8px 16px 16px;
 }
-body:is([data-panel="sessions"], [data-panel="chats"], [data-panel="memory"], [data-panel="usage"], [data-panel="skills"], [data-panel="plugins"], [data-panel="snowluma"], [data-panel="settings"], [data-panel="community"], [data-layout="compact"]) main > .head {
+body:is([data-panel="sessions"], [data-panel="chats"], [data-panel="memory"], [data-panel="usage"], [data-panel="skills"], [data-panel="plugins"], [data-panel="logs"], [data-panel="settings"], [data-panel="community"], [data-layout="compact"]) main > .head {
   min-height: 35px;
   align-items: center;
   gap: 8px 16px;
   padding-bottom: 4px;
   margin-bottom: 6px;
 }
-body:is([data-panel="sessions"], [data-panel="chats"], [data-panel="memory"], [data-panel="usage"], [data-panel="skills"], [data-panel="plugins"], [data-panel="snowluma"], [data-panel="settings"], [data-panel="community"], [data-layout="compact"]) main > .head > div:first-child {
+body:is([data-panel="sessions"], [data-panel="chats"], [data-panel="memory"], [data-panel="usage"], [data-panel="skills"], [data-panel="plugins"], [data-panel="logs"], [data-panel="settings"], [data-panel="community"], [data-layout="compact"]) main > .head > div:first-child {
   display: flex;
   flex: 1 1 220px;
   flex-wrap: wrap;
   align-items: baseline;
   gap: 4px 12px;
 }
-body:is([data-panel="sessions"], [data-panel="chats"], [data-panel="memory"], [data-panel="usage"], [data-panel="skills"], [data-panel="plugins"], [data-panel="snowluma"], [data-panel="settings"], [data-panel="community"], [data-layout="compact"]) main > .head h2 {
+body:is([data-panel="sessions"], [data-panel="chats"], [data-panel="memory"], [data-panel="usage"], [data-panel="skills"], [data-panel="plugins"], [data-panel="logs"], [data-panel="settings"], [data-panel="community"], [data-layout="compact"]) main > .head h2 {
   margin: 0;
   font-size: 18px;
   line-height: 1.4;
   letter-spacing: 0;
 }
-body:is([data-panel="sessions"], [data-panel="chats"], [data-panel="memory"], [data-panel="usage"], [data-panel="skills"], [data-panel="plugins"], [data-panel="snowluma"], [data-panel="settings"], [data-panel="community"], [data-layout="compact"]) main > .head .eyebrow {
+body:is([data-panel="sessions"], [data-panel="chats"], [data-panel="memory"], [data-panel="usage"], [data-panel="skills"], [data-panel="plugins"], [data-panel="logs"], [data-panel="settings"], [data-panel="community"], [data-layout="compact"]) main > .head .eyebrow {
   display: none;
 }
-body:is([data-panel="sessions"], [data-panel="chats"], [data-panel="memory"], [data-panel="usage"], [data-panel="skills"], [data-panel="plugins"], [data-panel="snowluma"], [data-panel="settings"], [data-panel="community"], [data-layout="compact"]) main > .head :is(.muted, .error) {
+body:is([data-panel="sessions"], [data-panel="chats"], [data-panel="memory"], [data-panel="usage"], [data-panel="skills"], [data-panel="plugins"], [data-panel="logs"], [data-panel="settings"], [data-panel="community"], [data-layout="compact"]) main > .head :is(.muted, .error) {
   min-width: 0;
   font-size: 12px;
   line-height: 1.4;
   overflow-wrap: anywhere;
 }
-body:is([data-panel="sessions"], [data-panel="chats"], [data-panel="memory"], [data-panel="usage"], [data-panel="skills"], [data-panel="plugins"], [data-panel="snowluma"], [data-panel="settings"], [data-panel="community"], [data-layout="compact"]) main > .head > .actions {
+body:is([data-panel="sessions"], [data-panel="chats"], [data-panel="memory"], [data-panel="usage"], [data-panel="skills"], [data-panel="plugins"], [data-panel="logs"], [data-panel="settings"], [data-panel="community"], [data-layout="compact"]) main > .head > .actions {
   flex: 0 1 auto;
   max-width: 100%;
   gap: 6px;
 }
-body:is([data-panel="sessions"], [data-panel="chats"], [data-panel="memory"], [data-panel="usage"], [data-panel="skills"], [data-panel="plugins"], [data-panel="snowluma"], [data-panel="settings"], [data-panel="community"], [data-layout="compact"]) main > .head :is(select, input[type="search"]) {
+body:is([data-panel="sessions"], [data-panel="chats"], [data-panel="memory"], [data-panel="usage"], [data-panel="skills"], [data-panel="plugins"], [data-panel="logs"], [data-panel="settings"], [data-panel="community"], [data-layout="compact"]) main > .head :is(select, input[type="search"]) {
   min-height: 30px;
   padding: 5px 8px;
 }
 @media (max-width: 760px) {
-  body:is([data-panel="sessions"], [data-panel="chats"], [data-panel="memory"], [data-panel="usage"], [data-panel="skills"], [data-panel="plugins"], [data-panel="snowluma"], [data-panel="settings"], [data-panel="community"], [data-layout="compact"]) main > .head > .actions {
+  body:is([data-panel="sessions"], [data-panel="chats"], [data-panel="memory"], [data-panel="usage"], [data-panel="skills"], [data-panel="plugins"], [data-panel="logs"], [data-panel="settings"], [data-panel="community"], [data-layout="compact"]) main > .head > .actions {
     flex-basis: 100%;
     margin-left: 0;
     justify-content: flex-start;

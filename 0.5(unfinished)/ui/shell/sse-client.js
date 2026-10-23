@@ -1,4 +1,4 @@
-const EVENT_NAMES=['hello','session-start','session-update','session-end','chat-update','memory-update','onebot-status','status','snowluma-status','snowluma-log','qq-portable-status','qq-portable-log','feedback','vision-scan','permission-ask','permission-decision','log','plugin-loaded','plugin-unloaded','plugin-error'];
+const EVENT_NAMES=['hello','session-start','session-update','session-end','chat-update','memory-update','onebot-status','status','feedback','vision-scan','permission-ask','permission-decision','log','plugin-loaded','plugin-unloaded','plugin-error'];
 
 export class SseClient {
   constructor({token='',onEvent=()=>{},onState=()=>{},retryDelay=1500,recoverAuth=null}={}) {

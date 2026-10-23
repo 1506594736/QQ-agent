@@ -8,8 +8,7 @@ const NAMES = new Set([
   // 会话与存档（M1）
   'session.start', 'session.update', 'session.end', 'chat.update', 'memory.update',
   // 传输与外部进程状态（M1/M4）
-  'onebot.status', 'transport.status', 'snowluma.status', 'snowluma.log', 'qq-portable.status', 'qq-portable.log',
-  // 工具与权限
+  'onebot.status', 'transport.status', // 工具与权限
   'tool.call', 'tool.result', 'permission.ask', 'permission.decision',
   // LLM / 遥测 / 其它周期行为
   'llm.call', 'telemetry.tick', 'reminder.fire', 'market.install', 'vision.scan', 'feedback', 'status',

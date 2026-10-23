@@ -41,7 +41,7 @@ async function fixture(t) {
     priceUpdates: { resolve: () => null, refresh: async () => { calls.price++; return { ok: true, remote: false }; } },
     communityMarket: { syncGlobalBlocklist: async () => { calls.community++; return { ok: true, ids: [] }; }, getBlocklist: () => ({ ok: true, ids: [] }), listAccounts: () => ({ ok: true, accounts: [] }) },
   });
-  kernel.config.update({ allowAllWhenEmpty: true, telemetry: { enabled: false }, proactive: { enabled: false }, tools: { crossChatSend: true }, snowluma: { autoLaunch: false }, store: { contextSliderPos: 0, randomPercent: 0 }, send: { dedupeWindowMs: 0 } });
+  kernel.config.update({ allowAllWhenEmpty: true, telemetry: { enabled: false }, proactive: { enabled: false }, tools: { crossChatSend: true }, store: { contextSliderPos: 0, randomPercent: 0 }, send: { dedupeWindowMs: 0 } });
   kernel.log.setLevel('error');
   // HTTP behavior has a real socket regression in 86; this suite isolates host
   // lifecycle, while retaining actual route registration and the actual loader.

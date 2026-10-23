@@ -38,8 +38,8 @@ if (!fs.existsSync(sourceFile)) {
   const secondary = structuredClone(config);
 
   secondary.server = { ...(secondary.server || {}), port: consolePort, token: '' };
-  secondary.snowluma = {
-    ...(secondary.snowluma || {}),
+  secondary.onebot = {
+    ...(secondary.onebot || {}),
     wsUrl: `ws://127.0.0.1:${wsPort}`,
     httpUrl: `http://127.0.0.1:${httpPort}`,
     accessToken: '',

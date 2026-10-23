@@ -8,13 +8,12 @@ export function createOneBotProvider({ cfg, log = console, onEvent, onStatus, to
   const connectionConfig = () => {
     const current = cfg();
     if (typeof connectionResolver === 'function') return connectionResolver(current);
-    // A present empty/null key deliberately clears it; only absent keys use the legacy namespace.
     const value = key => {
-      const source = Object.hasOwn(current.snowluma ?? {}, key) ? current.snowluma : current.onebot;
+      const source = current.onebot;
       return typeof source?.[key] === 'string' ? source[key] : '';
     };
     return { wsUrl: value('wsUrl'), httpUrl: value('httpUrl'), accessToken: value('accessToken'),
-      httpToken: value('httpAccessToken'), candidateScope: value('dir') };
+      httpToken: value('httpAccessToken'), candidateScope: 'onebot' };
   };
   let currentConnection = connectionConfig();
   const Client = clientFactory ?? OneBotClient;
@@ -49,7 +48,7 @@ export function createOneBotProvider({ cfg, log = console, onEvent, onStatus, to
     log, tokenCandidates,
   });
 
-  // 端口就绪轮询：SnowLuma 可能晚于内核启动（默认部署配件，不属于 OneBot 协议本身）。
+  // 可选的协议端端口就绪探测；默认适配器使用客户端自身的重连机制。
   // 注入的 provider 不走这里——它的重连节奏由自己负责。
   let probeTimer = null;
   let started = false;
@@ -202,58 +201,6 @@ export function createOneBotProvider({ cfg, log = console, onEvent, onStatus, to
     actions: {
       // Opaque account/lifecycle identity, without exposing credentials or QQ metadata.
       getAccountIdentity: accountIdentity,
-      async fetchCustomFaceDetails({ limit = 100, signal } = {}) {
-        if (signal?.aborted) throw signal.reason ?? new Error('表情同步已中止');
-        const identity = accountIdentity();
-        const count = Math.max(1, Math.min(500, Math.floor(Number(limit) || 100)));
-        const res = await client.call('fetch_custom_face_detail', { count });
-        if (signal?.aborted) throw signal.reason ?? new Error('表情同步已中止');
-        if (identity !== accountIdentity()) throw new Error('表情同步期间账号已更改');
-        if ((res?.status != null && res.status !== 'ok') || (res?.retcode != null && Number(res.retcode) !== 0)) {
-          throw new Error(`OneBot fetch_custom_face_detail 失败：${res?.wording ?? res?.message ?? res?.retcode ?? res?.status}`);
-        }
-        if (!Array.isArray(res?.data)) throw new Error('fetch_custom_face_detail 返回 data 不是数组');
-        const entries = res.data.slice(0, count).map(item => {
-          if (!item || typeof item !== 'object' || Array.isArray(item)) throw new Error('收藏表情详情条目不合法');
-          const identity = item.emoji_id ?? item.emojiId ?? item.resId ?? item.id;
-          const id = ['string', 'number'].includes(typeof identity) ? String(identity).trim() : '';
-          if (!id || id.length > 256 || /[\x00-\x1f]/.test(id) || (typeof identity === 'number' && !Number.isFinite(identity))) throw new Error('收藏表情详情缺少合法身份');
-          for (const field of ['resId', 'qqFile', 'file', 'url', 'md5', 'desc']) {
-            if (item[field] !== undefined && typeof item[field] !== 'string' && !(field === 'resId' && typeof item[field] === 'number' && Number.isFinite(item[field]))) throw new Error('收藏表情详情字段不合法');
-          }
-          return { id, emojiId: id, resId: String(item.resId ?? id).slice(0, 256), qqFile: String(item.qqFile ?? item.file ?? '').slice(0, 2048),
-            url: String(item.url ?? '').slice(0, 8192), md5: String(item.md5 ?? '').slice(0, 128).toUpperCase(), desc: String(item.desc ?? '').slice(0, 300) };
-        });
-        // The count-limited protocol does not prove a complete library snapshot.
-        return { entries, complete: false };
-      },
-      // ---- QQ 随账号收藏表情包（SnowLuma/go-cqhttp 系扩展，见 using/doc/extend_development/
-      // snowluma-capabilities.md 「扩展」节 add_custom_face / modify_custom_face / delete_custom_face）----
-      // 表情库以 QQ 账号为载体，备注也存在 QQ 侧；本地只做索引（emoji_id → 用途笔记），
-      // 不再另立本地备注字段当唯一真相。
-      async addCustomFace(file) {
-        //返回 { emoji_id }；QQ 侧上限（通常 1000）由协议端拒，错误原样上抛由调用方判定
-        const res = await client.call('add_custom_face', { file: String(file) });
-        if ((res?.status != null && res.status !== 'ok') || (res?.retcode != null && Number(res.retcode) !== 0)) {
-          throw new Error(`OneBot add_custom_face 失败：${res?.wording ?? res?.message ?? res?.retcode ?? res?.status}`);
-        }
-        const emojiId = res?.data?.emoji_id ?? res?.data?.qianqian_emoji ?? res?.data?.emojiId ?? null;
-        if (!['string', 'number'].includes(typeof emojiId) || !String(emojiId).trim() || (typeof emojiId === 'number' && !Number.isFinite(emojiId))) throw Object.assign(new Error('协议端未返回 emoji_id，无法确认收藏结果'), { code: 'QQ_EMOJI_NO_ID' });
-        return { emojiId: String(emojiId) };
-      },
-      async modifyCustomFace(emojiId, desc) {
-        const res = await client.call('modify_custom_face', { emoji_id: String(emojiId), desc: String(desc ?? '') });
-        return { ok: res?.retcode === 0 || res?.status === 'ok' };
-      },
-      async deleteCustomFace(emojiId) {
-        const res = await client.call('delete_custom_face', { emoji_id: String(emojiId) });
-        return { ok: res?.retcode === 0 || res?.status === 'ok' };
-      },
-      async fetchCustomFaces(count = 48) {
-        const res = await client.call('fetch_custom_face', { count: Number(count) || 48 });
-        const arr = res?.data;
-        return Array.isArray(arr) ? arr.map(String) : [];
-      },
       async poke(chatKey, { groupId, userId } = {}) {
         const kind = chatKey.split(':')[0];
         if (kind === 'group') {

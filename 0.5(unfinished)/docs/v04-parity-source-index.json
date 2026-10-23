@@ -1757,60 +1757,6 @@
         },
         {
           "kind": "api-path",
-          "name": "/api/snowluma/launch",
-          "line": 242,
-          "status": "needs-semantic-review"
-        },
-        {
-          "kind": "api-path",
-          "name": "/api/snowluma/logs",
-          "line": 253,
-          "status": "needs-semantic-review"
-        },
-        {
-          "kind": "api-path",
-          "name": "/api/snowluma/stop",
-          "line": 257,
-          "status": "needs-semantic-review"
-        },
-        {
-          "kind": "api-path",
-          "name": "/api/snowluma/open-folder",
-          "line": 268,
-          "status": "needs-semantic-review"
-        },
-        {
-          "kind": "api-path",
-          "name": "/api/snowluma/open-webui",
-          "line": 277,
-          "status": "needs-semantic-review"
-        },
-        {
-          "kind": "api-path",
-          "name": "/api/qq-portable/launch",
-          "line": 288,
-          "status": "needs-semantic-review"
-        },
-        {
-          "kind": "api-path",
-          "name": "/api/qq-portable/stop",
-          "line": 299,
-          "status": "needs-semantic-review"
-        },
-        {
-          "kind": "api-path",
-          "name": "/api/qq-portable/logs",
-          "line": 310,
-          "status": "needs-semantic-review"
-        },
-        {
-          "kind": "api-path",
-          "name": "/api/qq-portable/status",
-          "line": 314,
-          "status": "needs-semantic-review"
-        },
-        {
-          "kind": "api-path",
           "name": "/api/onebot/groups",
           "line": 320,
           "status": "needs-semantic-review"
@@ -3622,133 +3568,6 @@
       ]
     },
     {
-      "file": "ui/app/03-snowluma.js",
-      "sha256": "7bf4db973613a70ac30c059d8b8e0d89a5c3c7d739c71ae883ae7db62372a6cf",
-      "lines": 362,
-      "candidates": [
-        {
-          "kind": "function",
-          "name": "refreshSnowlumaLogs",
-          "line": 9,
-          "status": "needs-semantic-review"
-        },
-        {
-          "kind": "function",
-          "name": "scheduleSnowlumaReload",
-          "line": 49,
-          "status": "needs-semantic-review"
-        },
-        {
-          "kind": "function",
-          "name": "loadSnowlumaPage",
-          "line": 57,
-          "status": "needs-semantic-review"
-        },
-        {
-          "kind": "api-path",
-          "name": "/api/snowluma/logs",
-          "line": 18,
-          "status": "needs-semantic-review"
-        },
-        {
-          "kind": "api-path",
-          "name": "/api/qq-portable/logs",
-          "line": 19,
-          "status": "needs-semantic-review"
-        },
-        {
-          "kind": "api-path",
-          "name": "/api/logs?limit=120",
-          "line": 20,
-          "status": "needs-semantic-review"
-        },
-        {
-          "kind": "api-path",
-          "name": "/api/status",
-          "line": 60,
-          "status": "needs-semantic-review"
-        },
-        {
-          "kind": "api-path",
-          "name": "/api/snowluma/logs",
-          "line": 61,
-          "status": "needs-semantic-review"
-        },
-        {
-          "kind": "api-path",
-          "name": "/api/qq-portable/logs",
-          "line": 62,
-          "status": "needs-semantic-review"
-        },
-        {
-          "kind": "api-path",
-          "name": "/api/logs?limit=120",
-          "line": 63,
-          "status": "needs-semantic-review"
-        },
-        {
-          "kind": "api-path",
-          "name": "/api/logs/level",
-          "line": 219,
-          "status": "needs-semantic-review"
-        },
-        {
-          "kind": "api-path",
-          "name": "/api/qq-portable/launch",
-          "line": 243,
-          "status": "needs-semantic-review"
-        },
-        {
-          "kind": "api-path",
-          "name": "/api/snowluma/launch",
-          "line": 258,
-          "status": "needs-semantic-review"
-        },
-        {
-          "kind": "api-path",
-          "name": "/api/status",
-          "line": 274,
-          "status": "needs-semantic-review"
-        },
-        {
-          "kind": "api-path",
-          "name": "/api/qq-portable/launch",
-          "line": 299,
-          "status": "needs-semantic-review"
-        },
-        {
-          "kind": "api-path",
-          "name": "/api/qq-portable/stop",
-          "line": 312,
-          "status": "needs-semantic-review"
-        },
-        {
-          "kind": "api-path",
-          "name": "/api/snowluma/launch",
-          "line": 325,
-          "status": "needs-semantic-review"
-        },
-        {
-          "kind": "api-path",
-          "name": "/api/snowluma/stop",
-          "line": 337,
-          "status": "needs-semantic-review"
-        },
-        {
-          "kind": "api-path",
-          "name": "/api/snowluma/open-folder",
-          "line": 346,
-          "status": "needs-semantic-review"
-        },
-        {
-          "kind": "api-path",
-          "name": "/api/snowluma/open-webui",
-          "line": 352,
-          "status": "needs-semantic-review"
-        }
-      ]
-    },
-    {
       "file": "ui/app/04-archive-usage.js",
       "sha256": "cbfc9ced629a3c50d38cbb2d27e508c159509d1a0dd0c1212dd6a5ebd9569362",
       "lines": 897,
@@ -4789,18 +4608,6 @@
         },
         {
           "kind": "config-control",
-          "name": "cfg-snowlumadir",
-          "line": 1022,
-          "status": "needs-semantic-review"
-        },
-        {
-          "kind": "config-control",
-          "name": "cfg-snowlumalaunch",
-          "line": 1026,
-          "status": "needs-semantic-review"
-        },
-        {
-          "kind": "config-control",
           "name": "cfg-wsurl",
           "line": 1029,
           "status": "needs-semantic-review"
@@ -4966,12 +4773,6 @@
           "kind": "api-path",
           "name": "/api/version",
           "line": 927,
-          "status": "needs-semantic-review"
-        },
-        {
-          "kind": "api-path",
-          "name": "/api/snowluma/open-folder",
-          "line": 951,
           "status": "needs-semantic-review"
         },
         {

@@ -149,7 +149,7 @@ export default function register(http, dependencies, config) {
 
 ## 5. 前端、页面与组件
 
-`ui.panels` 按页面 id 替换或追加默认页。覆盖原会话、聊天、记忆、用量、技能、插件、SnowLuma、设置、社区页均无需修改宿主文件。默认清单仅为未覆盖时的回退。
+`ui.panels` 按页面 id 替换或追加默认页。覆盖原会话、聊天、记忆、用量、技能、插件、设置、应用日志、社区页均无需修改宿主文件。默认清单仅为未覆盖时的回退。
 
 页面由 `assetRoot` 整体提供，缺文件返回 404，不与默认页面资产拼接成半新半旧的实现。可信替换页使用显式 API 白名单；原 iframe、token 与 RPC 约束继续执行。可信设置页等保留相应页面角色，但普通 `ui.panel` 插件不能借相同 id、title 或 kind 冒充它们。
 
@@ -220,7 +220,7 @@ UI 根目录与显式单文件覆盖共同按层次裁决：新层完整页面/�
 
 `core.reply.rescue({text,trigger,sent,api,capabilities,signal,timeoutMs,state,log})`为异步可替换默认项。默认无主动reply提供者时保持沉默；可选提供者只提出原句的`send_message`调用，仍走正常工具、权限、SDK、发送队列和归档。API引用只含非密钥字段。返回`{calls,valid,signal,dispose}`：valid检查来源owner/provider/version；signal须覆盖提供者失效与调用取消，dispose由runner在工具完成、拦截、异常或退出时调用，取消残留排队并释放监听。只有已经确认的物理发送保留记录，不假称能撤回开始执行的外部副作用。旧替换仅有calls/valid仍兼容，但追加实现应遵守此生命周期合同。真实无type的发送receipt与旧typed text均参与排重；队列短期去重不能代替整轮已发送排重。详细迁移及复现见[回复迁移](reply-provider-migration.md)。
 
-`data.stickers`默认新增异步`syncFromQQ({force,signal})`，工具list与实际prompt均调用，构造应用自身不联网；原同步all/get/list保留。默认合并受提供者版本、账号代、权限receipt和生命周期约束，不完整远端快照不能删掉缓存条目。降级返回缓存及明确状态，不因未连接阻断所有回复。追加data.stickers或qq.emoji-favorites仍通过真实消费者生效，见[表情迁移](sticker-sync-migration.md)。
+`data.stickers`保留异步`syncFromQQ({force,signal})`接口，工具list与实际prompt均调用，构造应用自身不联网；原同步all/get/list保留。默认不再提供 QQ 收藏表情同步；相关能力可由用户安装的独立扩展提供，支持情况由扩展决定。默认合并受提供者版本、账号代、权限receipt和生命周期约束，不完整远端快照不能删掉缓存条目。降级返回缓存及明确状态，不因未连接阻断所有回复。追加data.stickers或qq.emoji-favorites仍通过真实消费者生效，见[表情迁移](sticker-sync-migration.md)。
 
 默认inline策略按每次模型回复重选；现代`reply.local-policy`维持preflight，旧兼容声明映射到独立`reply.after-tool-batch`。租约包含owner/函数/注册版本及同步selection变更通知，覆盖等待、工具守卫和发送队列，pin A→B→A不复活旧提案。默认`runtime.capability`接受`subscribeSelection`宿主参数，实际kernel绑定config同步通知；无关配置保存不无条件撤销。批后只接收实际触发DTO与已确认回执，模型引用脱敏，见[回复阶段合同](reply-provider-lifecycle.md)。
 

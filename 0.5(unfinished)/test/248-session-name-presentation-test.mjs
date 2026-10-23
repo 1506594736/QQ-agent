@@ -106,7 +106,7 @@ for(const mode of ['registration ABA','account ABA','permission ABA'])test(`${mo
   f.provider.actions.listGroups=async()=>[{id:'24801',name:'new'}];assert.equal((await f.controller.getNames(['group:24801'])).get('group:24801'),'new');
 });
 test('real default OneBot HTTP-only changes retire cached names until the account is reverified',async t=>{
-  const config={snowluma:{httpUrl:'http://inert248.invalid/a',wsUrl:'ws://inert248.invalid',httpAccessToken:'synthetic-a'}};let calls=0,logins=0,name='A';
+  const config={onebot:{httpUrl:'http://inert248.invalid/a',wsUrl:'ws://inert248.invalid',httpAccessToken:'synthetic-a'}};let calls=0,logins=0,name='A';
   const provider=createOneBotProvider({cfg:()=>config,log:{},onEvent(){},onStatus(){}});provider.client.selfId='24899';provider.client.connected=true;
   const nativeFetch=globalThis.fetch,requests=[];
   t.after(async()=>{await provider.stop();globalThis.fetch=nativeFetch;});
@@ -122,7 +122,7 @@ test('real default OneBot HTTP-only changes retire cached names until the accoun
   const f=pure(t,{provider});assert.equal((await f.controller.getNames(['group:24801'])).get('group:24801'),'A');
   assert.equal((await f.controller.getNames(['group:24801'])).get('group:24801'),'A');assert.equal(calls,1,'unchanged identity still shares its cached catalog');
   const identity=provider.actions.getAccountIdentity(),wsGeneration=provider.client._gen;
-  config.snowluma.httpUrl='http://inert248.invalid/b';name='B';provider.refreshConfig({reconnect:false});
+  config.onebot.httpUrl='http://inert248.invalid/b';name='B';provider.refreshConfig({reconnect:false});
   assert.equal(provider.selfId,null);assert.equal(provider.actions.getAccountIdentity(),null);assert.equal(provider.client._gen,wsGeneration,'HTTP-only changes preserve the WS generation');
   assert.equal((await f.controller.getNames(['group:24801'])).size,0,'unverified identity cannot reuse the old name cache');assert.equal(calls,1,'unknown account cannot issue a name lookup');
   await provider.client.call('get_login_info');
@@ -137,7 +137,7 @@ test('stop immediately releases a never-resolving source and all subscriptions',
   assert.equal((await f.controller.getNames(['group:24801'])).size,0);
 });
 test('default OneBot friend lookup forwards cancellation and suppresses its numeric fallback',async t=>{
-  const provider=createOneBotProvider({cfg:()=>({snowluma:{httpUrl:'http://inert248.invalid'}}),log:{},onEvent(){},onStatus(){}});provider.client.selfId='24899';provider.client.connected=true;
+  const provider=createOneBotProvider({cfg:()=>({onebot:{httpUrl:'http://inert248.invalid'}}),log:{},onEvent(){},onStatus(){}});provider.client.selfId='24899';provider.client.connected=true;
   let signal;const held=gate();provider.client.call=async(action,_args,options)=>{assert.equal(action,'get_friend_list');signal=options.signal;assert.ok(signal);await held.promise;return{data:[{user_id:24802,nickname:'真实动作合成昵称'},{user_id:24803}]};};
   const f=pure(t,{provider,timeoutMs:1000}),pending=f.controller.getNames(['private:24802','private:24803']);await until(()=>signal);held.resolve();const names=await pending;assert.equal(names.get('private:24802'),'真实动作合成昵称');assert.equal(names.get('private:24803'),'');
   assert.equal(signal.aborted,true,'the completed bounded lookup releases its request signal');
@@ -160,7 +160,7 @@ async function application(t,{mode='default'}={}){
   app=await createApplication({appRoot:root,env:{QQ_AGENT_DATA_DIR:dataDir,QQ_AGENT_PORT:'0',QQ_AGENT_MIGRATE_FROM:path.join(root,'absent')},headless:true,transport:provider,
     components:{'runtime.logger':options=>defaultComponents['runtime.logger']({...options,mirrorConsole:false})},
     fetchImpl:async()=>{external++;throw Error('No external traffic');},priceUpdates:{refresh:async()=>({ok:true}),resolve:()=>null},communityMarket:{syncGlobalBlocklist:async()=>({ok:true,ids:[]})}});
-  app.config.update({server:{port:0,token:'synthetic-names248'},api:{model:'inert248'},telemetry:{enabled:false},proactive:{enabled:false},snowluma:{autoLaunch:false},memory:{consolidateEnabled:false}});app.loader.startWatchers=()=>{};
+  app.config.update({server:{port:0,token:'synthetic-names248'},api:{model:'inert248'},telemetry:{enabled:false},proactive:{enabled:false},memory:{consolidateEnabled:false}});app.loader.startWatchers=()=>{};
   const base=`http://127.0.0.1:${await app.start()}`;assert.notEqual(app.httpServer.port,15967);assert.deepEqual(app.loader.listEntries(),[]);
   const request=async url=>{const response=await fetch(base+url,{headers:{'x-console-token':'synthetic-names248'}});return{status:response.status,body:await response.json()};};
   return{app,provider,base,dataDir,request,calls:()=>calls,rename:value=>{name=value;}};

@@ -46,7 +46,7 @@ export class PanelRegistry {
     const definition=this.defs.get(id);if(!definition)throw new Error('未知面板');
     // A host shortcut targets the existing settings UI without inspecting its sandbox
     // or replacing an open form. Other panels receive no settings navigation event.
-    const settingsSection=definition.kind==='bundled'&&(id==='settings'||definition.navigation?.role==='configuration')&&['models','access'].includes(section)?section:null;
+    const settingsSection=definition.kind==='bundled'&&(id==='settings'||definition.navigation?.role==='configuration')&&['models','access','onebot'].includes(section)?section:null;
     const active=this.current;
     if(!force&&active?.id===id&&active.definition===definition&&active.bridge.ready&&!active.bridge.closed&&active.frame.isConnected!==false){
       if(settingsSection)active.bridge.event('settings-section',{section:settingsSection});

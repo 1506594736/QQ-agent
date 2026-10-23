@@ -178,7 +178,7 @@ try {
     const [a, b] = await Promise.all([two.start(), three.start()]);
     assert.notEqual(a, b); assert.equal(two.dataDir, path.join(appRoot, 'data-2')); assert.equal(three.dataDir, path.join(appRoot, 'data-3'));
     assert.equal(two.config.get().server.port, 3310); assert.equal(three.config.get().server.port, 3410);
-    assert.equal(two.config.get().snowluma.wsUrl, 'ws://127.0.0.1:3101'); assert.equal(three.config.get().snowluma.wsUrl, 'ws://127.0.0.1:3201');
+    assert.equal(two.config.get().onebot.wsUrl, 'ws://127.0.0.1:3101'); assert.equal(three.config.get().onebot.wsUrl, 'ws://127.0.0.1:3201');
     assert.equal((await json(a)).onebot.selfId, '90002'); assert.equal((await json(b)).onebot.selfId, '90003');
     assert.equal((await json(a, '/api/version')).profile, 2); assert.equal((await json(b, '/api/version')).profile, 3);
     two.store.appendIncoming('group:900001', { mid: '126-profile-2', senderId: '90002', text: 'only-profile-2', ts: Date.now() });

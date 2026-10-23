@@ -117,7 +117,7 @@ function bootDiag(msg) {
 bootDiag('main.js 已加载');
 
 // 单实例锁：重复启动（双击 .bat）不产生第二个实例，而是唤出已有窗口。
-// 没有锁的话第二个实例会双份连 SnowLuma，群消息会被双重回复。
+// 没有锁的话第二个实例会重复连接协议端，群消息会被双重回复。
 const gotLock = app.requestSingleInstanceLock();
 if (!gotLock) {
   // 2026-09-23 修复：拿不到锁直接静默退出，用户看到的就是"双击没反应"。
@@ -328,7 +328,7 @@ app.whenReady().then(async () => {
 
 // 退出清理：core.stop() 是 async（要 abortAll / 关 SSE / 关 server / 释放单实例锁），
 // 而 before-quit 是同步事件 —— 直接调它会让进程在 await 让出后就被销毁，
-// 清理链跑一半：锁文件可能残留、会话最后一次进度可能丢、SnowLuma 子进程可能变孤儿。
+// 清理链跑一半：锁文件可能残留、会话最后一次进度可能丢。
 // 正确做法：拦下这次退出，等 stop() 真正跑完再 app.quit()。
 let shuttingDown = false;
 app.on('before-quit', (event) => {

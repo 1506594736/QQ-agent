@@ -14,7 +14,7 @@ const headed = process.argv.includes('--headed') || process.env.QA_HEADLESS === 
 fs.mkdirSync(evidenceDir, { recursive: true });
 const errors = [], outbound = [], requests = [], checks = [], evidence = {};
 const streams = new Set();
-const ids = ['sessions', 'chats', 'memory', 'usage', 'skills', 'plugins', 'snowluma', 'settings'];
+const ids = ['sessions', 'chats', 'memory', 'usage', 'skills', 'plugins', 'logs', 'settings'];
 const manifest = { panels: ids.map((id, index) => ({ id, kind: 'bundled', title: `合成面板 ${index + 1}`, description: '视觉回归合成面板', entry: 'qa180.html', permissions: [], api: [] })) };
 const frameHtml = `<!doctype html><html lang="zh-CN"><meta charset="utf-8"><link rel="stylesheet" href="/panels/common.css"><main><h2>合成面板</h2><label>未保存草稿<input id="draft" value="synthetic-180-draft"></label><p>仅验证 iframe 身份与草稿保留。</p></main><script type="module">import '/panels/panel-client.js';</script></html>`;
 const componentHtml = `<!doctype html><html lang="zh-CN"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><link rel="stylesheet" href="/panels/common.css"><style>body{margin:0;background:var(--bg);color:var(--text)}main{max-width:760px;margin:auto}.qa-row{box-sizing:border-box;min-height:92px;padding:16px;border:1px solid var(--line);margin:0 0 12px;position:relative}.qa-row h2{margin:0 0 8px;font-size:15px}.qa-row button{margin-right:12px}#rows{display:block}#result{margin-top:16px}</style><main><h1>合成删除视觉回归</h1><div id="rows"></div><p id="result" role="status"></p></main></html>`;
@@ -27,7 +27,7 @@ const server = http.createServer((req, res) => {
   if (req.method !== 'GET' && req.method !== 'HEAD') { res.writeHead(405); res.end(); return; }
   const json = value => { res.setHeader('Content-Type', 'application/json'); res.end(JSON.stringify(value)); };
   if (pathname === '/api/panels') return json(manifest);
-  if (pathname === '/api/status') return json({ paused: false, onebot: { connected: false }, qqPortable: { ready: false }, snowluma: { configured: false }, sessions: { active: 0 } });
+  if (pathname === '/api/status') return json({ paused: false, onebot: { connected: false }, sessions: { active: 0 } });
   if (pathname === '/api/config') return json({ ui: { refreshMs: 60000 }, api: { baseUrl: 'http://fixture.invalid/synthetic', model: 'synthetic-180' } });
   if (pathname === '/api/permissions/pending') return json({ requests: [] });
   if (pathname === '/api/events') {
@@ -85,7 +85,7 @@ async function sampleRail(toggles = [0], duration = 500) {
       };
       return { time: time - started, width: rail.width, side: right ? 'right' : 'left',
         frameRetained: document.querySelector('#panel-host iframe') === window.qa180Frame,
-        logo: point('#brand-emblem svg'), footer: point('#ready-qq .readiness-icon'),
+        logo: point('#brand-emblem svg'), footer: point('#ready-onebot .readiness-icon'),
         rows: [...document.querySelectorAll('#nav button')].map(node => {
           const box = node.getBoundingClientRect(), icon = node.querySelector('.nav-icon').getBoundingClientRect();
           return { id: node.dataset.panel, y: box.top - rail.top, height: box.height, anchor: right ? rail.right - (icon.left + icon.width / 2) : icon.left + icon.width / 2 - rail.left };

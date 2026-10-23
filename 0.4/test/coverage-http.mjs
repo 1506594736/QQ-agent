@@ -5,7 +5,7 @@
 //   - 安全回归：CSRF、SSRF、密钥脱敏、鉴权默认值
 //   - 接口覆盖率统计（跑了多少条声明的路由）
 //
-// 安全说明：会在隔离数据目录里起完整服务；不启动 SnowLuma / 不打开资源管理器 /
+// 安全说明：会在隔离数据目录里起完整服务；不打开资源管理器 /
 //           不动用户真实 data/。破坏性接口 /api/reset-data 放在最后单独测。
 //
 // 运行：node test/coverage-http.mjs
@@ -19,9 +19,6 @@ const c = createChecker('HTTP 接口层覆盖');
 
 const ctx = await bootApp({
   config: {
-    // 指向不存在的目录：让 /api/snowluma/launch 走"找不到"分支，
-    // 避免测试真的去拉起用户的 SnowLuma。
-    snowluma: { dir: path.join(ROOT, '__no_such_snowluma__'), accessToken: '' },
     api: {
       baseUrl: '', apiKey: '', model: 'test-model-a', priceRemoteUrl: '', vision: true,
       temperature: 0.7, maxRounds: 6, priceInputPerM: 2, priceOutputPerM: 8
@@ -52,10 +49,10 @@ const hit = async (method, p, opts) => {
 // ── 1. 状态 / 用量 / 价格 ────────────────────────────────────────────────
 c.section('1. 状态 / 用量 / 价格');
 {
-  await c.check('GET /api/status：返回 onebot/snowluma/orchestrator/usage 等关键块', async () => {
+  await c.check('GET /api/status：返回 onebot/orchestrator/usage 等关键块', async () => {
     const r = await hit('GET', '/api/status');
     assert.equal(r.status, 200);
-    for (const k of ['onebot', 'snowluma', 'orchestrator', 'usage', 'cost', 'paused', 'dataDir']) {
+    for (const k of ['onebot', 'orchestrator', 'usage', 'cost', 'paused', 'dataDir']) {
       assert.ok(k in r.data, `status 缺少字段 ${k}`);
     }
     assert.equal(r.data.onebot.connected, true, 'mock OneBot 应已连接');
@@ -714,48 +711,6 @@ c.section('9. 日志');
   });
 }
 
-// ── 10. 进程管理（只测安全分支） ─────────────────────────────────────────
-c.section('10. 进程管理（安全分支）');
-{
-  await c.check('GET /api/snowluma/logs：返回日志数组', async () => {
-    const r = await hit('GET', '/api/snowluma/logs');
-    assert.equal(r.status, 200);
-    assert.ok(Array.isArray(r.data.logs));
-  });
-
-  await c.check('POST /api/snowluma/launch：目录不存在时给出明确错误而不是崩溃', async () => {
-    const r = await hit('POST', '/api/snowluma/launch');
-    assert.ok(r.status === 400 || r.status === 200, `应返回结构化结果，实际 ${r.status}`);
-    assert.ok(r.data, '应有响应体');
-    assert.ok(r.data.ok === false || r.data.alreadyRunning, '不应误报成功启动');
-  });
-
-  await c.check('POST /api/snowluma/stop：未启动时安全返回', async () => {
-    const r = await hit('POST', '/api/snowluma/stop');
-    assert.ok(r.status === 200, `应 200，实际 ${r.status}`);
-    assert.ok(r.data && r.data.ok !== false, '应有结构化响应');
-  });
-
-  await c.check('GET /api/qq-portable/status：返回安装/运行状态', async () => {
-    const r = await hit('GET', '/api/qq-portable/status');
-    assert.equal(r.status, 200);
-    assert.ok(r.data && typeof r.data === 'object');
-  });
-
-  await c.check('GET /api/qq-portable/logs：返回日志数组', async () => {
-    const r = await hit('GET', '/api/qq-portable/logs');
-    assert.equal(r.status, 200);
-    assert.ok(Array.isArray(r.data.logs));
-  });
-
-  await c.check('POST /api/qq-portable/launch：未安装时返回 400 且不 spawn', async () => {
-    const r = await hit('POST', '/api/qq-portable/launch');
-    assert.equal(r.status, 400, `未安装应 400，实际 ${r.status}`);
-    assert.equal(r.data.ok, false);
-    assert.ok(/未安装|setup/i.test(r.data.error || ''), `错误信息应说明原因，实际：${r.data.error}`);
-  });
-}
-
 // ── 11. 媒体取图（含 SSRF 回归） ─────────────────────────────────────────
 c.section('11. 媒体取图与 SSRF');
 {
@@ -1083,9 +1038,6 @@ c.section('15. 接口覆盖率统计');
   // 明确不测的：会在用户桌面弹窗口 / 可能影响用户真实进程
   const SKIP = new Set([
     'POST /api/open-data-dir',
-    'POST /api/snowluma/open-folder',
-    'POST /api/snowluma/open-webui',
-    'POST /api/qq-portable/stop'
   ]);
 
   await c.check('声明的 API 路由覆盖率 ≥ 90%', async () => {

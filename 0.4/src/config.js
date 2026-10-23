@@ -161,16 +161,12 @@ export const DEFAULT_CONFIG = {
       siteSearchUrl: ''           // 站内搜索模板，如 'https://example.com/search?q={query}'
     }
   },
-  // SnowLuma / OneBot v11
-  snowluma: {
-    dir: '',                   // SnowLuma 程序目录；留空 = 自动探测项目内 ./snowluma
-    autoLaunch: false,         // 应用启动时自动拉起 SnowLuma（未运行时）
-    // 第二实例默认连自己的 OneBot 端口（3001/3000 + 偏移），
-    // 否则两个实例会同时连到主实例的 SnowLuma，消息被处理两遍。
+  // 外部 OneBot v11 服务：用户自行安装、登录并管理协议端。
+  onebot: {
     wsUrl: `ws://127.0.0.1:${3001 + portOffset()}`,
     httpUrl: `http://127.0.0.1:${3000 + portOffset()}`,
-    accessToken: '',           // WebSocket 令牌
-    httpAccessToken: ''        // HTTP API 令牌（SnowLuma 可与 WS 不同；留空沿用 accessToken）
+    accessToken: '',
+    httpAccessToken: '' // 留空沿用 WebSocket 令牌
   },
   // 人设与行为
   persona: {

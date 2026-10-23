@@ -411,7 +411,7 @@ function openBlocklistModal() {
       const n = (pending[activeGid] || []).length;
       statusEl.textContent = n ? `当前群已屏蔽 ${n} 人` : '';
     } catch (e) {
-      right.innerHTML = `<div class="empty-hint" style="padding:18px">拉取失败：${esc(e.message)}（SnowLuma 在线才能拿到群成员列表）</div>`;
+      right.innerHTML = `<div class="empty-hint" style="padding:18px">拉取失败：${esc(e.message)}（外部 OneBot 服务在线才能拿到群成员列表）</div>`;
     }
   }
 

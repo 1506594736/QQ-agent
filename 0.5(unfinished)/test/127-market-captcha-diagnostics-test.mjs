@@ -74,7 +74,7 @@ const market=createCommunityMarketAdapters({dataDir,appRoot:packageRoot,communit
   return new Response(JSON.stringify(remoteStatus===200?{ok:true,item:{code:'TEST127',name:'本地测试',token:accountToken,proof,nested:{proof}},note:`服务器附注 ${proof} ${accountToken}`,renamedTo:null}:{ok:false,error:`发布过于频繁 ${proof} ${accountToken}`}),{status:remoteStatus,headers:{'content-type':'application/json',...(remoteStatus===302?{location:`${COMMUNITY_BASE_URL}/unexpected-leak`}:{})}});
 }});
 kernel=createKernel({appRoot:isolation.appRoot,env:isolation.env,headless:true,fetchImpl:(...args)=>fetch(...args),transport:{id:'fixture',start(){},stop(){},status:()=>({connected:true}),actions:{}},priceUpdates: { refresh: async () => ({ok:true}), updateCheck: async () => ({ok:true,current:'0.5.0',latest:'0.5.0',hasUpdate:false}) },communityMarket:market});
-kernel.config.update({server:{port:0,token},telemetry:{enabled:false},proactive:{enabled:false},snowluma:{autoLaunch:false},api:{apiKey:'model-secret127'}});
+kernel.config.update({server:{port:0,token},telemetry:{enabled:false},proactive:{enabled:false},api:{apiKey:'model-secret127'}});
 kernel.loader.startWatchers=()=>{};
 let browser,port;
 try {
